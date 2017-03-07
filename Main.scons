@@ -1,0 +1,17 @@
+#! python
+
+env = Environment(CCFLAGS="-std=c++11")
+
+mainfile = 'main.cpp'
+
+sources = [ 'tinyxml2.cpp',
+			'tinyxml2_addon.cpp',
+			'TCoord.cpp',
+			'hit.cpp',
+			'pixel.cpp',
+			'readoutcell.cpp'
+			]
+			
+sources.append(mainfile)
+
+env.Program(target = 'a.out', source = sources)
