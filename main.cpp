@@ -1,14 +1,16 @@
 #include <iostream>
 #include <string>
 
-//#include "hit.h"
+#include "hit.h"
 #include "TCoord.h"
 #include "pixel.h"
+#include "readoutcell.h"
 
 
 int main(int argc, char** argv)
 {
-	//Hit a();
+	Hit a();
+	ReadoutCell b();
 	
 	
 	TCoord <double> position{10,20,30};

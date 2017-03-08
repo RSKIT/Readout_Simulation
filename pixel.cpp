@@ -1,6 +1,8 @@
 #include "pixel.h"
 
-Pixel::Pixel() //: position(TCoord<double>())
+Pixel::Pixel() : position(TCoord<double>{0,0,0}), size (TCoord<double>{0,0,0}), 
+	threshold(0), efficiency(0), hit(Hit()), hitflag1(false), hitflag2(false), 
+	addressname(""), address(0)
 {
 	
 }

@@ -10,7 +10,7 @@ class Hit
 {
 public:
 	Hit();
-	Hit(Hit& hit);
+	Hit(const Hit& hit);
 
 	int  GetTimeStamp();
 	void SetTimeStamp(int timestamp);

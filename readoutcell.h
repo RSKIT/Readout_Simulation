@@ -12,7 +12,7 @@ class ReadoutCell
 {
 public:
 	ReadoutCell();
-	ReadoutCell(std::string addressname, int address, std::vector<Pixel> pixelvector, std::vector<ReadoutCell> rocvector);	
+	ReadoutCell(std::string addressname, int address, int hitqueuelength);	
 	
 	std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
@@ -27,14 +27,16 @@ public:
 	void		SetHitqueuelength(int hitqueuelength);
 	
 	bool		AddHit(Hit hit);
+	Hit 		GetHit();
+	bool		PopHit();
 
-	Pixel& 		GetPixel(int index);
-	Pixel&		GetPixelAddress(int address);
+	Pixel* 		GetPixel(int index);
+	Pixel*		GetPixelAddress(int address);
 	void		AddPixel(Pixel pixel);
 	void		ClearPixelVector();
 	
-	ReadoutCell& GetROC(int index);
-	ReadoutCell& GetROCAddress(int address);
+	ReadoutCell* GetROC(int index);
+	ReadoutCell* GetROCAddress(int address);
 	void		AddROC(ReadoutCell readoutcell);
 	void		ClearROCVector();
 
