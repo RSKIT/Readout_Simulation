@@ -5,7 +5,7 @@ Hit::Hit() : eventindex(-1), timestamp(-1)
 	address = std::map<std::string, int>();
 }
 
-Hit::Hit(Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex)
+Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex)
 {
 	for(auto it : hit.address)
 		address.insert(it);
