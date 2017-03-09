@@ -5,12 +5,14 @@
 #include "TCoord.h"
 #include "pixel.h"
 #include "readoutcell.h"
+#include "detector.h"
 
 
 int main(int argc, char** argv)
 {
 	Hit a();
 	ReadoutCell b();
+        Detector c();
 	
 	
 	TCoord <double> position{10,20,30};
