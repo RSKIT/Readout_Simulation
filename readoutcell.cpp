@@ -112,6 +112,21 @@ void ReadoutCell::ClearPixelVector()
 	pixelvector.clear();
 }
 
+int ReadoutCell::GetNumPixels()
+{
+	return pixelvector.size();
+}
+
+std::vector<Pixel>::iterator ReadoutCell::GetPixelsBegin()
+{
+	return pixelvector.begin();
+}
+
+std::vector<Pixel>::iterator ReadoutCell::GetPixelsEnd()
+{
+	return pixelvector.end();
+}
+
 ReadoutCell* ReadoutCell::GetROC(int index)
 {
 	if (index < rocvector.size())
@@ -138,4 +153,19 @@ void ReadoutCell::AddROC(ReadoutCell readoutcell)
 void ReadoutCell::ClearROCVector()
 {
 	rocvector.clear();
+}
+
+int ReadoutCell::GetNumROCs()
+{
+	return rocvector.size();
+}
+
+std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsBegin()
+{
+	return rocvector.begin();
+}
+
+std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsEnd()
+{
+	return rocvector.end();
 }
