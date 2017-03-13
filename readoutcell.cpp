@@ -155,7 +155,6 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
-<<<<<<< HEAD
 bool ReadoutCell::GetNextHitflag()
 {
     return nexthitflag;
@@ -180,7 +179,8 @@ void ReadoutCell::Apply()
 {
     if (AddHit(nexthit))
         hitflag = nexthitflag;
-=======
+}
+
 int ReadoutCell::GetNumROCs()
 {
 	return rocvector.size();
@@ -194,5 +194,5 @@ std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsBegin()
 std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsEnd()
 {
 	return rocvector.end();
->>>>>>> 9cfbd860e2aef52c692b90c6e8335ae31226232f
+
 }
