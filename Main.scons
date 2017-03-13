@@ -10,7 +10,8 @@ sources = [ 'tinyxml2.cpp',
 			'pixel.cpp',
 			'readoutcell.cpp',
 			'detector.cpp',
-			'statemachine.cpp'
+			'TCoord.cpp',
+			'simulator.cpp'
 			]
 			
 sources.append(mainfile)

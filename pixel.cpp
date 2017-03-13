@@ -102,7 +102,10 @@ void Pixel::SetAddress(int address)
 	
 Hit Pixel::GetHit()
 {
+    if (hitflag2)
 	return hit;
+    else
+        return Hit();
 }
 
 bool Pixel::CreateHit(int timestamp)

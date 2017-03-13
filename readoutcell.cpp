@@ -139,3 +139,29 @@ void ReadoutCell::ClearROCVector()
 {
 	rocvector.clear();
 }
+
+bool ReadoutCell::GetNextHitflag()
+{
+    return nexthitflag;
+}
+
+void ReadoutCell::SetNextHitflag(bool nexthitflag)
+{
+    this->nexthitflag = nexthitflag;
+}
+
+Hit ReadoutCell::GetNextHit()
+{
+    return nexthit;
+}
+
+void ReadoutCell::SetNextHit(Hit nexthit)
+{
+    this->nexthit = nexthit;
+}
+
+void ReadoutCell::Apply()
+{
+    if (AddHit(nexthit))
+        hitflag = nexthitflag;
+}

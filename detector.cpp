@@ -1,7 +1,7 @@
 #include "detector.h"
 
 Detector::Detector() : 
-	addressname(""), address(0), rocvector(std::vector<ReadoutCell>())
+        addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), currentstate(PullDown)
 {
 	
 }
@@ -11,6 +11,7 @@ Detector::Detector(std::string addressname, int address)
 	this->addressname = addressname;
 	this->address = address;
 	rocvector = std::vector<ReadoutCell>();
+        currentstate = PullDown;
 }
 
 std::string Detector::GetAddressName()
@@ -86,4 +87,59 @@ TCoord<double> Detector::GetSize()
 void Detector::SetSize(TCoord<double> size)
 {
 	this->size = size;
+}
+
+void Detector::StateMachine()
+{
+    switch(currentstate)
+    {
+        case PullDown:
+            /* generate hits
+             * set flag1 in pixels
+             * */
+            break;
+
+        case LdPix:
+            /* iterate all pixels ín all rocs
+             * flag1-->flag2*/
+            break;
+
+        case LdCol:
+            /* get hit from first pix (prio logic) of each roc to rocqueue,
+             * reset this pix' flags,
+             * delete in pix
+             * set roc flag */
+            break;
+
+        case RdCol:
+            /* if flag in roc,
+             * return first data (prio logic)
+             * pop data in roc,
+             * check if hitvector size !=0 --> hitflag
+             * */
+
+            break;
+    }
+    NextState();
+}
+
+void Detector::SetState(state nextstate)
+{
+    this->currentstate = nextstate;
+}
+
+Detector::state Detector::GetState()
+{
+    return currentstate;
+}
+
+Detector::state Detector::NextState()
+{
+    switch(currentstate)
+    {
+        case PullDown   : return currentstate = LdPix;
+        case LdPix      : return currentstate = LdCol;
+        case LdCol      : return currentstate = RdCol;
+        case RdCol      : return currentstate = PullDown;
+    }
 }
