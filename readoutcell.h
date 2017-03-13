@@ -34,11 +34,17 @@ public:
 	Pixel*		GetPixelAddress(int address);
 	void		AddPixel(Pixel pixel);
 	void		ClearPixelVector();
+	int         GetNumPixels();
+	std::vector<Pixel>::iterator GetPixelsBegin();
+	std::vector<Pixel>::iterator GetPixelsEnd();
 	
 	ReadoutCell* GetROC(int index);
 	ReadoutCell* GetROCAddress(int address);
 	void		AddROC(ReadoutCell readoutcell);
 	void		ClearROCVector();
+	int         GetNumROCs();
+	std::vector<ReadoutCell>::iterator GetROCsBegin();
+	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
 	
 private:
