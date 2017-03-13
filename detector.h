@@ -30,6 +30,8 @@ public:
         ReadoutCell*    GetROCAddress(int address);
 	void		AddROC(ReadoutCell readoutcell);
 	void		ClearROCVector();
+	std::vector<ReadoutCell>::iterator GetROCVectorBegin();
+	std::vector<ReadoutCell>::iterator GetROCVectorEnd();
 	
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	

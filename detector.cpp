@@ -60,6 +60,17 @@ void Detector::ClearROCVector()
 {
 	rocvector.clear();
 }
+
+std::vector<ReadoutCell>::iterator Detector::GetROCVectorBegin()
+{
+	return rocvector.begin();
+}
+
+std::vector<ReadoutCell>::iterator Detector::GetROCVectorEnd()
+{
+	return rocvector.end();
+}
+
 	
 void Detector::SaveHit(Hit hit, std::string filename, bool compact)
 {

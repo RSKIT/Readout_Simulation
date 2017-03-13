@@ -112,6 +112,21 @@ void ReadoutCell::ClearPixelVector()
 	pixelvector.clear();
 }
 
+int ReadoutCell::GetNumPixels()
+{
+	return pixelvector.size();
+}
+
+std::vector<Pixel>::iterator ReadoutCell::GetPixelsBegin()
+{
+	return pixelvector.begin();
+}
+
+std::vector<Pixel>::iterator ReadoutCell::GetPixelsEnd()
+{
+	return pixelvector.end();
+}
+
 ReadoutCell* ReadoutCell::GetROC(int index)
 {
 	if (index < rocvector.size())
@@ -140,6 +155,7 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
+<<<<<<< HEAD
 bool ReadoutCell::GetNextHitflag()
 {
     return nexthitflag;
@@ -164,4 +180,19 @@ void ReadoutCell::Apply()
 {
     if (AddHit(nexthit))
         hitflag = nexthitflag;
+=======
+int ReadoutCell::GetNumROCs()
+{
+	return rocvector.size();
+}
+
+std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsBegin()
+{
+	return rocvector.begin();
+}
+
+std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsEnd()
+{
+	return rocvector.end();
+>>>>>>> 9cfbd860e2aef52c692b90c6e8335ae31226232f
 }
