@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
@@ -31,9 +32,42 @@ public:
 	 */
 	bool IsReady();
 
+	/**
+	 * @brief adds a detector object to the eventgenerator
+	 * @details the detector passed will be used for the generation of events additionally to
+	 *             the detectors already present in the detector. There is no check that a detector
+	 *             is already linked in the event generator. A double inclusion will cause "double 
+	 *             hits" in the event generator
+	 * 
+	 * @param detector       - the detector to add
+	 */
 	void AddDetector(Detector* detector);
+	/**
+	 * @brief removes all poointers to detectors from the event generator
+	 * @details
+	 */
 	void ClearDetectors();
+	/**
+	 * @brief returns a pointer to a detector linked in the event generator if present
+	 * @details for valid indices, this function returns a pointer to the detector linked at this
+	 *             index. For too large or too small indices, a null pointer till be returned.
+	 * 
+	 * @param index          - the index of the detector to return
+	 * @return               - a pointer to a detector or a null pointer in case of an index out 
+	 *                            of bounds
+	 */
 	Detector* GetDetectorByIndex(int index);
+	/**
+	 * @brief returns a pointer to a detector linked in the event generator, but uses the addess
+	 *             of the detector to find it
+	 * @details for an address occupied by a detector linked in the event generator, a pointer
+	 *             to this detector will be returned. On unoccupied addresses, a null pointer
+	 *             will be returned
+	 * 
+	 * @param address        - the address to look for
+	 * @return               - a pointer to a detector or a null pointer if the address is not
+	 *                            used by the detectors linked to the event generator
+	 */
 	Detector* GetDetectorByAddress(int address);
 
 	std::string GetOutputFileName();
@@ -68,6 +102,8 @@ public:
 	Hit GetNextHit();
 	Hit GetHit();
 
+	void PrintQueue();
+
 
 
 	/**
@@ -101,7 +137,7 @@ private:
 	double eventrate;
 	int seed;
 
-	double chargescale;
+	double chargescale;	//to make the "charge" calculated a charge in Coulomb
 
 	double minsize;		//maximum space diagonal of a volume treated as a point
 	int numsigmas;		//number of sigmas before the gaussian is cut off

@@ -176,6 +176,13 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		}
 	}
 
+	std::fstream fout;
+	fout.open(filename.c_str(), std::ios::out | std::ios::app);
+
+	if(!fout.is_open())
+		std::cout << "Could not open output file \"" << filename 
+				  << "\" to write the generated events." << std::endl;
+
 	double time = firsttime;
 	//generate the events:
 	for (int i = 0; i < numevents; ++i)
@@ -191,6 +198,12 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 
 		//generate the next time stamp:
 		time += -log(rand()/double(RAND_MAX)) / eventrate;
+
+		//save the parameters of the hit in the file for the events:
+		if(fout.is_open())
+			fout << "# Event " << eventindex << std::endl
+				 << "# Trajectory: g: x(t) = " << setpoint << " + t * " << direction << std::endl
+				 << "# Time: " << time << std::endl;
 
 		//generate the template hit object for this event:
 		Hit hittemplate;
@@ -208,10 +221,18 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 
 				//copy the hits to the event queue:
 				for(auto it2 : hits)
+				{
 					clusterparts.push_back(it2);
+
+					//also save the hit in the output file:
+					if(fout.is_open())
+						fout << "  " << it2.GenerateString() << std::endl;
+				}
 			}
 		}
 	}
+
+	fout.close();
 }
 
 int EventGenerator::GetNumEventsGenerated()
@@ -294,6 +315,13 @@ int EventGenerator::GetNumEventsLeft()
 		return eventindex - clusterparts.front().GetEventIndex();
 }
 
+void EventGenerator::PrintQueue()
+{
+	std::cout << "Events enqueued:" << std::endl;
+	for(auto it : clusterparts)
+		std::cout << "  " << it.GenerateString() << std::endl;
+}
+
 double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<double> position,
 					TCoord<double> size, double minsize, double sigma, int setzero, bool root)
 {
@@ -368,7 +396,8 @@ double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<dou
 
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
-									TCoord<double> direction, TCoord<double> setpoint)
+									TCoord<double> direction, TCoord<double> setpoint, 
+									bool print = false)
 {
 	std::vector<Hit> globalhits;
 
@@ -380,6 +409,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		//scan Sub-Cells:
 		for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); ++it)
 		{
+
 			//test one subdetector for hits:
 			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), direction, setpoint);
 
@@ -392,9 +422,14 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
-										minsize, clustersize, numsigmas, false);
-			if(charge >= it->GetThreshold())
+										minsize, clustersize, numsigmas, print);
+
+			if(charge > it->GetThreshold())
 			{
+				if(print)
+					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 
+							  << charge << std::endl;
+
 				Hit phit = hit;
 				phit.AddAddress(it->GetAddressName(),it->GetAddress());
 				globalhits.push_back(phit);
