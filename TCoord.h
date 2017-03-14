@@ -88,5 +88,4 @@ std::ostream& operator<<(std::ostream &out, TCoord<T> const &b);
 
 
 #include "TCoord.cpp"
-
 #endif // TCOORD_H

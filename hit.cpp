@@ -60,6 +60,11 @@ bool Hit::SetAddress(std::string name, int addr)
 		return false;		
 }
 
+int  Hit::AddressSize()
+{
+    return address.size();
+}
+
 void Hit::ClearAddress()
 {
 	address.clear();

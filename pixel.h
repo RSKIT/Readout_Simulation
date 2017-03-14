@@ -9,9 +9,10 @@
 class Pixel
 {
 public:
+        Pixel(TCoord <double> position, TCoord <double> size,
+            std::string addressname, int address, double threshold);
 	Pixel();
-	Pixel(TCoord <double> position, TCoord <double> size, 
-		std::string addressname, int address, double threshold);
+
 	
 	TCoord<double>	GetPosition();
 	void		SetPosition(TCoord<double> position);
