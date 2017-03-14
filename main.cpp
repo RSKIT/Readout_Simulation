@@ -6,10 +6,11 @@
 #include "pixel.h"
 #include "readoutcell.h"
 #include "detector.h"
+#include "EventGenerator.h"
 
-int pixsizex = 10;
-int pixsizey = 20;
-int pixsizez = 1;
+int pixsizex = 50;
+int pixsizey = 150;
+int pixsizez = 30;
 
 int main(int argc, char** argv)
 {
@@ -46,6 +47,55 @@ int main(int argc, char** argv)
     }
 
 
+
+
+
+
+    std::cout << Matrix.GetPosition() << std::endl;
+    std::cout << Matrix.GetSize() <<std::endl;
+
+    if (Matrix.SizeOK())
+        std::cout << "Size OK" << std::endl;
+    else
+        std::cout << "Size NOT OK" << std::endl;
+    if (Matrix.EnlargeSize())
+        std::cout << "enlarged" << std::endl;
+    else
+        std::cout << "not enlarged" << std::endl;
+    if (Matrix.SizeOK())
+        std::cout << "Size OK" << std::endl;
+    else
+        std::cout << "Size NOT OK" << std::endl;
+    std::cout << Matrix.GetPosition() << std::endl;
+    std::cout << Matrix.GetSize() <<std::endl;
+
+    //Simulator
+    EventGenerator evgen(&Matrix);
+    evgen.SetOutputFileName("eventgen out");
+    evgen.SetSeed();
+    evgen.SetClusterSize(20);
+    evgen.SetEventRate(0.1);
+    evgen.SetCutOffFactor(5);
+    evgen.SetMinSize(0.1);
+    std::cout << "test" << std::endl;
+    evgen.GenerateEvents(0, 1);
+
+    std::cout << "test" << std::endl;
+    for (int i = 0; i<10; i++)//to be replaced by 'while(eventqueue has still elements)'
+    {
+
+        std::cout << i << std::endl;
+        //clock down
+        std::vector<Hit> nextevent = evgen.GetNextEvent();
+        int nexttimestamp = nextevent.front().GetTimeStamp();
+        for (auto it = nextevent.begin(); it != nextevent.end(); it++)
+        {
+           // it->GetIndex
+        }
+
+
+        //clock up
+    }
 
 
 

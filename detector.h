@@ -40,6 +40,9 @@ public:
 	
 	TCoord<double>	GetSize();
 	void		SetSize(TCoord<double> size);
+
+        bool            SizeOK();
+        bool EnlargeSize();
 	
         void            StateMachine();
 
@@ -55,6 +58,8 @@ private:
         TCoord<double> size;
 
         state currentstate;
+        bool    SizeOKROC(ReadoutCell* cell);
+        bool EnlargeSizeROC(ReadoutCell* cell);
 
 };
 
