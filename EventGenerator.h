@@ -24,6 +24,11 @@ public:
 	EventGenerator(Detector* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
 
+	/**
+	 * @brief checks whether the output file and the event rate are set
+	 * @details
+	 * @return               - true if both are set correctly
+	 */
 	bool IsReady();
 
 	void AddDetector(Detector* detector);
@@ -44,6 +49,9 @@ public:
 	double GetEventRate();
 	void   SetEventRate(double rate);
 
+	double GetChargeScaling();
+	void   SetChargeScaling(double scalefactor);
+
 	double GetMinSize();
 	void   SetMinSize(double diagonallength);
 
@@ -53,6 +61,7 @@ public:
 	void GenerateEvents(double firsttime = 0, int numevents = 1);
 
 	int GetNumEventsGenerated();
+	int GetNumEventsLeft();
 
 	std::vector<Hit> GetNextEvent();
 	std::vector<Hit> GetEvent(int eventindex);
@@ -91,6 +100,8 @@ private:
 	double clustersize;
 	double eventrate;
 	int seed;
+
+	double chargescale;
 
 	double minsize;		//maximum space diagonal of a volume treated as a point
 	int numsigmas;		//number of sigmas before the gaussian is cut off
