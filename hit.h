@@ -21,7 +21,7 @@ public:
 	void AddAddress(std::string name, int addr);
 	int  GetAddress(std::string name);
 	bool SetAddress(std::string name, int addr);
-        int  AddressSize();
+    int  AddressSize();
 
 	void ClearAddress();
 
