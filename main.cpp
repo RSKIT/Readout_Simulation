@@ -76,21 +76,21 @@ int main(int argc, char** argv)
     evgen.SetClusterSize(20);
     evgen.SetEventRate(0.1);
     evgen.SetCutOffFactor(5);
-    evgen.SetMinSize(0.1);
+    evgen.SetMinSize(1);
     std::cout << "test" << std::endl;
     evgen.GenerateEvents(0, 1);
 
     std::cout << "test" << std::endl;
-    for (int i = 0; i<10; i++)//to be replaced by 'while(eventqueue has still elements)'
+    for (int timestamp = 0; timestamp<100; timestamp++)//to be replaced by 'while(eventqueue has still elements)'
     {
 
-        std::cout << i << std::endl;
+        std::cout << timestamp << std::endl;
         //clock down
         std::vector<Hit> nextevent = evgen.GetNextEvent();
         int nexttimestamp = nextevent.front().GetTimeStamp();
         for (auto it = nextevent.begin(); it != nextevent.end(); it++)
         {
-           // it->GetIndex
+            //it-> ;
         }
 
 
