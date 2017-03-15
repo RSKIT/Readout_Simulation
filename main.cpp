@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     evgen.SetCutOffFactor(5);
     evgen.SetMinSize(1);	//0.1);
     std::cout << "test" << std::endl;
-    evgen.GenerateEvents(0, 1);
+    evgen.GenerateEvents(0, 2);
 
     std::cout << "Events: " << evgen.GetNumEventsLeft() << std::endl;
 

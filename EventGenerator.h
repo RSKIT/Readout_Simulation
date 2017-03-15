@@ -127,7 +127,7 @@ public:
 						int setzero = 5, bool root = true);
 private:
 	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
-										TCoord<double> setpoint);
+										TCoord<double> setpoint, bool print = false);
 
 	std::vector<Detector*> detectors;
 

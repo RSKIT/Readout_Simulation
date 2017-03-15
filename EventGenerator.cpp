@@ -247,11 +247,15 @@ std::vector<Hit> EventGenerator::GetNextEvent()
 	if(clusterparts.size() == 0)
 		return event;
 
+	std::cout << "peep1" << std::endl;
+
 	//get the eventindex of the first hit in the queue:
 	int thiseventindex = clusterparts.front().GetEventIndex();
 
+	std::cout << "peep2" << std::endl;
+
 	//move all hits from the event to a vector:
-	while(thiseventindex == clusterparts.front().GetEventIndex())
+	while(clusterparts.size() > 0 && thiseventindex == clusterparts.front().GetEventIndex())
 	{
 			event.push_back(clusterparts.front());
 
@@ -397,7 +401,7 @@ double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<dou
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
 									TCoord<double> direction, TCoord<double> setpoint, 
-									bool print = false)
+									bool print)
 {
 	std::vector<Hit> globalhits;
 
