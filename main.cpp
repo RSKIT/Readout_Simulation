@@ -77,6 +77,7 @@ int main(int argc, char** argv)
     evgen.SetEventRate(0.1);
     evgen.SetCutOffFactor(5);
     evgen.SetMinSize(1);	//0.1);
+    evgen.SetInclinationSigma(0.3);	//gaussian sigma in radians
     std::cout << "test" << std::endl;
     evgen.GenerateEvents(0, 2);
 
@@ -84,7 +85,7 @@ int main(int argc, char** argv)
 
     evgen.PrintQueue();
 
-    std::cout << "test" << std::endl;
+    std::cout << "test2" << std::endl;
     for (int i = 0; i<10; i++)//to be replaced by 'while(eventqueue has still elements)'
     {
 

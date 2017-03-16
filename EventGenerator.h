@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
+#include <random>
 #include <math.h>
 #include <deque>
 
@@ -77,6 +78,9 @@ public:
 	int  GetSeed();
 	void SetSeed(int seed = 0);
 
+	double GetInclinationSigma();
+	void   SetInclinationSigma(double sigma);
+
 	double GetClusterSize();
 	void   SetClusterSize(double size);
 
@@ -135,7 +139,11 @@ private:
 
 	double clustersize;
 	double eventrate;
+
+	std::default_random_engine generator;	//a uniform random generator
 	int seed;
+	double inclinationsigma;				//sigma for the gaussian distribution of the theta
+											// angle in radians
 
 	double chargescale;	//to make the "charge" calculated a charge in Coulomb
 

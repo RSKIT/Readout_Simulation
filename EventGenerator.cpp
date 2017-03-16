@@ -1,21 +1,24 @@
 #include "EventGenerator.h"
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
-					seed(0), chargescale(1)
+					seed(0), inclinationsigma(0.3), chargescale(1)
 {
-
+	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(Detector* detector) : filename(""), eventindex(0), clustersize(0),
-					eventrate(0), seed(0), chargescale(1)
+					eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1)
 {
 	detectors.push_back(detector);
+
+	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
-					eventindex(0), chargescale(1)
+					eventindex(0), chargescale(1), inclinationsigma(0.3)
 {
 	this->seed 		  = seed;
+	SetSeed(seed);
 	this->clustersize = clustersize;
 	this->eventrate   = rate;
 }
@@ -81,9 +84,22 @@ void EventGenerator::SetSeed(int seed)
 
 	//generate a seed from the cpu time on '0':
 	if(seed == 0)
-		srand(time(0));
+		generator.seed(time(0));
 	else
-		srand(seed);
+		generator.seed(seed);
+}
+
+double EventGenerator::GetInclinationSigma()
+{
+	return inclinationsigma;
+}
+
+void EventGenerator::SetInclinationSigma(double sigma)
+{
+	if(sigma < 0)
+		inclinationsigma = -sigma;
+	else
+		inclinationsigma = sigma;
 }
 
 double EventGenerator::GetClusterSize()
@@ -184,20 +200,33 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 				  << "\" to write the generated events." << std::endl;
 
 	double time = firsttime;
+
+	//normal distribution for the generation of the theta angles (result in radians):
+	std::normal_distribution<double> distribution(0.0,inclinationsigma);
+
 	//generate the events:
 	for (int i = 0; i < numevents; ++i)
 	{
 		//get a new random particle track:
 		TCoord<double> direction;
-		for(int i = 0; i < 3; ++i)
-			direction[i] = rand() / double(RAND_MAX);
+
+		double theta = distribution(generator);
+		if(theta < 0)
+			theta = -theta;
+		double phi   = 2* 3.14159265 * (generator() / double(RAND_MAX));
+		direction[0] = cos(phi)*sin(theta);
+		direction[1] = sin(phi)*sin(theta);
+		direction[2] = cos(theta);
+
+		//for(int i = 0; i < 3; ++i)
+		//	direction[i] = generator() / double(RAND_MAX);
 		TCoord<double> setpoint;	//inside the detector volume
 		for(int i = 0; i < 3; ++i)
-			setpoint[i] = rand() / double(RAND_MAX) * (detectorend[i]-detectorstart[i]) 
+			setpoint[i] = generator() / double(RAND_MAX) * (detectorend[i]-detectorstart[i]) 
 							+ detectorstart[i];
 
 		//generate the next time stamp:
-		time += -log(rand()/double(RAND_MAX)) / eventrate;
+		time += -log(generator()/double(RAND_MAX)) / eventrate;
 
 		//save the parameters of the hit in the file for the events:
 		if(fout.is_open())
