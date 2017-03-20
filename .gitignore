@@ -3,3 +3,5 @@ build/
 *.exe
 *.out
 *.dblite
+*.autosave
+*.dat
