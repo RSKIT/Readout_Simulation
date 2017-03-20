@@ -246,7 +246,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		{
 			for(auto it = dit->GetROCVectorBegin(); it != dit->GetROCVectorEnd(); ++it)
 			{
-				hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint);
+                                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
 
 				//copy the hits to the event queue:
 				for(auto it2 : hits)
@@ -455,7 +455,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
-										minsize, clustersize, numsigmas, print);
+                                                                                minsize, clustersize, numsigmas, print);
 
 			if(charge > it->GetThreshold())
 			{

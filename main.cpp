@@ -11,6 +11,13 @@
 int pixsizex = 50;
 int pixsizey = 150;
 int pixsizez = 30;
+int testcounter = 0;
+
+void test(std::string text = "test: ")
+{
+    std::cout << text << testcounter << std::endl;
+    testcounter++;
+}
 
 int main(int argc, char** argv)
 {
@@ -79,30 +86,47 @@ int main(int argc, char** argv)
     evgen.SetMinSize(1);	//0.1);
     evgen.SetInclinationSigma(0.3);	//gaussian sigma in radians
     std::cout << "test" << std::endl;
-    evgen.GenerateEvents(0, 2);
+    evgen.GenerateEvents(0, 3);
 
     std::cout << "Events: " << evgen.GetNumEventsLeft() << std::endl;
 
     evgen.PrintQueue();
 
-    std::cout << "test2" << std::endl;
-    for (int i = 0; i<10; i++)//to be replaced by 'while(eventqueue has still elements)'
+    bool getnewevent = true;
+    int currentTS = 0;
+    int nextTS = -1;
+    std::vector<Hit> nextevent;
+    nextevent.clear();
+    int eventsleft = evgen.GetNumEventsLeft();
+    while (eventsleft != 0)
     {
-
-        std::cout << i << std::endl;
         //clock down
-        std::vector<Hit> nextevent = evgen.GetNextEvent();
-
-        if(nextevent.size() != 0)
+        if (getnewevent == true)
         {
-	        int nexttimestamp = nextevent.front().GetTimeStamp();
-	        for (auto it = nextevent.begin(); it != nextevent.end(); it++)
-	        {
-	           // it->GetIndex
-	        }
-    	}
+            nextevent = evgen.GetNextEvent();
+            getnewevent = false;
+            nextTS = nextevent.front().GetTimeStamp();
+        }
+        std::cout << "currentTS: " << currentTS << "; nextEventTS: " << nextTS << std::endl;
+        if (currentTS == nextTS)
+        {
+            std::cout << "I AM HIT!" << std::endl;
+            for (auto it = nextevent.begin(); it != nextevent.end(); it++)
+            {
+                std::cout << it->GenerateString() << std::endl;
+            }
+
+            if (eventsleft > 0)
+                getnewevent = true;
+        }
 
         //clock up
+
+
+
+
+        currentTS++;
+        eventsleft = evgen.GetNumEventsLeft();
     }
 
 
@@ -127,3 +151,4 @@ int main(int argc, char** argv)
 	std::string abc = pix.GetAddressName();
         std::cout << "Hello World!" << abc << std::endl;*/
 }
+

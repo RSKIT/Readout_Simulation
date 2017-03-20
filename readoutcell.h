@@ -15,7 +15,7 @@ public:
 	ReadoutCell();
 
 	
-	std::string GetAddressName();
+        std::string     GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
 	int 		GetAddress();
