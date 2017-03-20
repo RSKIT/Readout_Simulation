@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
@@ -24,11 +25,49 @@ public:
 	EventGenerator(Detector* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
 
+	/**
+	 * @brief checks whether the output file and the event rate are set
+	 * @details
+	 * @return               - true if both are set correctly
+	 */
 	bool IsReady();
 
+	/**
+	 * @brief adds a detector object to the eventgenerator
+	 * @details the detector passed will be used for the generation of events additionally to
+	 *             the detectors already present in the detector. There is no check that a detector
+	 *             is already linked in the event generator. A double inclusion will cause "double 
+	 *             hits" in the event generator
+	 * 
+	 * @param detector       - the detector to add
+	 */
 	void AddDetector(Detector* detector);
+	/**
+	 * @brief removes all poointers to detectors from the event generator
+	 * @details
+	 */
 	void ClearDetectors();
+	/**
+	 * @brief returns a pointer to a detector linked in the event generator if present
+	 * @details for valid indices, this function returns a pointer to the detector linked at this
+	 *             index. For too large or too small indices, a null pointer till be returned.
+	 * 
+	 * @param index          - the index of the detector to return
+	 * @return               - a pointer to a detector or a null pointer in case of an index out 
+	 *                            of bounds
+	 */
 	Detector* GetDetectorByIndex(int index);
+	/**
+	 * @brief returns a pointer to a detector linked in the event generator, but uses the addess
+	 *             of the detector to find it
+	 * @details for an address occupied by a detector linked in the event generator, a pointer
+	 *             to this detector will be returned. On unoccupied addresses, a null pointer
+	 *             will be returned
+	 * 
+	 * @param address        - the address to look for
+	 * @return               - a pointer to a detector or a null pointer if the address is not
+	 *                            used by the detectors linked to the event generator
+	 */
 	Detector* GetDetectorByAddress(int address);
 
 	std::string GetOutputFileName();
@@ -44,6 +83,9 @@ public:
 	double GetEventRate();
 	void   SetEventRate(double rate);
 
+	double GetChargeScaling();
+	void   SetChargeScaling(double scalefactor);
+
 	double GetMinSize();
 	void   SetMinSize(double diagonallength);
 
@@ -53,11 +95,14 @@ public:
 	void GenerateEvents(double firsttime = 0, int numevents = 1);
 
 	int GetNumEventsGenerated();
+	int GetNumEventsLeft();
 
 	std::vector<Hit> GetNextEvent();
 	std::vector<Hit> GetEvent(int eventindex);
 	Hit GetNextHit();
 	Hit GetHit();
+
+	void PrintQueue();
 
 
 
@@ -81,8 +126,8 @@ public:
 						TCoord<double> size, double minsize, double sigma, 
 						int setzero = 5, bool root = true);
 private:
-	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
-										TCoord<double> setpoint);
+        std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction,
+                                                                                TCoord<double> setpoint, bool print);
 
 	std::vector<Detector*> detectors;
 
@@ -91,6 +136,8 @@ private:
 	double clustersize;
 	double eventrate;
 	int seed;
+
+	double chargescale;	//to make the "charge" calculated a charge in Coulomb
 
 	double minsize;		//maximum space diagonal of a volume treated as a point
 	int numsigmas;		//number of sigmas before the gaussian is cut off

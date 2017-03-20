@@ -4,3 +4,4 @@ build/
 *.out
 *.dblite
 *.autosave
+*.dat
