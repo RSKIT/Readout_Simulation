@@ -181,6 +181,111 @@ void ReadoutCell::Apply()
         hitflag = nexthitflag;
 }
 
+bool ReadoutCell::PlaceHit(Hit hit)
+{
+    if (rocvector.size() > 0)
+    {
+        for (auto &it : rocvector)
+        {
+            std::string addressname = it.GetAddressName();
+            int address = hit.GetAddress(addressname);
+            std::cout << "roc addressname: " << addressname << std::endl;
+            std::cout << "hi getaddress: " << address << std::endl;
+            if (it.GetAddress() == address)
+                return it.PlaceHit(hit);
+        }
+        return false;
+    }
+    else if (pixelvector.size() > 0)
+    {
+        for (auto &it : pixelvector)
+        {
+            std::string addressname = it.GetAddressName();
+            int address = hit.GetAddress(addressname);
+            if (it.GetAddress() == address)
+            {
+                return it.CreateHit(hit.GetTimeStamp());
+            }
+        }
+        return false;
+    }
+    else
+        return false;
+}
+
+bool ReadoutCell::LdPix()
+{
+    bool returnval = false;
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    {
+        if (it->LdPix())
+            returnval = true;
+    }
+
+    for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
+    {
+        if (it->LoadFlag())
+            returnval = true;
+
+        std::cout << "flag1: " <<it->GetHitFlag1();
+        std::cout << "flag2: " << it->GetHitFlag2() << std::endl;
+    }
+
+    return returnval;
+
+}
+
+bool ReadoutCell::LdCol()
+{
+    bool returnval = false;
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    {
+        if (it->LdCol())
+            return true;
+    }
+
+    for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
+    {
+        if (it->GetHitFlag2())
+        {
+            std::cout << "addhit to roc" << std::endl;
+            if(this->AddHit(it->GetHit()))
+            {
+                this->SetHitflag(true);
+                it->ClearFlags();
+                std::cout << "###flags cleared" << std::endl;
+            }
+            break;
+        }
+    }
+
+    return returnval;
+}
+
+Hit ReadoutCell::RdCol()
+{
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    {
+        if (it->GetHitflag())
+        {
+            Hit hit = it->GetHit();
+            it->PopHit();
+            return hit;
+        }
+    }
+
+
+    if (this->hitflag == true)
+    {
+        Hit hit = this->GetHit();
+        this->PopHit();
+        return hit;
+    }
+
+    Hit hit;
+    return hit;
+}
+
 int ReadoutCell::GetNumROCs()
 {
 	return rocvector.size();

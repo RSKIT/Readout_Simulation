@@ -55,6 +55,12 @@ public:
 
         void            Apply();
 
+        bool            PlaceHit(Hit hit);
+        bool            LdPix();
+        bool            LdCol();
+        Hit             RdCol();
+
+
 	
 private:
 	std::string addressname;

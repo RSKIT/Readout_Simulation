@@ -110,14 +110,14 @@ Hit Pixel::GetHit()
 
 bool Pixel::CreateHit(int timestamp)
 {
-	if (!hitflag1)
+        if (!hitflag1)
 	{
 		hit.SetTimeStamp(timestamp);
 		SetHitFlag1(true);
 		return true;
 	}
-	else
-		return false;
+        else
+                return false;
 }
 	
 bool Pixel::LoadFlag()

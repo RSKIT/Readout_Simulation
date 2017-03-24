@@ -96,8 +96,10 @@ int main(int argc, char** argv)
     std::vector<Hit> nextevent;
     nextevent.clear();
     int eventsleft = evgen.GetNumEventsLeft();
-    while (eventsleft != 0)
+    int k= 0;
+    while ((eventsleft != 0 || getnewevent )&& k <50)
     {
+        k++;
         //clock down
         if (getnewevent == true)
         {
@@ -112,19 +114,27 @@ int main(int argc, char** argv)
             for (auto it = nextevent.begin(); it != nextevent.end(); it++)
             {
                 std::cout << it->GenerateString() << std::endl;
+                Hit hit = *it;
+                std::cout << hit.GenerateString() << std::endl;
+                if (Matrix.PlaceHit(hit))
+                    std::cout << "HIT PLACED" << std::endl;
             }
 
+
+            eventsleft = evgen.GetNumEventsLeft();
             if (eventsleft > 0)
                 getnewevent = true;
         }
 
         //clock up
+        std::cout << "current state: " << Matrix.GetState() << std::endl;
+        Matrix.StateMachine();
 
 
-
-
+        //counters up
         currentTS++;
-        eventsleft = evgen.GetNumEventsLeft();
+        //Matrix.NextState();
+
     }
 
 
