@@ -27,12 +27,12 @@ int main(int argc, char** argv)
     //generate ROC with 4 pixels
     for (int x = 0; x<4; x++)
     {
-        ReadoutCell roc("roc" + std::to_string(x), x, 1);
+        ReadoutCell roc("roc" /*+ std::to_string(x)*/, x, 1);
         for (int y = 0; y<3;y++)
         {
             TCoord <double> position{(double)x*pixsizex,(double)y*pixsizey,0};
             TCoord <double> size{(double)pixsizex,(double)pixsizey,(double)pixsizez};
-            Pixel pix(position, size, "pix" + std::to_string(y), y, 0 );
+            Pixel pix(position, size, "pix" /*+ std::to_string(y)*/, y, 0 );
             roc.AddPixel(pix);
             std::cout << "pix" << y << "added" << std::endl;
         }

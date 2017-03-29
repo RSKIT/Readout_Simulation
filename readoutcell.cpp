@@ -11,7 +11,10 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
 	this->addressname = addressname;
 	this->address = address;
 	this->hitqueuelength = hitqueuelength;
-	//hitqueue.clear();
+        this->hitflag = false;
+        while (hitqueue.size() != 0)
+            hitqueue.pop();
+        //hitqueue.clear();
 	//pixelvector.clear();
 	//rocvector.clear();
 }
@@ -204,7 +207,7 @@ bool ReadoutCell::PlaceHit(Hit hit)
             int address = hit.GetAddress(addressname);
             if (it.GetAddress() == address)
             {
-                return it.CreateHit(hit.GetTimeStamp());
+                return it.CreateHit(hit);
             }
         }
         return false;
@@ -225,10 +228,13 @@ bool ReadoutCell::LdPix()
     for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
     {
         if (it->LoadFlag())
+        {
             returnval = true;
+            std::cout << "flag1: " <<it->GetHitFlag1();
+            std::cout << " flag2: " << it->GetHitFlag2() << std::endl;
 
-        std::cout << "flag1: " <<it->GetHitFlag1();
-        std::cout << "flag2: " << it->GetHitFlag2() << std::endl;
+        }
+        std::cout << it->GetHit().GenerateString() << std::endl;
     }
 
     return returnval;
@@ -249,6 +255,7 @@ bool ReadoutCell::LdCol()
         if (it->GetHitFlag2())
         {
             std::cout << "addhit to roc" << std::endl;
+            std::cout << it->GetHit().GenerateString()<< std::endl;
             if(this->AddHit(it->GetHit()))
             {
                 this->SetHitflag(true);
@@ -264,7 +271,7 @@ bool ReadoutCell::LdCol()
 
 Hit ReadoutCell::RdCol()
 {
-    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    /*for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
     {
         if (it->GetHitflag())
         {
@@ -272,17 +279,22 @@ Hit ReadoutCell::RdCol()
             it->PopHit();
             return hit;
         }
-    }
+    }*/
 
-
+    std::cout << "roc hitflag: " << this->hitflag << std::endl;
     if (this->hitflag == true)
     {
-        Hit hit = this->GetHit();
-        this->PopHit();
+
+        Hit hit = hitqueue.front();//this->GetHit();
+        if(this->PopHit())
+            std::cout << "popped" << std::endl;
+        else
+            std::cout << "notpopped" << std::endl;
         return hit;
     }
 
     Hit hit;
+    std::cout << "meep "<< this->hitqueue.size() << std::endl;
     return hit;
 }
 

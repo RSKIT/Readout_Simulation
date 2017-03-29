@@ -39,7 +39,7 @@ public:
 	void		SetAddress(int address);
 	
 	Hit 		GetHit();
-	bool		CreateHit(int timestamp);
+        bool		CreateHit(Hit hit);
 	
 	bool		LoadFlag();
 	void		ClearFlags();
