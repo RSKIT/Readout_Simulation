@@ -190,34 +190,59 @@ void Detector::StateMachine()
     {
         case PullDown:
 
-            /* generate hits
-             * set flag1 in pixels
+            /* generate hits & set flag1 in pixels <-- moved to main/simulator
              * */
+
             break;
 
         case LdPix:
-            /* iterate all pixels ín all rocs
+            std::cout << "-->LdPix<--" << std::endl;
+            /* iterate all pixels in all rocs
              * flag1-->flag2*/
+            for (auto &it : rocvector)
+                if (it.LdPix())
+                    std::cout << "Pixel flag loaded" << std::endl;
+                else
+                    std::cout << "No pixel flag loaded" << std::endl;;
+
             break;
 
         case LdCol:
-            /* get hit from first pix (prio logic) of each roc to rocqueue,
-             * reset this pix' flags,
+            std::cout << "-->LdCol<--" << std::endl;
+            /* get hit from first pix (prio logic) of each roc to rocqueue, done
+             * reset this pix' flags, done
              * delete in pix
              * set roc flag */
+            for (auto &it : rocvector)
+                it.LdCol();
+
             break;
 
         case RdCol:
+            std::cout << "-->RdCol<--" << std::endl;
             /* if flag in roc,
              * return first data (prio logic)
              * pop data in roc,
              * check if hitvector size !=0 --> hitflag
              * */
+            for (auto &it: rocvector)
+            {
+                Hit hit = it.RdCol();
+                std::cout << hit.GenerateString()<< std::endl;
+
+                if (hit.GetEventIndex() == -1)
+                    std::cout << "NO HIT FOUND!!" << std::endl;
+                else
+                    std::cout << "HIT FOUND: " << hit.GenerateString() << std::endl;
+
+            }
+
 
             break;
     }
     NextState();
 }
+
 
 void Detector::SetState(state nextstate)
 {
@@ -238,4 +263,20 @@ Detector::state Detector::NextState()
         case LdCol      : return currentstate = RdCol;
         case RdCol      : return currentstate = PullDown;
     }
+}
+
+bool Detector::PlaceHit(Hit hit)
+{
+    if (rocvector.size() < 1)
+        return false;
+    for (auto &it : rocvector)
+    {
+        std::string addressname = it.GetAddressName();
+        int address = hit.GetAddress(addressname);
+        std::cout << "roc addressname: " << addressname << std::endl;
+        std::cout << "hit getaddress: " << address << std::endl;
+        if (it.GetAddress() == address)
+            return it.PlaceHit(hit);
+    }
+    return false;
 }

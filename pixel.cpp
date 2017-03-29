@@ -108,16 +108,16 @@ Hit Pixel::GetHit()
         return Hit();
 }
 
-bool Pixel::CreateHit(int timestamp)
+bool Pixel::CreateHit(Hit hit)
 {
-	if (!hitflag1)
+        if (!hitflag1)
 	{
-		hit.SetTimeStamp(timestamp);
+                this->hit = hit;
 		SetHitFlag1(true);
 		return true;
 	}
-	else
-		return false;
+        else
+                return false;
 }
 	
 bool Pixel::LoadFlag()

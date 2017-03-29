@@ -1,21 +1,26 @@
-<map version="freeplane 1.3.0">
+<map version="freeplane 1.5.9">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
-<node TEXT="Auslese-Simulation" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1488809753127"><hook NAME="MapStyle">
+<node TEXT="Auslese-Simulation" FOLDED="false" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1488809753127"><hook NAME="MapStyle">
+    <properties fit_to_viewport="false;"/>
 
 <map_styles>
-<stylenode LOCALIZED_TEXT="styles.root_node">
-<stylenode LOCALIZED_TEXT="styles.predefined" POSITION="right">
-<stylenode LOCALIZED_TEXT="default" MAX_WIDTH="600" COLOR="#000000" STYLE="as_parent">
+<stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
+<font SIZE="24"/>
+<stylenode LOCALIZED_TEXT="styles.predefined" POSITION="right" STYLE="bubble">
+<stylenode LOCALIZED_TEXT="default" MAX_WIDTH="600.0 px" COLOR="#000000" STYLE="as_parent">
 <font NAME="SansSerif" SIZE="10" BOLD="false" ITALIC="false"/>
 </stylenode>
 <stylenode LOCALIZED_TEXT="defaultstyle.details"/>
+<stylenode LOCALIZED_TEXT="defaultstyle.attributes">
+<font SIZE="9"/>
+</stylenode>
 <stylenode LOCALIZED_TEXT="defaultstyle.note"/>
 <stylenode LOCALIZED_TEXT="defaultstyle.floating">
 <edge STYLE="hide_edge"/>
 <cloud COLOR="#f0f0f0" SHAPE="ROUND_RECT"/>
 </stylenode>
 </stylenode>
-<stylenode LOCALIZED_TEXT="styles.user-defined" POSITION="right">
+<stylenode LOCALIZED_TEXT="styles.user-defined" POSITION="right" STYLE="bubble">
 <stylenode LOCALIZED_TEXT="styles.topic" COLOR="#18898b" STYLE="fork">
 <font NAME="Liberation Sans" SIZE="10" BOLD="true"/>
 </stylenode>
@@ -29,7 +34,7 @@
 <icon BUILTIN="yes"/>
 </stylenode>
 </stylenode>
-<stylenode LOCALIZED_TEXT="styles.AutomaticLayout" POSITION="right">
+<stylenode LOCALIZED_TEXT="styles.AutomaticLayout" POSITION="right" STYLE="bubble">
 <stylenode LOCALIZED_TEXT="AutomaticLayout.level.root" COLOR="#000000">
 <font SIZE="18"/>
 </stylenode>
@@ -49,7 +54,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="12"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="13" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="HIt" POSITION="left" ID="ID_426126783" CREATED="1488811292151" MODIFIED="1488811302406">
 <edge COLOR="#7c7c00"/>
 <node TEXT="TimeStamp" ID="ID_1633438898" CREATED="1488811303791" MODIFIED="1488811309493"/>
@@ -81,26 +86,6 @@
 <icon BUILTIN="forward"/>
 </node>
 </node>
-<node TEXT="PixelBlock" POSITION="left" ID="ID_1208406152" CREATED="1488809912924" MODIFIED="1488809916830">
-<edge COLOR="#00007c"/>
-<node TEXT="erbt von ReadoutCell" ID="ID_1913199734" CREATED="1488810388002" MODIFIED="1488810481177"/>
-<node TEXT="vector&lt;Pixel&gt;" ID="ID_474455763" CREATED="1488810382482" MODIFIED="1488810387571">
-<node TEXT="wird von ReadoutCell geerbt" ID="ID_899889980" CREATED="1488810903153" MODIFIED="1488810909351"/>
-</node>
-<node TEXT="Block-Adresse" ID="ID_711505131" CREATED="1488810501208" MODIFIED="1488810519265">
-<node TEXT="wird von ReadoutCell geerbt" ID="ID_375905703" CREATED="1488810903153" MODIFIED="1488810909351"/>
-</node>
-<node TEXT="Pixel-Prio-Logik" ID="ID_1254512739" CREATED="1488810519670" MODIFIED="1488810536302"/>
-<node TEXT="HitFlag" ID="ID_242578032" CREATED="1488810537554" MODIFIED="1488810560025">
-<node TEXT="wird von ReadoutCell geerbt" ID="ID_1253391100" CREATED="1488811596336" MODIFIED="1488811675594"/>
-</node>
-<node TEXT="vector&lt;Hit&gt;" ID="ID_1718838951" CREATED="1488811585687" MODIFIED="1488811725257">
-<node TEXT="wird von ReadoutCell geerbt" ID="ID_271247977" CREATED="1488811596336" MODIFIED="1488811675594"/>
-</node>
-<node TEXT="LoadColumn" ID="ID_1527610983" CREATED="1488810758126" MODIFIED="1488810776807">
-<icon BUILTIN="forward"/>
-</node>
-</node>
 <node TEXT="Simulator" POSITION="right" ID="ID_1553370942" CREATED="1488809755077" MODIFIED="1488809761364">
 <edge COLOR="#ff0000"/>
 <node TEXT="vector&lt;Detektor&gt;" ID="ID_923964367" CREATED="1488809899721" MODIFIED="1488809906215"/>
@@ -121,18 +106,13 @@
 <edge COLOR="#7c0000"/>
 <node TEXT="kennt oberste ReadoutCell des Detektors" ID="ID_1944735726" CREATED="1488813322242" MODIFIED="1488813407262"/>
 <node TEXT="Bewegt Hits durch die Struktur" ID="ID_1593313215" CREATED="1488813411026" MODIFIED="1488813437444"/>
+<node TEXT="Priologik" ID="ID_859113392" CREATED="1488897661285" MODIFIED="1488897672479"/>
 </node>
 <node TEXT="Eventgenerator" POSITION="right" ID="ID_1232068005" CREATED="1488809769542" MODIFIED="1488809773931">
 <edge COLOR="#00ff00"/>
 <node TEXT="Random Seed-Setter/Getter" ID="ID_575470174" CREATED="1488811934096" MODIFIED="1488811952686"/>
 <node TEXT="generiert Hits" ID="ID_1159038785" CREATED="1488811957188" MODIFIED="1488811970359"/>
-<node TEXT="Speichert generierte Treffer" ID="ID_983296688" CREATED="1488811970814" MODIFIED="1488812047040">
-<node TEXT="Dateiinhalt" ID="ID_1018057248" CREATED="1489135779556" MODIFIED="1489135785345">
-<node TEXT="Random-Seed" ID="ID_1600438227" CREATED="1489135786372" MODIFIED="1489135789667"/>
-<node TEXT="Teilchenspur-Gerade (Parameter)" ID="ID_1531215326" CREATED="1489135790010" MODIFIED="1489135820066"/>
-<node TEXT="getroffene Pixel" ID="ID_1781645571" CREATED="1489135824380" MODIFIED="1489149746600"/>
-</node>
-</node>
+<node TEXT="Speichert generierte Treffer" ID="ID_983296688" CREATED="1488811970814" MODIFIED="1488812047040"/>
 <node TEXT="Parameter f&#xfc;r Cluster" ID="ID_382616611" CREATED="1488812056761" MODIFIED="1488812091306">
 <node TEXT="Gr&#xf6;&#xdf;e" ID="ID_211371490" CREATED="1488813142135" MODIFIED="1488813145462"/>
 <node TEXT="Rate" ID="ID_154232721" CREATED="1488813145841" MODIFIED="1488813146870"/>
@@ -150,6 +130,7 @@
 <node TEXT="&quot;Clock-Eingang&quot;" ID="ID_550123372" CREATED="1488811835825" MODIFIED="1488811861512"/>
 <node TEXT="Name/Adresse" ID="ID_1724213744" CREATED="1488812189230" MODIFIED="1488812205066"/>
 <node TEXT="Hit Speichern" ID="ID_821570133" CREATED="1488813051579" MODIFIED="1488813057534"/>
+<node TEXT="Gr&#xf6;&#xdf;e/Position" ID="ID_659576492" CREATED="1489049609922" MODIFIED="1489049628131"/>
 </node>
 <node TEXT="ReadoutCell" POSITION="right" ID="ID_259727270" CREATED="1488809825178" MODIFIED="1488809855839">
 <edge COLOR="#ffff00"/>
