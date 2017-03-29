@@ -11,11 +11,11 @@
 class ReadoutCell
 {
 public:
-        ReadoutCell(std::string addressname, int address, int hitqueuelength);
+    ReadoutCell(std::string addressname, int address, int hitqueuelength);
 	ReadoutCell();
 
 	
-        std::string     GetAddressName();
+    std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
 	int 		GetAddress();
@@ -24,7 +24,7 @@ public:
 	bool		GetHitflag();
 	void		SetHitflag(bool hitflag);
 	
-        int		GetHitqueuelength();
+    int			GetHitqueuelength();
 	void		SetHitqueuelength(int hitqueuelength);
 	
 	bool		AddHit(Hit hit);
@@ -47,13 +47,13 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCsBegin();
 	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
-        bool		GetNextHitflag();
-        void		SetNextHitflag(bool nexthitflag);
+    bool		GetNextHitflag();
+    void		SetNextHitflag(bool nexthitflag);
 
-        Hit             GetNextHit();
-        void            SetNextHit(Hit nexthit);
+    Hit         GetNextHit();
+    void        SetNextHit(Hit nexthit);
 
-        void            Apply();
+    void        Apply();
 
 	
 private:

@@ -276,12 +276,8 @@ std::vector<Hit> EventGenerator::GetNextEvent()
 	if(clusterparts.size() == 0)
 		return event;
 
-	std::cout << "peep1" << std::endl;
-
 	//get the eventindex of the first hit in the queue:
 	int thiseventindex = clusterparts.front().GetEventIndex();
-
-	std::cout << "peep2" << std::endl;
 
 	//move all hits from the event to a vector:
 	while(clusterparts.size() > 0 && thiseventindex == clusterparts.front().GetEventIndex())
@@ -457,7 +453,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
                                                                                 minsize, clustersize, numsigmas, print);
 
-			if(charge > it->GetThreshold())
+			if(charge > it->GetThreshold() && generator()/double(RAND_MAX) <= it->GetEfficiency())
 			{
 				if(print)
 					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 
