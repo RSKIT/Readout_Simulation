@@ -42,13 +42,15 @@ public:
 	void		SetSize(TCoord<double> size);
 
         bool            SizeOK();
-        bool EnlargeSize();
+        bool            EnlargeSize();
 	
         void            StateMachine();
 
         void            SetState(state nextstate);
         Detector::state GetState();
         Detector::state NextState();
+
+        bool            PlaceHit(Hit hit);
 
 private:
 	std::string addressname;
@@ -60,6 +62,8 @@ private:
         state currentstate;
         bool    SizeOKROC(ReadoutCell* cell);
         bool EnlargeSizeROC(ReadoutCell* cell);
+
+
 
 };
 

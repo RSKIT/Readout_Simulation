@@ -118,19 +118,19 @@ Hit Pixel::GetHit()
         return Hit();
 }
 
-bool Pixel::CreateHit(int timestamp, double deaduntil)
+bool Pixel::CreateHit(Hit hit, double deaduntil)
 {
 	if(timestamp <= this->deaduntil)
 		return false;
 	else if (!hitflag1)
 	{
-		hit.SetTimeStamp(timestamp);
+                this->hit = hit;
 		SetHitFlag1(true);
 		this->deaduntil = deaduntil;
 		return true;
 	}
-	else
-		return false;
+        else
+                return false;
 }
 	
 bool Pixel::LoadFlag()

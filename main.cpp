@@ -27,14 +27,12 @@ int main(int argc, char** argv)
     //generate ROC with 4 pixels
     for (int x = 0; x<4; x++)
     {
-        //ReadoutCell roc("roc" + std::to_string(x), x, 1);
         ReadoutCell roc("roc", x, 1);
         for (int y = 0; y<3;y++)
         {
             TCoord <double> position{(double)x*pixsizex,(double)y*pixsizey,0};
             TCoord <double> size{(double)pixsizex,(double)pixsizey,(double)pixsizez};
-            //Pixel pix(position, size, "pix" + std::to_string(y), y, 0 );
-            Pixel pix(position, size, "pixel", y, 0 );
+            Pixel pix(position, size, "pix", y, 0 );
             roc.AddPixel(pix);
             std::cout << " pixel " << y << " added" << std::endl;
         }
@@ -100,8 +98,10 @@ int main(int argc, char** argv)
     std::vector<Hit> nextevent;
     nextevent.clear();
     int eventsleft = evgen.GetNumEventsLeft();
-    while (eventsleft != 0)
+    int k= 0;
+    while ((eventsleft != 0 || getnewevent )&& k <50)
     {
+        k++;
         //clock down
         if (getnewevent == true)
         {
@@ -116,19 +116,27 @@ int main(int argc, char** argv)
             for (auto it = nextevent.begin(); it != nextevent.end(); it++)
             {
                 std::cout << it->GenerateString() << std::endl;
+                Hit hit = *it;
+                std::cout << hit.GenerateString() << std::endl;
+                if (Matrix.PlaceHit(hit))
+                    std::cout << "HIT PLACED" << std::endl;
             }
 
+
+            eventsleft = evgen.GetNumEventsLeft();
             if (eventsleft > 0)
                 getnewevent = true;
         }
 
         //clock up
+        std::cout << "current state: " << Matrix.GetState() << std::endl;
+        Matrix.StateMachine();
 
 
-
-
+        //counters up
         currentTS++;
-        eventsleft = evgen.GetNumEventsLeft();
+        //Matrix.NextState();
+
     }
 
 

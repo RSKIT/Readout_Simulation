@@ -35,14 +35,14 @@ public:
 	bool 		GetHitFlag2();
 	void		SetHitFlag2(bool hitflag2);
 	
-	std::string GetAddressName();
+        std::string     GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
 	int 		GetAddress();
 	void		SetAddress(int address);
 	
 	Hit 		GetHit();
-	bool		CreateHit(int timestamp, double deaduntil = 0);
+	bool		CreateHit(Hit hit, double deaduntil = 0);
 	
 	bool		LoadFlag();
 	void		ClearFlags();
