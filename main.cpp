@@ -7,6 +7,7 @@
 #include "readoutcell.h"
 #include "detector.h"
 #include "EventGenerator.h"
+#include "simulator.h"
 
 const int pixsizex = 50;
 const int pixsizey = 150;
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
     evgen.SetMinSize(1);	//0.1);
     evgen.SetInclinationSigma(0.15);	//gaussian sigma in radians
     std::cout << "test" << std::endl;
-    evgen.GenerateEvents(0, 3);
+    evgen.GenerateEvents(0, 1); //3);
 
     std::cout << "Events: " << evgen.GetNumEventsLeft() << std::endl;
 
@@ -103,7 +104,7 @@ int main(int argc, char** argv)
     int k= 0;
     while ((eventsleft != 0 || getnewevent )&& k <50)
     {
-        k++;
+        ++k;
         //clock down
         if (getnewevent == true)
         {
@@ -142,8 +143,11 @@ int main(int argc, char** argv)
     }
 
 
+    Simulator sim("simulation.xml");
+    sim.LoadInputFile();
 
-
+    std::cout << "Detectors: " << sim.GetNumDetectors() << std::endl;
+    std::cout << sim.PrintDetectors() << std::endl;
 
     /*
 	Hit a();

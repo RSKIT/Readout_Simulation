@@ -20,9 +20,9 @@ public:
 
     enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};
 	
-    void            StateMachine();
+    void	StateMachine();
 
-    int NextState();
+    int 	NextState();
     
 private:
 

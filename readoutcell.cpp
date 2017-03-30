@@ -1,7 +1,7 @@
 #include "readoutcell.h"
 
 ReadoutCell::ReadoutCell() : addressname(""), address(0), hitflag(false), 
-	hitqueuelength(0), hitqueue(std::queue<Hit>()), pixelvector(std::vector<Pixel>()),
+	hitqueuelength(1), hitqueue(std::queue<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>())
 {
 	
@@ -54,7 +54,8 @@ int ReadoutCell::GetHitqueuelength()
 }
 void ReadoutCell::SetHitqueuelength(int hitqueuelength)
 {
-	this->hitqueuelength = hitqueuelength;
+	if(hitqueuelength > 0)
+        this->hitqueuelength = hitqueuelength;
 }
 
 bool ReadoutCell::AddHit(Hit hit)
@@ -325,7 +326,8 @@ std::string ReadoutCell::PrintROC(std::string space)
 
 	for(auto it : pixelvector)
 		s << space << " " << "Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
-			<< "; Size: " << it.GetSize() << std::endl;
+			<< "; Size: " << it.GetSize() << " Thr: " << it.GetThreshold() << "; Eff: "
+            << it.GetEfficiency() << std::endl;
 
 	return s.str();
 }

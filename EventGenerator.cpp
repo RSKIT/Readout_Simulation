@@ -1,13 +1,13 @@
 #include "EventGenerator.h"
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
-					seed(0), inclinationsigma(0.3), chargescale(1)
+					seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3)
 {
 	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(Detector* detector) : filename(""), eventindex(0), clustersize(0),
-					eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1)
+					eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3)
 {
 	detectors.push_back(detector);
 

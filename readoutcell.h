@@ -70,8 +70,8 @@ private:
 	std::queue<Hit> hitqueue;
 	std::vector<Pixel> pixelvector;
 	std::vector<ReadoutCell> rocvector;
-        Hit nexthit;
-        bool nexthitflag;
+    Hit nexthit;
+    bool nexthitflag;
 
 };
 
