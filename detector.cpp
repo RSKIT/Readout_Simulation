@@ -265,18 +265,29 @@ Detector::state Detector::NextState()
     }
 }
 
-bool Detector::PlaceHit(Hit hit)
+bool Detector::PlaceHit(Hit hit, double deadtimeend)
 {
     if (rocvector.size() < 1)
         return false;
+    std::string addressname = rocvector.front().GetAddressName();
     for (auto &it : rocvector)
     {
-        std::string addressname = it.GetAddressName();
         int address = hit.GetAddress(addressname);
         std::cout << "roc addressname: " << addressname << std::endl;
         std::cout << "hit getaddress: " << address << std::endl;
         if (it.GetAddress() == address)
-            return it.PlaceHit(hit);
+            return it.PlaceHit(hit, deadtimeend);
     }
     return false;
+}
+
+std::string Detector::PrintDetector()
+{
+	std::stringstream s("");
+
+	s << "Detector " << address << " Contents:\n";
+	for(auto it : rocvector)
+		s << it.PrintROC(" ");
+
+	return s.str();
 }

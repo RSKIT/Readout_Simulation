@@ -9,12 +9,37 @@ Simulator::Simulator(std::string filename)
 
 }
 
-std::string Simulator::GetFileName()
+std::string Simulator::GetLoadFileName()
+{
+	return inputfile;
+}
+
+void Simulator::LoadInputFile(std::string filename)
+{
+	/*
+	inputfile = filename;
+
+	tinyxml2::XMLDocument doc;
+	doc.LoadFile(inputfile);
+
+	tinyxml2::XMLElement* elem = doc.GetFirstChild();
+	while(elem != 0)
+	{
+		if(elem)//TODO: not even really started...
+
+		if(elem != doc.GetLastChild())
+			elem = elem.NextSibling();
+		else
+			elem = 0;
+	}*/
+}
+
+std::string Simulator::GetSaveFileName()
 {
 
 }
 
-void Simulator::SetFileName(std::string filename)
+void Simulator::SetLoadFileName(std::string filename)
 {
 
 }

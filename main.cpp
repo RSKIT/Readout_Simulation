@@ -8,9 +8,9 @@
 #include "detector.h"
 #include "EventGenerator.h"
 
-int pixsizex = 50;
-int pixsizey = 150;
-int pixsizez = 30;
+const int pixsizex = 50;
+const int pixsizey = 150;
+const int pixsizez = 30;
 int testcounter = 0;
 
 void test(std::string text = "test: ")
@@ -76,6 +76,8 @@ int main(int argc, char** argv)
     std::cout << Matrix.GetPosition() << std::endl;
     std::cout << Matrix.GetSize() <<std::endl;
 
+    std::cout << Matrix.PrintDetector() << std::endl;
+
     //Simulator
     EventGenerator evgen(&Matrix);
     evgen.SetOutputFileName("eventgen.dat");
@@ -84,7 +86,7 @@ int main(int argc, char** argv)
     evgen.SetEventRate(0.1);
     evgen.SetCutOffFactor(5);
     evgen.SetMinSize(1);	//0.1);
-    evgen.SetInclinationSigma(0.3);	//gaussian sigma in radians
+    evgen.SetInclinationSigma(0.15);	//gaussian sigma in radians
     std::cout << "test" << std::endl;
     evgen.GenerateEvents(0, 3);
 

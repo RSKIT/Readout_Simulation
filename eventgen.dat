@@ -2251,3 +2251,144 @@
   Event 2 Timestamp 27 Address (pix) 2 (roc) 2
   Event 2 Timestamp 27 Address (pix) 1 (roc) 3
   Event 2 Timestamp 27 Address (pix) 2 (roc) 3
+# Event 0
+# Trajectory: g: x(t) = {181.765, 277.286, 9.66647} + t * {0.0627898, -0.105805, 0.992403}
+# Time: 7.31199
+  Event 0 Timestamp 7 Address (pix) 1 (roc) 1
+  Event 0 Timestamp 7 Address (pix) 2 (roc) 1
+  Event 0 Timestamp 7 Address (pix) 1 (roc) 2
+  Event 0 Timestamp 7 Address (pix) 2 (roc) 2
+  Event 0 Timestamp 7 Address (pix) 1 (roc) 3
+  Event 0 Timestamp 7 Address (pix) 2 (roc) 3
+# Event 1
+# Trajectory: g: x(t) = {112.021, 319.703, 16.8233} + t * {0.184157, -0.0083664, 0.982861}
+# Time: 7.52447
+  Event 1 Timestamp 7 Address (pix) 1 (roc) 0
+  Event 1 Timestamp 7 Address (pix) 2 (roc) 0
+  Event 1 Timestamp 7 Address (pix) 1 (roc) 1
+  Event 1 Timestamp 7 Address (pix) 2 (roc) 1
+  Event 1 Timestamp 7 Address (pix) 1 (roc) 2
+  Event 1 Timestamp 7 Address (pix) 2 (roc) 2
+  Event 1 Timestamp 7 Address (pix) 1 (roc) 3
+  Event 1 Timestamp 7 Address (pix) 2 (roc) 3
+# Event 2
+# Trajectory: g: x(t) = {18.4253, 165.147, 1.27684} + t * {0.102062, 0.058748, 0.993042}
+# Time: 18.5817
+  Event 2 Timestamp 18 Address (pix) 0 (roc) 0
+  Event 2 Timestamp 18 Address (pix) 1 (roc) 0
+  Event 2 Timestamp 18 Address (pix) 0 (roc) 1
+  Event 2 Timestamp 18 Address (pix) 1 (roc) 1
+  Event 2 Timestamp 18 Address (pix) 0 (roc) 2
+  Event 2 Timestamp 18 Address (pix) 1 (roc) 2
+# Event 0
+# Trajectory: g: x(t) = {75.5243, 307.139, 9.08298} + t * {0.0853088, 0.0939258, 0.991918}
+# Time: 5.26012
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 0
+  Event 0 Timestamp 5 Address (pix) 2 (roc) 0
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 1
+  Event 0 Timestamp 5 Address (pix) 2 (roc) 1
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 2
+  Event 0 Timestamp 5 Address (pix) 2 (roc) 2
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 3
+  Event 0 Timestamp 5 Address (pix) 2 (roc) 3
+# Event 1
+# Trajectory: g: x(t) = {40.4113, 434.162, 14.0856} + t * {0.363206, 0.0279175, 0.931291}
+# Time: 21.305
+  Event 1 Timestamp 21 Address (pix) 2 (roc) 0
+  Event 1 Timestamp 21 Address (pix) 2 (roc) 1
+  Event 1 Timestamp 21 Address (pix) 2 (roc) 2
+# Event 2
+# Trajectory: g: x(t) = {165.147, 56.3753, 16.6971} + t * {-0.055173, -0.00494956, 0.998465}
+# Time: 33.8922
+  Event 2 Timestamp 33 Address (pix) 0 (roc) 1
+  Event 2 Timestamp 33 Address (pix) 0 (roc) 2
+  Event 2 Timestamp 33 Address (pix) 1 (roc) 2
+  Event 2 Timestamp 33 Address (pix) 0 (roc) 3
+  Event 2 Timestamp 33 Address (pix) 1 (roc) 3
+# Event 0
+# Trajectory: g: x(t) = {195.626, 181.158, 1.60135} + t * {-0.159389, -0.327593, 0.931278}
+# Time: 20.5141
+  Event 0 Timestamp 20 Address (pix) 1 (roc) 1
+  Event 0 Timestamp 20 Address (pix) 0 (roc) 2
+  Event 0 Timestamp 20 Address (pix) 1 (roc) 2
+  Event 0 Timestamp 20 Address (pix) 0 (roc) 3
+  Event 0 Timestamp 20 Address (pix) 1 (roc) 3
+# Event 1
+# Trajectory: g: x(t) = {23.5161, 78.3882, 21.351} + t * {-0.300274, 0.499275, 0.812748}
+# Time: 26.7971
+  Event 1 Timestamp 26 Address (pix) 0 (roc) 0
+  Event 1 Timestamp 26 Address (pix) 0 (roc) 1
+  Event 1 Timestamp 26 Address (pix) 1 (roc) 1
+  Event 1 Timestamp 26 Address (pix) 0 (roc) 2
+# Event 2
+# Trajectory: g: x(t) = {46.3426, 180.323, 25.7105} + t * {0.338431, 0.0804435, 0.937546}
+# Time: 28.123
+  Event 2 Timestamp 28 Address (pix) 0 (roc) 0
+  Event 2 Timestamp 28 Address (pix) 1 (roc) 0
+  Event 2 Timestamp 28 Address (pix) 0 (roc) 1
+  Event 2 Timestamp 28 Address (pix) 1 (roc) 1
+  Event 2 Timestamp 28 Address (pix) 0 (roc) 2
+  Event 2 Timestamp 28 Address (pix) 1 (roc) 2
+# Event 0
+# Trajectory: g: x(t) = {74.14, 159.445, 2.34043} + t * {-0.134721, 0.0630038, 0.988879}
+# Time: 16.6362
+  Event 0 Timestamp 16 Address (pix) 0 (roc) 0
+  Event 0 Timestamp 16 Address (pix) 1 (roc) 0
+  Event 0 Timestamp 16 Address (pix) 0 (roc) 1
+  Event 0 Timestamp 16 Address (pix) 1 (roc) 1
+# Event 0
+# Trajectory: g: x(t) = {180.683, 307.635, 24.902} + t * {0.176976, 0.2779, 0.944167}
+# Time: 0.57072
+  Event 0 Timestamp 0 Address (pix) 1 (roc) 1
+  Event 0 Timestamp 0 Address (pix) 2 (roc) 1
+  Event 0 Timestamp 0 Address (pix) 1 (roc) 2
+  Event 0 Timestamp 0 Address (pix) 2 (roc) 2
+  Event 0 Timestamp 0 Address (pix) 1 (roc) 3
+  Event 0 Timestamp 0 Address (pix) 2 (roc) 3
+# Event 1
+# Trajectory: g: x(t) = {49.758, 185.506, 12.7297} + t * {-0.0574899, 0.121581, 0.990915}
+# Time: 6.00191
+  Event 1 Timestamp 6 Address (pix) 0 (roc) 0
+  Event 1 Timestamp 6 Address (pix) 1 (roc) 0
+  Event 1 Timestamp 6 Address (pix) 0 (roc) 1
+  Event 1 Timestamp 6 Address (pix) 1 (roc) 1
+  Event 1 Timestamp 6 Address (pix) 0 (roc) 2
+  Event 1 Timestamp 6 Address (pix) 1 (roc) 2
+  Event 1 Timestamp 6 Address (pix) 1 (roc) 3
+# Event 2
+# Trajectory: g: x(t) = {167.264, 15.3842, 17.5072} + t * {0.00688943, 0.0772551, 0.996988}
+# Time: 26.0956
+  Event 2 Timestamp 26 Address (pix) 0 (roc) 1
+  Event 2 Timestamp 26 Address (pix) 0 (roc) 2
+  Event 2 Timestamp 26 Address (pix) 0 (roc) 3
+# Event 0
+# Trajectory: g: x(t) = {91.262, 90.1736, 26.5649} + t * {-0.187856, 0.0738598, 0.979416}
+# Time: 5.78215
+  Event 0 Timestamp 5 Address (pix) 0 (roc) 0
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 0
+  Event 0 Timestamp 5 Address (pix) 0 (roc) 1
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 1
+  Event 0 Timestamp 5 Address (pix) 0 (roc) 2
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 2
+  Event 0 Timestamp 5 Address (pix) 0 (roc) 3
+  Event 0 Timestamp 5 Address (pix) 1 (roc) 3
+# Event 1
+# Trajectory: g: x(t) = {23.1048, 276.243, 10.8215} + t * {-0.212096, -0.351834, 0.911717}
+# Time: 11.0227
+  Event 1 Timestamp 11 Address (pix) 1 (roc) 0
+  Event 1 Timestamp 11 Address (pix) 2 (roc) 0
+  Event 1 Timestamp 11 Address (pix) 1 (roc) 1
+  Event 1 Timestamp 11 Address (pix) 2 (roc) 1
+  Event 1 Timestamp 11 Address (pix) 1 (roc) 2
+  Event 1 Timestamp 11 Address (pix) 2 (roc) 2
+# Event 2
+# Trajectory: g: x(t) = {117.027, 147.005, 14.0592} + t * {0.44867, 0.115611, 0.886188}
+# Time: 19.393
+  Event 2 Timestamp 19 Address (pix) 0 (roc) 0
+  Event 2 Timestamp 19 Address (pix) 1 (roc) 0
+  Event 2 Timestamp 19 Address (pix) 0 (roc) 1
+  Event 2 Timestamp 19 Address (pix) 1 (roc) 1
+  Event 2 Timestamp 19 Address (pix) 0 (roc) 2
+  Event 2 Timestamp 19 Address (pix) 1 (roc) 2
+  Event 2 Timestamp 19 Address (pix) 0 (roc) 3
+  Event 2 Timestamp 19 Address (pix) 1 (roc) 3

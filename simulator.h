@@ -14,8 +14,11 @@ public:
 	Simulator();
 	Simulator(std::string filename);
 
-	std::string GetFileName();
-	void SetFileName(std::string filename);
+	std::string GetLoadFileName();
+	void LoadInputFile(std::string filename);
+
+	std::string GetSaveFileName();
+	void SetLoadFileName(std::string filename);
 
 	Detector* GetDetector(int address);
 	void AddDetector(Detector& detector);
@@ -35,6 +38,7 @@ private:
     EventGenerator eventgenerator;
 
     std::string inputfile;
+    std::string outputfile;
 	
 };
 

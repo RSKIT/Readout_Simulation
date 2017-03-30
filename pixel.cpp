@@ -120,11 +120,14 @@ Hit Pixel::GetHit()
 
 bool Pixel::CreateHit(Hit hit, double deaduntil)
 {
-	if(timestamp <= this->deaduntil)
+	if(hit.GetTimeStamp() <= this->deaduntil)
+	{
+		this->deaduntil = deaduntil;
 		return false;
+	}
 	else if (!hitflag1)
 	{
-                this->hit = hit;
+        this->hit = hit;
 		SetHitFlag1(true);
 		this->deaduntil = deaduntil;
 		return true;

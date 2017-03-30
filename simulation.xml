@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Simulation>
+	<Standardpixel x="50" y="150" z ="30"/>
+	<Detektor addrname="Det">
+		<ROC queuelength = 4>
+			<Pixel>
+				<Position x="10" y="2" z="7"/>
+				<!--<Size x="40" y="60" z="30"/>-->
+				<Threshold thr="1"/>
+				<Efficiency n="0.7"/>				
+			</Pixel>
+		</ROC>
+	</Detektor>
+</Simulation>

@@ -55,12 +55,12 @@ public:
 
     void        Apply();
 
-        bool            PlaceHit(Hit hit);
-        bool            LdPix();
-        bool            LdCol();
-        Hit             RdCol();
+    bool        PlaceHit(Hit hit, double deadtimeend = 0);
+    bool        LdPix();
+    bool        LdCol();
+    Hit         RdCol();
 
-
+    std::string PrintROC(std::string space);
 	
 private:
 	std::string addressname;

@@ -184,18 +184,18 @@ void ReadoutCell::Apply()
         hitflag = nexthitflag;
 }
 
-bool ReadoutCell::PlaceHit(Hit hit)
+bool ReadoutCell::PlaceHit(Hit hit, double deadtimeend)
 {
     if (rocvector.size() > 0)
     {
+        std::string addressname = rocvector.front().GetAddressName();
         for (auto &it : rocvector)
         {
-            std::string addressname = it.GetAddressName();
             int address = hit.GetAddress(addressname);
             std::cout << "roc addressname: " << addressname << std::endl;
             std::cout << "hi getaddress: " << address << std::endl;
             if (it.GetAddress() == address)
-                return it.PlaceHit(hit);
+                return it.PlaceHit(hit, deadtimeend);
         }
         return false;
     }
@@ -207,7 +207,7 @@ bool ReadoutCell::PlaceHit(Hit hit)
             int address = hit.GetAddress(addressname);
             if (it.GetAddress() == address)
             {
-                return it.CreateHit(hit);
+                return it.CreateHit(hit, deadtimeend);
             }
         }
         return false;
@@ -271,7 +271,7 @@ bool ReadoutCell::LdCol()
 
 Hit ReadoutCell::RdCol()
 {
-    /*for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
     {
         if (it->GetHitflag())
         {
@@ -279,7 +279,7 @@ Hit ReadoutCell::RdCol()
             it->PopHit();
             return hit;
         }
-    }*/
+    }
 
     std::cout << "roc hitflag: " << this->hitflag << std::endl;
     if (this->hitflag == true)
@@ -312,4 +312,20 @@ std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsEnd()
 {
 	return rocvector.end();
 
+}
+
+std::string ReadoutCell::PrintROC(std::string space)
+{
+	std::stringstream s("");
+
+	s << space << "ROC " << address << " contents:\n";
+
+	for(auto it : rocvector)
+		s << it.PrintROC(space + " ");
+
+	for(auto it : pixelvector)
+		s << space << " " << "Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
+			<< "; Size: " << it.GetSize() << std::endl;
+
+	return s.str();
 }
