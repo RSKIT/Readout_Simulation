@@ -9,6 +9,7 @@ sources = [ 'tinyxml2.cpp',
 			'hit.cpp',
 			'pixel.cpp',
 			'readoutcell.cpp',
+			'detector_base.cpp',
 			'detector.cpp',
 			'simulator.cpp',
 			'EventGenerator.cpp'

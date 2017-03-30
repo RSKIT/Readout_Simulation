@@ -15,6 +15,7 @@
 #include "TCoord.h"
 #include "hit.h"
 #include "pixel.h"
+#include "readoutcell.h"
 #include "detector.h"
 
 
