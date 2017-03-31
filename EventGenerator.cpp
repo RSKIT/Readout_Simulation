@@ -207,6 +207,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 	//generate the events:
 	for (int i = 0; i < numevents; ++i)
 	{
+		std::cout << "   Generating Event " << i << " of " << numevents << " ..." << std::endl;
 		//get a new random particle track:
 		TCoord<double> direction;
 
@@ -262,6 +263,11 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 	}
 
 	fout.close();
+}
+
+void EventGenerator::ClearEventQueue()
+{
+	clusterparts.clear();
 }
 
 int EventGenerator::GetNumEventsGenerated()

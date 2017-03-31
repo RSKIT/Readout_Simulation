@@ -98,6 +98,7 @@ public:
 	void SetCutOffFactor(int numsigmas);
 
 	void GenerateEvents(double firsttime = 0, int numevents = 1);
+	void ClearEventQueue();
 
 	int GetNumEventsGenerated();
 	int GetNumEventsLeft();

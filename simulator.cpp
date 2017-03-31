@@ -1,10 +1,10 @@
 #include "simulator.h"
-Simulator::Simulator()
+Simulator::Simulator() : events(0)
 {
 
 }
 
-Simulator::Simulator(std::string filename) : inputfile(filename)
+Simulator::Simulator(std::string filename) : inputfile(filename), events(0)
 {
 
 }
@@ -22,6 +22,9 @@ void Simulator::LoadInputFile(std::string filename)
 		inputfile = filename;
 
 	std::cout << "Loading data from \"" << filename << "\" ..." << std::endl;
+
+	detectors.clear();
+	eventgenerator.ClearEventQueue();
 
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLError error = doc.LoadFile(filename.c_str());
@@ -51,31 +54,45 @@ void Simulator::LoadInputFile(std::string filename)
 			elem = 0;
 	}
 
+	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+		eventgenerator.AddDetector(&(*it));
+
 }
 
 std::string Simulator::GetSaveFileName()
 {
-
+	return outputfile;
 }
 
 void Simulator::SetLoadFileName(std::string filename)
 {
-
+	outputfile = filename;
 }
 
 Detector* Simulator::GetDetector(int address)
 {
+	if(detectors.size() == 0)
+		return 0;
 
+	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+	{
+		if(it->GetAddress() == address)
+			return &(*it);
+	}
+
+	return 0;
 }
 	
 void Simulator::AddDetector(Detector& detector)
 {
 	detectors.push_back(detector);
+	eventgenerator.AddDetector(&(*(--detectors.end())));
 }
 
 void Simulator::ClearDetectors()
 {
-
+	eventgenerator.ClearDetectors();
+	detectors.clear();
 }
 
 int Simulator::GetNumDetectors()
@@ -85,7 +102,7 @@ int Simulator::GetNumDetectors()
 
 EventGenerator* Simulator::GetEventGenerator()
 {
-
+	return &eventgenerator;
 }
 
 void Simulator::InitEventGenerator()
@@ -110,7 +127,13 @@ void Simulator::Loader()
 
 void Simulator::SimulateUntil(int stoptime)
 {
+	if(events > 0)
+	{
+		eventgenerator.GenerateEvents(0, events);
+		events = 0;
+	}
 
+	//TODO: implementation
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -215,7 +238,7 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			int seed;
 			eventgenerator.SetSeed((element->QueryIntAttribute("x0",&seed)
-										!= tinyxml2::XML_NO_ERROR)?seed:0);
+										== tinyxml2::XML_NO_ERROR)?seed:0);
 		}
 		else if(name.compare("Output") == 0)
 		{
@@ -227,37 +250,42 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			double rate;
 			eventgenerator.SetEventRate((element->QueryDoubleAttribute("f",&rate) 
-											!= tinyxml2::XML_NO_ERROR)?rate:0);
+											== tinyxml2::XML_NO_ERROR)?rate:0);
 		}
 		else if(name.compare("ClusterSize") == 0)
 		{
 			double size;
 			eventgenerator.SetClusterSize((element->QueryDoubleAttribute("sigma",&size)
-											!= tinyxml2::XML_NO_ERROR)?size:0);
+											== tinyxml2::XML_NO_ERROR)?size:0);
 		}
 		else if(name.compare("CutOffFactor") == 0)
 		{
 			int cutoff;
 			eventgenerator.SetCutOffFactor((element->QueryIntAttribute("numsigmas",&cutoff)
-											!= tinyxml2::XML_NO_ERROR)?cutoff:0);			
+											== tinyxml2::XML_NO_ERROR)?cutoff:0);			
 		}
 		else if(name.compare("InclinationSigma") == 0)
 		{
 			double inclsigma;
 			eventgenerator.SetInclinationSigma((element->QueryDoubleAttribute("sigma",&inclsigma)
-												!= tinyxml2::XML_NO_ERROR)?inclsigma:3);
+												== tinyxml2::XML_NO_ERROR)?inclsigma:3);
 		}
 		else if(name.compare("ChargeScale") == 0)
 		{
 			double scale;
 			eventgenerator.SetChargeScaling((element->QueryDoubleAttribute("scale", &scale)
-											!= tinyxml2::XML_NO_ERROR)?scale:1);
+											== tinyxml2::XML_NO_ERROR)?scale:1);
 		}
 		else if(name.compare("MinSize") == 0)
 		{
 			double minsize;
 			eventgenerator.SetMinSize((element->QueryDoubleAttribute("diagonal", &minsize)
-										!= tinyxml2::XML_NO_ERROR)?minsize:1);
+										== tinyxml2::XML_NO_ERROR)?minsize:1);
+		}
+		else if(name.compare("NumEvents") == 0)
+		{
+			if(element->QueryIntAttribute("n", &events) != tinyxml2::XML_NO_ERROR)
+				events = 0;
 		}
 
 
@@ -266,8 +294,6 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else
 			element = 0;
 	}
-
-	//TODO: add implementation
 }
 
 std::string Simulator::PrintDetectors()
@@ -325,7 +351,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(error != tinyxml2::XML_NO_ERROR)
 		queuelength = 1;
 
-	ReadoutCell roc(addressname, address, queuelength);
+	//check for PPtB setting:
+	bool pptb;
+	error = parent->QueryBoolAttribute("PPtB", &pptb);
+	if(error != tinyxml2::XML_NO_ERROR)
+		pptb = false;
+
+	ReadoutCell roc(addressname, address, queuelength, pptb);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -335,6 +367,8 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 			roc.AddROC(LoadROC(child, pixelsize, childaddressname));
 		else if(childname.compare("Pixel") == 0)
 			roc.AddPixel(LoadPixel(child, pixelsize));
+		else if(childname.compare("NTimes") == 0)
+			LoadNPixels(&roc, child, pixelsize);
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -367,7 +401,7 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	tinyxml2::XMLElement* properties = parent->FirstChildElement();
 	while(properties != 0)
 	{
-		std::string name = properties->Value();
+		std::string name = std::string(properties->Value());
 		if(name.compare("Position") == 0)
 			position = LoadTCoord(properties);
 		else if(name.compare("Size") == 0)
@@ -395,4 +429,48 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	pix.SetEfficiency(efficiency);
 
 	return pix;
+}
+
+void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 
+							TCoord<double> pixelsize)
+{
+	//for a PPtB ROC, the pixel addresses have to be provided:
+	if(parentcell == 0 || parentcell->GetPPtBState())
+		return;
+
+	int numpixels;
+	TCoord<double> shift;
+	tinyxml2::XMLError error;
+
+	error = parentnode->QueryIntAttribute("n", &numpixels);
+	if(error != tinyxml2::XML_NO_ERROR)
+		numpixels = 0;
+	shift = LoadTCoord(parentnode);
+
+	Pixel pix;
+	bool pixelset = false;	//to check whether a pixel was defined in this block
+	tinyxml2::XMLElement* elem = parentnode->FirstChildElement();
+	while(elem != 0)
+	{
+		std::string name = std::string(elem->Value());
+		if(name.compare("Pixel") == 0)
+		{
+			pix = LoadPixel(elem, pixelsize);
+			pixelset = true;
+		}
+
+		if(elem != parentnode->LastChildElement())
+			elem = elem->NextSiblingElement();
+		else
+			elem = 0;
+	}
+
+	for(int i = 0; i < numpixels; ++i)
+	{
+		parentcell->AddPixel(pix);
+		pix.SetPosition(pix.GetPosition() + shift);
+		pix.SetAddress(pix.GetAddress() + 1);
+	}
+
+	return;
 }

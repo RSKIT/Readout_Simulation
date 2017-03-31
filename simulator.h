@@ -44,9 +44,12 @@ private:
 	ReadoutCell LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixelsize, 
 							std::string defaultaddressname = "ROC");
 	Pixel LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsize);
+	void LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 
+						TCoord<double> pixelsize);
 
     std::vector<Detector> detectors;
     EventGenerator eventgenerator;
+    int events;
 
     std::string inputfile;
     std::string outputfile;

@@ -11,7 +11,7 @@
 class ReadoutCell
 {
 public:
-    ReadoutCell(std::string addressname, int address, int hitqueuelength);
+    ReadoutCell(std::string addressname, int address, int hitqueuelength, bool pptb=false);
 	ReadoutCell();
 
 	
@@ -26,6 +26,9 @@ public:
 	
     int			GetHitqueuelength();
 	void		SetHitqueuelength(int hitqueuelength);
+
+	bool 		GetPPtBState();
+	void 		SetPPtBState(bool pptb);
 	
 	bool		AddHit(Hit hit);
 	Hit 		GetHit();
@@ -72,6 +75,8 @@ private:
 	std::vector<ReadoutCell> rocvector;
     Hit nexthit;
     bool nexthitflag;
+
+    bool ispptb;
 
 };
 
