@@ -140,6 +140,7 @@ bool DetectorBase::SizeOK()
 
 bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
 {
+    //somewhere here "-nan" values are created...
     bool corrected=false;
     for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); it++)
     {
