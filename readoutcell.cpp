@@ -197,7 +197,7 @@ void ReadoutCell::Apply()
         hitflag = nexthitflag;
 }
 
-bool ReadoutCell::PlaceHit(Hit hit, double deadtimeend)
+bool ReadoutCell::PlaceHit(Hit hit)
 {
     if (rocvector.size() > 0)
     {
@@ -208,7 +208,7 @@ bool ReadoutCell::PlaceHit(Hit hit, double deadtimeend)
             std::cout << "roc addressname: " << addressname << std::endl;
             std::cout << "hi getaddress: " << address << std::endl;
             if (it.GetAddress() == address)
-                return it.PlaceHit(hit, deadtimeend);
+                return it.PlaceHit(hit);
         }
         return false;
     }
@@ -220,7 +220,7 @@ bool ReadoutCell::PlaceHit(Hit hit, double deadtimeend)
             int address = hit.GetAddress(addressname);
             if (it.GetAddress() == address)
             {
-                return it.CreateHit(hit, deadtimeend);
+                return it.CreateHit(hit);
             }
         }
         return false;
@@ -366,4 +366,13 @@ std::string ReadoutCell::PrintROC(std::string space)
             << it.GetEfficiency() << std::endl;
 
 	return s.str();
+}
+
+void ReadoutCell::ShiftCell(TCoord<double> distance)
+{
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+        it->ShiftCell(distance);
+
+    for(auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
+        it->SetPosition(it->GetPosition() + distance);
 }

@@ -1,10 +1,11 @@
 #include "simulator.h"
-Simulator::Simulator() : events(0)
+Simulator::Simulator() : events(0), starttime(0), stoptime(-1), stopdelay(0)
 {
 
 }
 
-Simulator::Simulator(std::string filename) : inputfile(filename), events(0)
+Simulator::Simulator(std::string filename) : inputfile(filename), events(0), starttime(0),
+		stoptime(-1), stopdelay(0)
 {
 
 }
@@ -47,6 +48,17 @@ void Simulator::LoadInputFile(std::string filename)
 			standardpixel = LoadTCoord(elem);
 		else if(elementname.compare("EventGenerator") == 0)
 			LoadEventGenerator(elem);
+		else if(elementname.compare("SimulationEnd") == 0)
+		{
+			//load end time:
+			tinyxml2::XMLError error = elem->QueryIntAttribute("t", &stoptime);
+			if(error != tinyxml2::XML_NO_ERROR)
+				stoptime = -1;
+			//load delay for stopping:
+			error = elem->QueryIntAttribute("stopdelay", &stopdelay);
+			if(error != tinyxml2::XML_NO_ERROR)
+				stopdelay = 0;
+		}
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -55,7 +67,10 @@ void Simulator::LoadInputFile(std::string filename)
 	}
 
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+	{
+		it->EnlargeSize();
 		eventgenerator.AddDetector(&(*it));
+	}
 
 }
 
@@ -68,6 +83,52 @@ void Simulator::SetLoadFileName(std::string filename)
 {
 	outputfile = filename;
 }
+
+int Simulator::GetNumEventsToGenerate()
+{
+	return events;
+}
+
+void Simulator::SetNumEventsToGenerate(int events)
+{
+	this->events = events;
+}
+
+int Simulator::GetStartTime()
+{
+	return starttime;
+}
+
+void Simulator::SetStartTime(int starttime)
+{
+	this->starttime = starttime;
+}
+
+int Simulator::GetStopTime()
+{
+	return stoptime;
+}
+
+void Simulator::SetStopTime(int stoptime)
+{
+	this->stoptime = stoptime;
+}
+
+void Simulator::RemoveStopTime()
+{
+	stoptime = -1;
+}
+
+int Simulator::GetStopDelay()
+{
+	return stopdelay;
+}
+
+void Simulator::SetStopDelay(int stopdelay)
+{
+	this->stopdelay = stopdelay;
+}
+
 
 Detector* Simulator::GetDetector(int address)
 {
@@ -107,33 +168,96 @@ EventGenerator* Simulator::GetEventGenerator()
 
 void Simulator::InitEventGenerator()
 {
+	if(!eventgenerator.IsReady())
+	{
+		std::cout << "EventGenerator is not set up properly because of missing parameters" 
+				  << std::endl;
 
+		std::cout << "output file: \"" << eventgenerator.GetOutputFileName() << "\"" << std::endl;
+		std::cout << "rate: " << eventgenerator.GetEventRate() << std::endl;
+		return;
+	}
+
+	eventgenerator.GenerateEvents(starttime, events);
+	events = 0;
+}
+
+void Simulator::GenerateEvents(int events, double starttime)
+{
+	if(starttime < 0)
+		eventgenerator.GenerateEvents(events,this->starttime);
+	else
+		eventgenerator.GenerateEvents(events, starttime);
 }
 
 void Simulator::ClockUp()
 {
-
+	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+		it->StateMachineCkUp();
 }
 
 void Simulator::ClockDown()
 {
-
+	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+		it->StateMachineCkDown();
 }
 
-void Simulator::Loader()
-{
-
-}
-
-void Simulator::SimulateUntil(int stoptime)
+void Simulator::SimulateUntil(int stoptime, int delaystop)
 {
 	if(events > 0)
 	{
-		eventgenerator.GenerateEvents(0, events);
+		eventgenerator.GenerateEvents(starttime, events);
 		events = 0;
 	}
 
-	//TODO: implementation
+
+	int timestamp = 0;
+	int nextevent = eventgenerator.GetHit().GetTimeStamp();
+
+	int hitcounter = 0;
+
+	while(timestamp <= stoptime || (stoptime == -1 && stopdelay >= 0))
+	{
+		if(timestamp == nextevent)
+		{
+			//load the next event:
+			std::vector<Hit> event = eventgenerator.GetNextEvent();
+			//update the time stamp for the next event:
+			nextevent = eventgenerator.GetHit().GetTimeStamp();
+
+			//insert the hits of the current event into the detector(s):
+			for(auto hit : event)
+			{
+				for(auto it = detectors.begin(); it != detectors.end(); ++it)
+				{
+					if(it->PlaceHit(hit))
+						break;
+				}
+
+				++hitcounter;
+			}
+
+			std::cout << "Inserted " << hitcounter << "signals by now..." << std::endl;
+		}
+
+		ClockUp();
+		ClockDown();
+
+		++timestamp;
+
+		//delay the stopping of the simulation for "stop-on-done" (see while()):
+		if(nextevent == -1)
+			--stopdelay;
+	}
+
+	//count the signals read out from the detectors:
+	int dethitcounter = 0;
+	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+		dethitcounter += it->GetHitCounter();
+
+	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
+			  << std::endl << "  read out signals: " << dethitcounter << std::endl
+			  << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -171,9 +295,13 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		latestindex.insert(std::make_pair(addressname,address));
 	}
 
+	//check for an output file name for this detector:
+	nam = parent->Attribute("outputfile");
+	std::string outputfile = (nam != 0)?std::string(nam):"";
+
 
 	Detector det(addressname, address);
-	//XMLDetector xmldet(addressname, address);
+	det.SetOutputFile(outputfile);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -194,6 +322,8 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else
 			child = 0;
 	}
+
+	std::cout << det.GetPosition() << " - " << det.GetPosition() + det.GetSize() << std::endl;
 
 	det.EnlargeSize();
 
@@ -246,7 +376,7 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			if(nam != 0)
 				eventgenerator.SetOutputFileName(std::string(nam));
 		}
-		else if(name.compare("Eventrate") == 0)
+		else if(name.compare("EventRate") == 0)
 		{
 			double rate;
 			eventgenerator.SetEventRate((element->QueryDoubleAttribute("f",&rate) 
@@ -286,6 +416,11 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			if(element->QueryIntAttribute("n", &events) != tinyxml2::XML_NO_ERROR)
 				events = 0;
+		}
+		else if(name.compare("EventStart") == 0)
+		{
+			if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
+				starttime = 0;	
 		}
 
 
@@ -438,17 +573,18 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 	if(parentcell == 0 || parentcell->GetPPtBState())
 		return;
 
-	int numpixels;
+	int numelements;
 	TCoord<double> shift;
 	tinyxml2::XMLError error;
 
-	error = parentnode->QueryIntAttribute("n", &numpixels);
+	error = parentnode->QueryIntAttribute("n", &numelements);
 	if(error != tinyxml2::XML_NO_ERROR)
-		numpixels = 0;
+		numelements = 0;
 	shift = LoadTCoord(parentnode);
 
 	Pixel pix;
-	bool pixelset = false;	//to check whether a pixel was defined in this block
+	ReadoutCell roc;
+	int pixelset = 0;	//to check whether a pixel was defined in this block
 	tinyxml2::XMLElement* elem = parentnode->FirstChildElement();
 	while(elem != 0)
 	{
@@ -456,7 +592,12 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		if(name.compare("Pixel") == 0)
 		{
 			pix = LoadPixel(elem, pixelsize);
-			pixelset = true;
+			pixelset = 1;
+		}
+		else if(name.compare("ROC") == 0)
+		{
+			roc = LoadROC(elem, pixelsize, "c" + parentcell->GetAddressName());
+			pixelset = 2;
 		}
 
 		if(elem != parentnode->LastChildElement())
@@ -465,11 +606,23 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 			elem = 0;
 	}
 
-	for(int i = 0; i < numpixels; ++i)
+	if(pixelset == 1)
 	{
-		parentcell->AddPixel(pix);
-		pix.SetPosition(pix.GetPosition() + shift);
-		pix.SetAddress(pix.GetAddress() + 1);
+		for(int i = 0; i < numelements; ++i)
+		{
+			parentcell->AddPixel(pix);
+			pix.SetPosition(pix.GetPosition() + shift);
+			pix.SetAddress(pix.GetAddress() + 1);
+		}
+	}
+	else if(pixelset == 2)
+	{
+		for(int i = 0; i< numelements; ++i)
+		{
+			parentcell->AddROC(roc);
+			roc.ShiftCell(shift);
+			roc.SetAddress(roc.GetAddress() + 1);
+		}
 	}
 
 	return;

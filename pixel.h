@@ -42,7 +42,7 @@ public:
 	void		SetAddress(int address);
 	
 	Hit 		GetHit();
-	bool		CreateHit(Hit hit, double deaduntil = 0);
+	bool		CreateHit(Hit hit);
 	
 	bool		LoadFlag();
 	void		ClearFlags();

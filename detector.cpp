@@ -11,8 +11,12 @@ Detector::Detector(std::string addressname, int address) : DetectorBase(addressn
 
 }
 
+Detector::Detector(const Detector& templ) : DetectorBase(templ)
+{
 
-void Detector::StateMachine()
+}
+
+void Detector::StateMachineCkUp()
 {
     switch(currentstate)
     {
@@ -61,14 +65,21 @@ void Detector::StateMachine()
                 if (hit.GetEventIndex() == -1)
                     std::cout << "NO HIT FOUND!!" << std::endl;
                 else
+                {
                     std::cout << "HIT FOUND: " << hit.GenerateString() << std::endl;
+                    SaveHit(hit, false);
+                }
 
             }
-
 
             break;
     }
     NextState();
+}
+
+void Detector::StateMachineCkDown()
+{
+    
 }
 
 int Detector::NextState()

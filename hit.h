@@ -18,10 +18,13 @@ public:
 	int  GetEventIndex();
 	void SetEventIndex(int index);
 
+	double GetDeadTimeEnd();
+	void SetDeadTimeEnd(double time);
+
 	void AddAddress(std::string name, int addr);
 	int  GetAddress(std::string name);
 	bool SetAddress(std::string name, int addr);
-        int  AddressSize();
+    int  AddressSize();
 
 	void ClearAddress();
 
@@ -29,6 +32,7 @@ public:
 private:
 	int timestamp;
 	int eventindex;
+	double deadtimeend;
 
 	std::map<std::string, int> address;
 };

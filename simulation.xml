@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Simulation>
+	<SimulationEnd t="-1" stopdelay="50"/>
 	<Standardpixel x="50" y="150" z ="30"/>
 	<Detector addrname="Det">
 		<ROC queuelength ="4">
@@ -30,5 +31,6 @@
 		<ChargeScale scale="1"/>
 		<MinSize diagonal="1"/>
 		<NumEvents n="5"/>
+		<EventStart t="0"/>
 	</EventGenerator>
 </Simulation>

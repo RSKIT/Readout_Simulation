@@ -33,6 +33,17 @@ void Hit::SetEventIndex(int index)
 		eventindex = index;
 }
 
+double Hit::GetDeadTimeEnd()
+{
+	return deadtimeend;
+}
+
+void Hit::SetDeadTimeEnd(double time)
+{
+	deadtimeend = time;
+}
+
+
 void Hit::AddAddress(std::string name, int addr)
 {
 	address.insert(std::make_pair(name, addr));

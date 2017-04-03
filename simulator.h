@@ -21,6 +21,19 @@ public:
 	std::string GetSaveFileName();
 	void SetLoadFileName(std::string filename);
 
+	int GetNumEventsToGenerate();
+	void SetNumEventsToGenerate(int events);
+
+	int GetStartTime();
+	void SetStartTime(int starttime);
+
+	int GetStopTime();
+	void SetStopTime(int stoptime);
+	void RemoveStopTime();
+
+	int GetStopDelay();
+	void SetStopDelay(int stopdelay);
+
 	Detector* GetDetector(int address);
 	void AddDetector(Detector& detector);
 	void ClearDetectors();
@@ -28,12 +41,12 @@ public:
 
 	EventGenerator* GetEventGenerator();
 	void InitEventGenerator();
+	void GenerateEvents(int events, double starttime = -1);
 
     void ClockUp();
     void ClockDown();
-    void Loader();
 
-    void SimulateUntil(int stoptime = -1);
+    void SimulateUntil(int stoptime = -1, int delaystop = 0);
 
     std::string PrintDetectors();
 
@@ -49,7 +62,13 @@ private:
 
     std::vector<Detector> detectors;
     EventGenerator eventgenerator;
-    int events;
+    //event generation parameters for the event generator:
+    int events;			//number of events
+    double starttime;	//earliest time possible for the first event
+
+    //end conditions for the simulation:
+    int stoptime;
+    int stopdelay;
 
     std::string inputfile;
     std::string outputfile;
