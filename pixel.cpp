@@ -2,14 +2,14 @@
 
 Pixel::Pixel() : position(TCoord<double>{0,0,0}), size (TCoord<double>{0,0,0}), 
 	threshold(0), efficiency(0), hit(Hit()), hitflag1(false), hitflag2(false), 
-	addressname(""), address(0)
+	addressname(""), address(0), deaduntil(0.)
 {
 	
 }
 
 Pixel::Pixel(TCoord <double> position, TCoord <double> size, 
 	std::string addressname, int address, double threshold) : 
-	hitflag1(false), hitflag2(false), efficiency(1.0)
+	hitflag1(false), hitflag2(false), efficiency(1.0), deaduntil(0.)
 {
 	this->addressname = addressname;
 	this->address = address;	
@@ -60,6 +60,16 @@ void Pixel::SetEfficiency(double efficiency)
 	this->efficiency = efficiency;
 }
 	
+double Pixel::GetDeadTimeEnd()
+{
+	return deaduntil;
+}
+
+void Pixel::SetDeadTimeEnd(double enddeadtime)
+{
+	deaduntil = enddeadtime;
+}
+
 bool Pixel::GetHitFlag1()
 {
 	return hitflag1;
@@ -108,12 +118,18 @@ Hit Pixel::GetHit()
         return Hit();
 }
 
-bool Pixel::CreateHit(Hit hit)
+bool Pixel::CreateHit(Hit hit, double deaduntil)
 {
-        if (!hitflag1)
+	if(hit.GetTimeStamp() <= this->deaduntil)
 	{
-                this->hit = hit;
+		this->deaduntil = deaduntil;
+		return false;
+	}
+	else if (!hitflag1)
+	{
+        this->hit = hit;
 		SetHitFlag1(true);
+		this->deaduntil = deaduntil;
 		return true;
 	}
         else

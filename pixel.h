@@ -9,7 +9,7 @@
 class Pixel
 {
 public:
-        Pixel(TCoord <double> position, TCoord <double> size,
+    Pixel(TCoord <double> position, TCoord <double> size,
             std::string addressname, int address, double threshold);
 	Pixel();
 
@@ -25,6 +25,9 @@ public:
 	
 	double 		GetEfficiency();
 	void		SetEfficiency(double efficiency);
+
+	double		GetDeadTimeEnd();
+	void		SetDeadTimeEnd(double enddeadtime);
 	
 	bool 		GetHitFlag1();
 	void		SetHitFlag1(bool hitflag1);
@@ -39,7 +42,7 @@ public:
 	void		SetAddress(int address);
 	
 	Hit 		GetHit();
-        bool		CreateHit(Hit hit);
+	bool		CreateHit(Hit hit, double deaduntil = 0);
 	
 	bool		LoadFlag();
 	void		ClearFlags();
@@ -49,6 +52,8 @@ private:
 	TCoord<double> size;
 	double threshold;
 	double efficiency;
+	double deaduntil;	//point in time until the current "analouge hit signal" ends
+						// preventing new hits 
 	Hit hit;
 	bool hitflag1;
 	bool hitflag2;

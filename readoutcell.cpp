@@ -1,12 +1,13 @@
 #include "readoutcell.h"
 
 ReadoutCell::ReadoutCell() : addressname(""), address(0), hitflag(false), 
-	hitqueuelength(0), hitqueue(std::queue<Hit>()), pixelvector(std::vector<Pixel>()),
-	rocvector(std::vector<ReadoutCell>())
+	hitqueuelength(1), hitqueue(std::queue<Hit>()), pixelvector(std::vector<Pixel>()),
+	rocvector(std::vector<ReadoutCell>()), ispptb(false)
 {
 	
 }
-ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelength) : hitflag(false)	
+ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelength, bool pptb) 
+    : hitflag(false), ispptb(pptb)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -54,8 +55,20 @@ int ReadoutCell::GetHitqueuelength()
 }
 void ReadoutCell::SetHitqueuelength(int hitqueuelength)
 {
-	this->hitqueuelength = hitqueuelength;
+	if(hitqueuelength > 0)
+        this->hitqueuelength = hitqueuelength;
 }
+
+bool ReadoutCell::GetPPtBState()
+{
+    return ispptb;
+}
+
+void ReadoutCell::SetPPtBState(bool pptb)
+{
+    ispptb = pptb;
+}
+
 
 bool ReadoutCell::AddHit(Hit hit)
 {
@@ -184,18 +197,18 @@ void ReadoutCell::Apply()
         hitflag = nexthitflag;
 }
 
-bool ReadoutCell::PlaceHit(Hit hit)
+bool ReadoutCell::PlaceHit(Hit hit, double deadtimeend)
 {
     if (rocvector.size() > 0)
     {
+        std::string addressname = rocvector.front().GetAddressName();
         for (auto &it : rocvector)
         {
-            std::string addressname = it.GetAddressName();
             int address = hit.GetAddress(addressname);
             std::cout << "roc addressname: " << addressname << std::endl;
             std::cout << "hi getaddress: " << address << std::endl;
             if (it.GetAddress() == address)
-                return it.PlaceHit(hit);
+                return it.PlaceHit(hit, deadtimeend);
         }
         return false;
     }
@@ -207,7 +220,7 @@ bool ReadoutCell::PlaceHit(Hit hit)
             int address = hit.GetAddress(addressname);
             if (it.GetAddress() == address)
             {
-                return it.CreateHit(hit);
+                return it.CreateHit(hit, deadtimeend);
             }
         }
         return false;
@@ -250,28 +263,52 @@ bool ReadoutCell::LdCol()
             return true;
     }
 
-    for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
-    {
-        if (it->GetHitFlag2())
+    if(!ispptb)
+    {    
+        for (auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
         {
-            std::cout << "addhit to roc" << std::endl;
-            std::cout << it->GetHit().GenerateString()<< std::endl;
-            if(this->AddHit(it->GetHit()))
+            if (it->GetHitFlag2())
             {
-                this->SetHitflag(true);
-                it->ClearFlags();
-                std::cout << "###flags cleared" << std::endl;
+                std::cout << "addhit to roc" << std::endl;
+                std::cout << it->GetHit().GenerateString()<< std::endl;
+                if(this->AddHit(it->GetHit()))
+                {
+                    this->SetHitflag(true);
+                    it->ClearFlags();
+                    std::cout << "###flags cleared" << std::endl;
+                }
+                break;
             }
-            break;
         }
     }
-
+    else    //is a pptb chip
+    {
+        int pixeladdress = 0;
+        std::string addrname;
+        Hit hit;
+        for(auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
+        {
+            if(it->GetHitFlag2())
+            {
+                addrname = it->GetAddressName();
+                hit = it->GetHit();
+                pixeladdress |= hit.GetAddress(addrname);
+                this->SetHitflag(true);
+                it->ClearFlags();
+            }
+        }
+        if(GetHitflag())
+        {
+            hit.SetAddress(addrname, pixeladdress);
+            AddHit(hit);
+        }
+    }
     return returnval;
 }
 
 Hit ReadoutCell::RdCol()
 {
-    /*for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
     {
         if (it->GetHitflag())
         {
@@ -279,7 +316,7 @@ Hit ReadoutCell::RdCol()
             it->PopHit();
             return hit;
         }
-    }*/
+    }
 
     std::cout << "roc hitflag: " << this->hitflag << std::endl;
     if (this->hitflag == true)
@@ -294,7 +331,7 @@ Hit ReadoutCell::RdCol()
     }
 
     Hit hit;
-    std::cout << "meep "<< this->hitqueue.size() << std::endl;
+    std::cout << "meep " << this->hitqueue.size() << std::endl;
     return hit;
 }
 
@@ -312,4 +349,21 @@ std::vector<ReadoutCell>::iterator ReadoutCell::GetROCsEnd()
 {
 	return rocvector.end();
 
+}
+
+std::string ReadoutCell::PrintROC(std::string space)
+{
+	std::stringstream s("");
+
+	s << space << "ROC " << address << " contents:\n";
+
+	for(auto it : rocvector)
+		s << it.PrintROC(space + " ");
+
+	for(auto it : pixelvector)
+		s << space << " " << "Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
+			<< "; Size: " << it.GetSize() << " Thr: " << it.GetThreshold() << "; Eff: "
+            << it.GetEfficiency() << std::endl;
+
+	return s.str();
 }

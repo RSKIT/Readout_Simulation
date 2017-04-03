@@ -7,10 +7,11 @@
 #include "readoutcell.h"
 #include "detector.h"
 #include "EventGenerator.h"
+#include "simulator.h"
 
-int pixsizex = 50;
-int pixsizey = 150;
-int pixsizez = 30;
+const int pixsizex = 50;
+const int pixsizey = 150;
+const int pixsizez = 30;
 int testcounter = 0;
 
 void test(std::string text = "test: ")
@@ -27,17 +28,17 @@ int main(int argc, char** argv)
     //generate ROC with 4 pixels
     for (int x = 0; x<4; x++)
     {
-        ReadoutCell roc("roc" /*+ std::to_string(x)*/, x, 1);
+        ReadoutCell roc("roc", x, 1);
         for (int y = 0; y<3;y++)
         {
             TCoord <double> position{(double)x*pixsizex,(double)y*pixsizey,0};
             TCoord <double> size{(double)pixsizex,(double)pixsizey,(double)pixsizez};
-            Pixel pix(position, size, "pix" /*+ std::to_string(y)*/, y, 0 );
+            Pixel pix(position, size, "pix", y, 0 );
             roc.AddPixel(pix);
-            std::cout << "pix" << y << "added" << std::endl;
+            std::cout << " pixel " << y << " added" << std::endl;
         }
         Matrix.AddROC(roc);
-        std::cout << "roc" << x << "added" << std::endl;
+        std::cout << "roc " << x << " added" << std::endl;
     }
 
     for (int x = 0; x<4; x++)
@@ -76,6 +77,8 @@ int main(int argc, char** argv)
     std::cout << Matrix.GetPosition() << std::endl;
     std::cout << Matrix.GetSize() <<std::endl;
 
+    std::cout << Matrix.PrintDetector() << std::endl;
+
     //Simulator
     EventGenerator evgen(&Matrix);
     evgen.SetOutputFileName("eventgen.dat");
@@ -84,7 +87,9 @@ int main(int argc, char** argv)
     evgen.SetEventRate(0.1);
     evgen.SetCutOffFactor(5);
     evgen.SetMinSize(1);	//0.1);
-    evgen.GenerateEvents(0, 3);
+    evgen.SetInclinationSigma(0.15);	//gaussian sigma in radians
+    std::cout << "test" << std::endl;
+    evgen.GenerateEvents(0, 1); //3);
 
     std::cout << "Events: " << evgen.GetNumEventsLeft() << std::endl;
 
@@ -99,7 +104,7 @@ int main(int argc, char** argv)
     int k= 0;
     while ((eventsleft != 0 || getnewevent )&& k <50)
     {
-        k++;
+        ++k;
         //clock down
         if (getnewevent == true)
         {
@@ -138,8 +143,11 @@ int main(int argc, char** argv)
     }
 
 
+    Simulator sim("simulation.xml");
+    sim.LoadInputFile();
 
-
+    std::cout << "Detectors: " << sim.GetNumDetectors() << std::endl;
+    std::cout << sim.PrintDetectors() << std::endl;
 
     /*
 	Hit a();

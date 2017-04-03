@@ -11,11 +11,11 @@
 class ReadoutCell
 {
 public:
-        ReadoutCell(std::string addressname, int address, int hitqueuelength);
+    ReadoutCell(std::string addressname, int address, int hitqueuelength, bool pptb=false);
 	ReadoutCell();
 
 	
-        std::string     GetAddressName();
+    std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
 	int 		GetAddress();
@@ -24,8 +24,11 @@ public:
 	bool		GetHitflag();
 	void		SetHitflag(bool hitflag);
 	
-        int		GetHitqueuelength();
+    int			GetHitqueuelength();
 	void		SetHitqueuelength(int hitqueuelength);
+
+	bool 		GetPPtBState();
+	void 		SetPPtBState(bool pptb);
 	
 	bool		AddHit(Hit hit);
 	Hit 		GetHit();
@@ -47,20 +50,20 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCsBegin();
 	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
-        bool		GetNextHitflag();
-        void		SetNextHitflag(bool nexthitflag);
+    bool		GetNextHitflag();
+    void		SetNextHitflag(bool nexthitflag);
 
-        Hit             GetNextHit();
-        void            SetNextHit(Hit nexthit);
+    Hit         GetNextHit();
+    void        SetNextHit(Hit nexthit);
 
-        void            Apply();
+    void        Apply();
 
-        bool            PlaceHit(Hit hit);
-        bool            LdPix();
-        bool            LdCol();
-        Hit             RdCol();
+    bool        PlaceHit(Hit hit, double deadtimeend = 0);
+    bool        LdPix();
+    bool        LdCol();
+    Hit         RdCol();
 
-
+    std::string PrintROC(std::string space);
 	
 private:
 	std::string addressname;
@@ -70,8 +73,10 @@ private:
 	std::queue<Hit> hitqueue;
 	std::vector<Pixel> pixelvector;
 	std::vector<ReadoutCell> rocvector;
-        Hit nexthit;
-        bool nexthitflag;
+    Hit nexthit;
+    bool nexthitflag;
+
+    bool ispptb;
 
 };
 

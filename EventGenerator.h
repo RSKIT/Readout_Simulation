@@ -8,12 +8,14 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
+#include <random>
 #include <math.h>
 #include <deque>
 
 #include "TCoord.h"
 #include "hit.h"
 #include "pixel.h"
+#include "readoutcell.h"
 #include "detector.h"
 
 
@@ -77,6 +79,9 @@ public:
 	int  GetSeed();
 	void SetSeed(int seed = 0);
 
+	double GetInclinationSigma();
+	void   SetInclinationSigma(double sigma);
+
 	double GetClusterSize();
 	void   SetClusterSize(double size);
 
@@ -93,6 +98,7 @@ public:
 	void SetCutOffFactor(int numsigmas);
 
 	void GenerateEvents(double firsttime = 0, int numevents = 1);
+	void ClearEventQueue();
 
 	int GetNumEventsGenerated();
 	int GetNumEventsLeft();
@@ -126,8 +132,8 @@ public:
 						TCoord<double> size, double minsize, double sigma, 
 						int setzero = 5, bool root = true);
 private:
-        std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction,
-                                                                                TCoord<double> setpoint, bool print);
+	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
+										TCoord<double> setpoint, bool print = false);
 
 	std::vector<Detector*> detectors;
 
@@ -135,7 +141,11 @@ private:
 
 	double clustersize;
 	double eventrate;
+
+	std::default_random_engine generator;	//a uniform random generator
 	int seed;
+	double inclinationsigma;				//sigma for the gaussian distribution of the theta
+											// angle in radians
 
 	double chargescale;	//to make the "charge" calculated a charge in Coulomb
 

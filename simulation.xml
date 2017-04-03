@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Simulation>
+	<Standardpixel x="50" y="150" z ="30"/>
+	<Detector addrname="Det">
+		<ROC queuelength ="4">
+			<Pixel> <!-- a For a PPtB ROC, the pixel addresses have to be provided -->
+				<Position x="10" y="2" z="7"/>
+				<!--<Size x="40" y="60" z="30"/>-->
+				<Threshold thr="1"/>
+				<Efficiency n="0.7"/>				
+			</Pixel>
+			<NTimes n="5" x="0" y="165" z="0"> <!-- not possible for PPtB ROCs -->
+				<Pixel>
+					<Position x="10" y="200" z="7"/>
+					<!--<Size x="40" y="60" z="30"/>-->
+					<Threshold thr="1"/>
+					<Efficiency n="0.7"/>				
+				</Pixel>
+				<!-- only the last pixel object will be used -->
+			</NTimes>
+		</ROC>
+	</Detector>
+	<EventGenerator>
+		<Seed x0="0"/>
+		<Output filename="eventgen.dat"/>
+		<EventRate f="0.1"/>
+		<ClusterSize sigma="20"/>
+		<CutOffFactor numsigmas="5"/>
+		<InclinationSigma sigma="0.15"/>
+		<ChargeScale scale="1"/>
+		<MinSize diagonal="1"/>
+		<NumEvents n="5"/>
+	</EventGenerator>
+</Simulation>
