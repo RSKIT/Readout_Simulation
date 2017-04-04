@@ -1,18 +1,32 @@
 #include "detector_base.h"
 
 DetectorBase::DetectorBase() : 
-        addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), currentstate(PullDown)
+        addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), currentstate(PullDown),
+        outputfile(""), fout(std::fstream()), hitcounter(0), position(TCoord<double>::Null),
+        size(TCoord<double>::Null)
 {
 	
 }
 
-DetectorBase::DetectorBase(std::string addressname, int address)
+DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""), 
+        fout(std::fstream()), currentstate(PullDown), hitcounter(0), 
+        position(TCoord<double>::Null), size(TCoord<double>::Null)
 {
 	this->addressname = addressname;
 	this->address = address;
 	rocvector = std::vector<ReadoutCell>();
-        currentstate = PullDown;
+
 }
+
+
+DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addressname),
+        address(templ.address), rocvector(templ.rocvector), currentstate(templ.currentstate),
+        outputfile(templ.outputfile), fout(std::fstream()), hitcounter(0), 
+        position(templ.position), size(templ.size)
+{
+
+}
+
 
 std::string DetectorBase::GetAddressName()
 {
@@ -73,21 +87,6 @@ std::vector<ReadoutCell>::iterator DetectorBase::GetROCVectorEnd()
 	return rocvector.end();
 }
 
-	
-void DetectorBase::SaveHit(Hit hit, std::string filename, bool compact)
-{
-    std::fstream outfile;
-    outfile.open(filename.c_str(), std::ios::out);
-    if(!outfile.is_open())
-    {
-        std::cout << "Could not open outputfile \"" << filename << "\"" << std::endl;
-        return;
-    }
-
-    outfile << hit.GenerateString(compact) << std::endl;
-    outfile.close();
-}
-
 TCoord<double> DetectorBase::GetPosition()
 {
 	return position;
@@ -142,6 +141,7 @@ bool DetectorBase::SizeOK()
 
 bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
 {
+    //somewhere here "-nan" values are created...
     bool corrected=false;
     for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); it++)
     {
@@ -178,6 +178,8 @@ bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
             this->SetSize(parentsize);
             corrected = true;
         }
+
+        std::cout << parentpos << " size: " << parentsize << std::endl;
     }
     return corrected;
 }
@@ -193,6 +195,22 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
+void DetectorBase::StateMachine()
+{
+    StateMachineCkUp();
+    StateMachineCkDown();
+}
+
+void DetectorBase::StateMachineCkUp()
+{
+
+}
+
+void DetectorBase::StateMachineCkDown()
+{
+
+}
+
 void DetectorBase::SetState(int nextstate)
 {
     this->currentstate = nextstate;
@@ -203,7 +221,7 @@ int DetectorBase::GetState()
     return currentstate;
 }
 
-bool DetectorBase::PlaceHit(Hit hit, double deadtimeend)
+bool DetectorBase::PlaceHit(Hit hit)
 {
     if (rocvector.size() < 1)
         return false;
@@ -215,17 +233,83 @@ bool DetectorBase::PlaceHit(Hit hit, double deadtimeend)
         std::cout << "roc addressname: " << addressname << std::endl;
         std::cout << "hit getaddress: " << address << std::endl;
         if (it.GetAddress() == address)
-            return it.PlaceHit(hit, deadtimeend);
+            return it.PlaceHit(hit);
     }
 
     return false;
 }
 
+void DetectorBase::SaveHit(Hit hit, std::string filename, bool compact)
+{
+    ++hitcounter;
+
+    std::fstream outfile;
+    outfile.open(filename.c_str(), std::ios::out);
+    if(!outfile.is_open())
+    {
+        std::cout << "Could not open outputfile \"" << filename << "\"" << std::endl;
+        return;
+    }
+
+    outfile << hit.GenerateString(compact) << std::endl;
+    outfile.close();
+}
+
+bool DetectorBase::SaveHit(Hit hit, bool compact)
+{
+    ++hitcounter;
+
+    if(!fout.is_open())
+    {
+        if(outputfile == "")
+            return false;
+        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
+        if(!fout.is_open())
+        {
+            std::cout << "Could not open output file \"" << outputfile << "\"." << std::endl;
+            return false;
+        }
+    }
+
+    fout << hit.GenerateString(compact) << std::endl;
+
+    return true;
+}
+
+std::string DetectorBase::GetOutputFile()
+{
+    return outputfile;
+}
+
+void DetectorBase::SetOutputFile(std::string filename)
+{
+    CloseOutputFile();
+    outputfile = filename;
+}
+
+void DetectorBase::CloseOutputFile()
+{
+    if(fout.is_open())
+        fout.close();
+}
+
+int DetectorBase::GetHitCounter()
+{
+    return hitcounter;
+}
+
+void DetectorBase::ResetHitCounter()
+{
+    hitcounter = 0;
+}
+
+
 std::string DetectorBase::PrintDetector()
 {
 	std::stringstream s("");
 
-	s << "Detector " << address << " Contents:\n";
+    s << "Detector Size: " << position << " - " << position + size << std::endl
+	  << "Detector " << address << " Contents:\n";
 	for(auto it : rocvector)
 		s << it.PrintROC(" ");
 

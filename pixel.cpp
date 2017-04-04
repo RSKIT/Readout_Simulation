@@ -118,7 +118,7 @@ Hit Pixel::GetHit()
         return Hit();
 }
 
-bool Pixel::CreateHit(Hit hit, double deaduntil)
+bool Pixel::CreateHit(Hit hit)
 {
 	if(hit.GetTimeStamp() <= this->deaduntil)
 	{
@@ -129,11 +129,11 @@ bool Pixel::CreateHit(Hit hit, double deaduntil)
 	{
         this->hit = hit;
 		SetHitFlag1(true);
-		this->deaduntil = deaduntil;
+		this->deaduntil = hit.GetDeadTimeEnd();
 		return true;
 	}
-        else
-                return false;
+    else
+        return false;
 }
 	
 bool Pixel::LoadFlag()

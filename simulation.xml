@@ -1,20 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Simulation>
+	<SimulationEnd t="1000" stopdelay="50"/>
 	<Standardpixel x="50" y="150" z ="30"/>
-	<Detector addrname="Det">
+	<Detector addrname="Det" outputfile="readhits.dat">
 		<ROC queuelength ="4">
-			<Pixel> <!-- a For a PPtB ROC, the pixel addresses have to be provided -->
+			<Pixelcomment> <!-- a For a PPtB ROC, the pixel addresses have to be provided -->
 				<Position x="10" y="2" z="7"/>
 				<!--<Size x="40" y="60" z="30"/>-->
 				<Threshold thr="1"/>
-				<Efficiency n="0.7"/>				
-			</Pixel>
-			<NTimes n="5" x="0" y="165" z="0"> <!-- not possible for PPtB ROCs -->
+				<Efficiency n="1.0"/>				
+			</Pixelcomment>
+			<NTimes n="10" x="55" y="0" z="0"> <!-- not possible for PPtB ROCs -->
 				<Pixel>
-					<Position x="10" y="200" z="7"/>
+					<Position x="60" y="2" z="7"/>
 					<!--<Size x="40" y="60" z="30"/>-->
 					<Threshold thr="1"/>
-					<Efficiency n="0.7"/>				
+					<Efficiency n="1.0"/>				
+				</Pixel>
+				<!-- only the last pixel object will be used -->
+			</NTimes>
+		</ROC>
+		<ROC queuelength="4">
+			<NTimes n="10" x="55" y="0" z="0"> <!-- not possible for PPtB ROCs -->
+				<Pixel>
+					<Position x="60" y="160" z="7"/>
+					<!--<Size x="40" y="60" z="30"/>-->
+					<Threshold thr="1"/>
+					<Efficiency n="1.0"/>				
+				</Pixel>
+				<!-- only the last pixel object will be used -->
+			</NTimes>
+		</ROC>
+		<ROC queuelength="4">
+			<NTimes n="10" x="55" y="0" z="0"> <!-- not possible for PPtB ROCs -->
+				<Pixel>
+					<Position x="60" y="320" z="7"/>
+					<!--<Size x="40" y="60" z="30"/>-->
+					<Threshold thr="1"/>
+					<Efficiency n="1.0"/>				
 				</Pixel>
 				<!-- only the last pixel object will be used -->
 			</NTimes>
@@ -28,7 +51,8 @@
 		<CutOffFactor numsigmas="5"/>
 		<InclinationSigma sigma="0.15"/>
 		<ChargeScale scale="1"/>
-		<MinSize diagonal="1"/>
-		<NumEvents n="5"/>
+		<MinSize diagonal="2."/>
+		<NumEvents n="50"/>
+		<EventStart t="0"/>
 	</EventGenerator>
 </Simulation>

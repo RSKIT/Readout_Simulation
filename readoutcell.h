@@ -58,12 +58,14 @@ public:
 
     void        Apply();
 
-    bool        PlaceHit(Hit hit, double deadtimeend = 0);
+    bool        PlaceHit(Hit hit);
     bool        LdPix();
     bool        LdCol();
     Hit         RdCol();
 
     std::string PrintROC(std::string space);
+
+    void ShiftCell(TCoord<double> distance);
 	
 private:
 	std::string addressname;

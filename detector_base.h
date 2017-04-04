@@ -16,6 +16,7 @@ class DetectorBase
 public:
     DetectorBase(std::string addressname, int address);
 	DetectorBase();
+	DetectorBase(const DetectorBase& templ);
 	
 
     enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};
@@ -33,7 +34,6 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCVectorBegin();
 	std::vector<ReadoutCell>::iterator GetROCVectorEnd();
 	
-	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	
 	TCoord<double>	GetPosition();
 	void		SetPosition(TCoord<double> position);
@@ -44,13 +44,23 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    void        StateMachine();
+    void        StateMachineCkUp();
+    void 		StateMachineCkDown();
+    void		StateMachine();
 
     void        SetState(int nextstate);
     int 		GetState();
     int 		NextState();
 
-    bool            PlaceHit(Hit hit, double deadtimeend = 0);
+    bool        PlaceHit(Hit hit);
+	void 		SaveHit(Hit hit, std::string filename, bool compact);
+	bool		SaveHit(Hit hit, bool compact = false);
+	std::string	GetOutputFile();
+	void 		SetOutputFile(std::string filename);
+	void 		CloseOutputFile();
+
+	int 		GetHitCounter();
+	void		ResetHitCounter();
 
     std::string PrintDetector();
     
@@ -66,7 +76,9 @@ protected:
     bool    SizeOKROC(ReadoutCell* cell);
     bool EnlargeSizeROC(ReadoutCell* cell);
 
-
+    int hitcounter;
+    std::string outputfile;
+    std::fstream fout;
 
 };
 
