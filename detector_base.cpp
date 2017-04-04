@@ -21,7 +21,8 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
 
 DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addressname),
         address(templ.address), rocvector(templ.rocvector), currentstate(templ.currentstate),
-        outputfile(templ.outputfile), fout(std::fstream()), hitcounter(0)
+        outputfile(templ.outputfile), fout(std::fstream()), hitcounter(0), 
+        position(templ.position), size(templ.size)
 {
 
 }
@@ -177,6 +178,8 @@ bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
             this->SetSize(parentsize);
             corrected = true;
         }
+
+        std::cout << parentpos << " size: " << parentsize << std::endl;
     }
     return corrected;
 }

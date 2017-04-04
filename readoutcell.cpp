@@ -247,7 +247,8 @@ bool ReadoutCell::LdPix()
             std::cout << " flag2: " << it->GetHitFlag2() << std::endl;
 
         }
-        std::cout << it->GetHit().GenerateString() << std::endl;
+        if(it->GetHit().GetTimeStamp() != -1)
+            std::cout << it->GetHit().GenerateString() << std::endl;
     }
 
     return returnval;

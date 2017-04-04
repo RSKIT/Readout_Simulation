@@ -132,8 +132,8 @@ bool Pixel::CreateHit(Hit hit)
 		this->deaduntil = hit.GetDeadTimeEnd();
 		return true;
 	}
-        else
-                return false;
+    else
+        return false;
 }
 	
 bool Pixel::LoadFlag()

@@ -146,8 +146,16 @@ Detector* Simulator::GetDetector(int address)
 	
 void Simulator::AddDetector(Detector& detector)
 {
+	std::cout << "Input:  "
+			  << detector.GetPosition() << " size: " << detector.GetSize() << std::endl;
 	detectors.push_back(detector);
-	eventgenerator.AddDetector(&(*(--detectors.end())));
+	auto it = detectors.end();
+	--it;
+	eventgenerator.AddDetector(&(*it));
+
+	//auto it = --detectors.end();
+	std::cout << "Output: "
+			  << it->GetPosition() << " size: " << it->GetSize() << std::endl;
 }
 
 void Simulator::ClearDetectors()
@@ -210,6 +218,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		events = 0;
 	}
 
+	eventgenerator.PrintQueue();
 
 	int timestamp = 0;
 	int nextevent = eventgenerator.GetHit().GetTimeStamp();
@@ -218,7 +227,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	while(timestamp <= stoptime || (stoptime == -1 && stopdelay >= 0))
 	{
-		if(timestamp == nextevent)
+		while(timestamp == nextevent)
 		{
 			//load the next event:
 			std::vector<Hit> event = eventgenerator.GetNextEvent();
@@ -237,7 +246,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				++hitcounter;
 			}
 
-			std::cout << "Inserted " << hitcounter << "signals by now..." << std::endl;
+			std::cout << "Inserted " << hitcounter << " signals by now..." << std::endl;
 		}
 
 		ClockUp();
@@ -248,6 +257,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		//delay the stopping of the simulation for "stop-on-done" (see while()):
 		if(nextevent == -1)
 			--stopdelay;
+
+		std::cout << "TS: " << timestamp << "; nextEvent: " << nextevent << "; stopdelay: "
+				  << stopdelay << std::endl;
 	}
 
 	//count the signals read out from the detectors:
@@ -322,8 +334,6 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else
 			child = 0;
 	}
-
-	std::cout << det.GetPosition() << " - " << det.GetPosition() + det.GetSize() << std::endl;
 
 	det.EnlargeSize();
 

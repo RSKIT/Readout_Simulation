@@ -93,12 +93,12 @@ int main(int argc, char** argv)
         evgen.SetOutputFileName("eventgen.dat");
         evgen.SetSeed();
         evgen.SetClusterSize(20);
-        evgen.SetEventRate(0.1);
+        evgen.SetEventRate(2); //0.1);
         evgen.SetCutOffFactor(5);
         evgen.SetMinSize(1);	//0.1);
         evgen.SetInclinationSigma(0.15);	//gaussian sigma in radians
         std::cout << "test" << std::endl;
-        evgen.GenerateEvents(0, 1); //3);
+        evgen.GenerateEvents(0, 50); //3);
 
         std::cout << "Events: " << evgen.GetNumEventsLeft() << std::endl;
 

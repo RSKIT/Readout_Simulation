@@ -60,7 +60,7 @@ void Detector::StateMachineCkUp()
             for (auto &it: rocvector)
             {
                 Hit hit = it.RdCol();
-                std::cout << hit.GenerateString()<< std::endl;
+                //std::cout << hit.GenerateString()<< std::endl;
 
                 if (hit.GetEventIndex() == -1)
                     std::cout << "NO HIT FOUND!!" << std::endl;
