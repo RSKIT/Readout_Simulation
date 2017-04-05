@@ -2,6 +2,7 @@
 #define _PIXEL
 
 #include <string>
+#include <fstream>
 
 #include "hit.h"
 #include "TCoord.h"
@@ -44,7 +45,7 @@ public:
 	Hit 		GetHit();
 	bool		CreateHit(Hit hit);
 	
-	bool		LoadFlag(int timestamp);
+	bool		LoadFlag(int timestamp, std::fstream* out);
 	void		ClearFlags();
 
 private:
