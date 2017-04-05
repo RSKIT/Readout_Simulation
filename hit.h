@@ -28,6 +28,12 @@ public:
 
 	void ClearAddress();
 
+	void AddReadoutTime(std::string name, int timestamp);
+	int GetReadoutTime(std::string name);
+	bool SetReadoutTime(std::string name, int timestamp);
+	int ReadoutTimeSize();
+	void ClearReadoutTimes();
+
 	std::string GenerateString(bool compact = false);
 private:
 	int timestamp;
@@ -35,6 +41,8 @@ private:
 	double deadtimeend;
 
 	std::map<std::string, int> address;
+
+	std::map<std::string, int> readouttimestamps;
 };
 
 #endif //_HIT

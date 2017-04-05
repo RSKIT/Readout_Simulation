@@ -21,8 +21,8 @@ public:
 
     enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};
 	
-    void	StateMachineCkUp();
-    void	StateMachineCkDown();
+    void	StateMachineCkUp(int timestamp);
+    void	StateMachineCkDown(int timestamp);
 
     int 	NextState();
     

@@ -81,6 +81,43 @@ void Hit::ClearAddress()
 	address.clear();
 }
 
+void Hit::AddReadoutTime(std::string name, int timestamp)
+{
+	readouttimestamps.insert(std::make_pair(name, timestamp));
+}
+
+int Hit::GetReadoutTime(std::string name)
+{
+	auto it = readouttimestamps.find(name);
+
+	if(it != readouttimestamps.end())
+		return it->second;
+	else 
+		return -1;
+}
+
+bool Hit::SetReadoutTime(std::string name, int timestamp)
+{
+	auto it = readouttimestamps.find(name);
+	if(it == readouttimestamps.end())
+		return false;
+	else
+	{
+		it->second = timestamp;
+		return true;
+	}
+}
+
+int Hit::ReadoutTimeSize()
+{
+	return readouttimestamps.size();
+}
+
+void Hit::ClearReadoutTimes()
+{
+	readouttimestamps.size();
+}
+
 std::string Hit::GenerateString(bool compact)
 {
 	std::stringstream s("");
@@ -93,15 +130,26 @@ std::string Hit::GenerateString(bool compact)
 		{
 			s << " (" << it.first << ") " << it.second;
 		}
+
+		s << "; Readout:";
+
+		for(auto it: readouttimestamps)
+		{
+			s << " (" << it.first << ") " << it.second;
+		}
 	}
 	else
 	{
 		s << eventindex << " " << timestamp;
 
+		//address:
 		for(auto it : address)
-		{
 			s << " " << it.second;
-		}
+
+		//readouttimestamps:
+		s << " ;";
+		for(auto it : readouttimestamps)
+			s << " " << it.second;
 	}
 
 	return s.str();

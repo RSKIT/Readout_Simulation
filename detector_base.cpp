@@ -195,18 +195,18 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
-void DetectorBase::StateMachine()
+void DetectorBase::StateMachine(int timestamp)
 {
-    StateMachineCkUp();
-    StateMachineCkDown();
+    StateMachineCkUp(timestamp);
+    StateMachineCkDown(timestamp);
 }
 
-void DetectorBase::StateMachineCkUp()
+void DetectorBase::StateMachineCkUp(int timestamp)
 {
 
 }
 
-void DetectorBase::StateMachineCkDown()
+void DetectorBase::StateMachineCkDown(int timestamp)
 {
 
 }

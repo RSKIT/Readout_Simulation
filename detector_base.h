@@ -44,9 +44,9 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    void        StateMachineCkUp();
-    void 		StateMachineCkDown();
-    void		StateMachine();
+    void        StateMachineCkUp(int timestamp);
+    void 		StateMachineCkDown(int timestamp);
+    void		StateMachine(int timestamp);
 
     void        SetState(int nextstate);
     int 		GetState();
