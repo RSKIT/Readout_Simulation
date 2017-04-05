@@ -16,7 +16,7 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ)
 
 }
 
-void Detector::StateMachineCkUp()
+void Detector::StateMachineCkUp(int timestamp)
 {
     switch(currentstate)
     {
@@ -67,6 +67,7 @@ void Detector::StateMachineCkUp()
                 else
                 {
                     std::cout << "HIT FOUND: " << hit.GenerateString() << std::endl;
+                    hit.AddReadoutTime(addressname, timestamp);
                     SaveHit(hit, false);
                 }
 
@@ -77,7 +78,7 @@ void Detector::StateMachineCkUp()
     NextState();
 }
 
-void Detector::StateMachineCkDown()
+void Detector::StateMachineCkDown(int timestamp)
 {
     
 }

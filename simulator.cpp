@@ -198,16 +198,16 @@ void Simulator::GenerateEvents(int events, double starttime)
 		eventgenerator.GenerateEvents(events, starttime);
 }
 
-void Simulator::ClockUp()
+void Simulator::ClockUp(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
-		it->StateMachineCkUp();
+		it->StateMachineCkUp(timestamp);
 }
 
-void Simulator::ClockDown()
+void Simulator::ClockDown(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
-		it->StateMachineCkDown();
+		it->StateMachineCkDown(timestamp);
 }
 
 void Simulator::SimulateUntil(int stoptime, int delaystop)
@@ -249,8 +249,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			std::cout << "Inserted " << hitcounter << " signals by now..." << std::endl;
 		}
 
-		ClockUp();
-		ClockDown();
+		ClockUp(timestamp);
+		ClockDown(timestamp);
 
 		++timestamp;
 

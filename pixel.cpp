@@ -113,7 +113,7 @@ void Pixel::SetAddress(int address)
 Hit Pixel::GetHit()
 {
     if (hitflag2)
-	return hit;
+		return hit;
     else
         return Hit();
 }
@@ -136,19 +136,24 @@ bool Pixel::CreateHit(Hit hit)
         return false;
 }
 	
-bool Pixel::LoadFlag()
+bool Pixel::LoadFlag(int timestamp)
 {
 	if (hitflag1 && !hitflag2)
 	{
 		hitflag2 = true;
+		hit.AddReadoutTime(addressname, timestamp);
 		return true;
 	}
 	else
+	{
+		//TODO: save not detected hit
 		return false;
+	}
 }
 	
 void Pixel::ClearFlags()
 {
 	hitflag1 = false;
 	hitflag2 = false;
+	hit.ClearReadoutTimes();
 }

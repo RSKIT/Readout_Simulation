@@ -30,7 +30,7 @@ public:
 	bool 		GetPPtBState();
 	void 		SetPPtBState(bool pptb);
 	
-	bool		AddHit(Hit hit);
+	bool		AddHit(Hit hit, int timestamp = -1);
 	Hit 		GetHit();
 	bool		PopHit();
 
@@ -54,7 +54,7 @@ public:
     void		SetNextHitflag(bool nexthitflag);
 
     Hit         GetNextHit();
-    void        SetNextHit(Hit nexthit);
+    void        SetNextHit(Hit nexthit, int timestamp = -1);
 
     void        Apply();
 
@@ -62,6 +62,11 @@ public:
     bool        LdPix();
     bool        LdCol();
     Hit         RdCol();
+
+    bool 		LoadPixelFlag(int timestamp, std::fstream* out = 0);
+    bool 		LoadPixel(int timestamp, std::fstream* out = 0);
+    bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
+    Hit 		ReadCell();
 
     std::string PrintROC(std::string space);
 
@@ -75,8 +80,10 @@ private:
 	std::queue<Hit> hitqueue;
 	std::vector<Pixel> pixelvector;
 	std::vector<ReadoutCell> rocvector;
+    //structure to apply new hits synchronuous in all ROCs:
     Hit nexthit;
     bool nexthitflag;
+    int nexthitTS;
 
     bool ispptb;
 

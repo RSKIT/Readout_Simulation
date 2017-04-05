@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 
             //clock up
             std::cout << "current state: " << Matrix.GetState() << std::endl;
-            Matrix.StateMachine();
+            Matrix.StateMachine(currentTS);
 
 
             //counters up

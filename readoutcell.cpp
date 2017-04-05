@@ -70,11 +70,12 @@ void ReadoutCell::SetPPtBState(bool pptb)
 }
 
 
-bool ReadoutCell::AddHit(Hit hit)
+bool ReadoutCell::AddHit(Hit hit, int timestamp)
 {
 	if (hitqueue.size() < hitqueuelength)
 	{
-		hitqueue.push(hit);
+		hit.AddReadoutTime(addressname, timestamp);
+        hitqueue.push(hit);
 		return true;
 	}
 	else
@@ -186,14 +187,15 @@ Hit ReadoutCell::GetNextHit()
     return nexthit;
 }
 
-void ReadoutCell::SetNextHit(Hit nexthit)
+void ReadoutCell::SetNextHit(Hit nexthit, int timestamp)
 {
     this->nexthit = nexthit;
+    this->nexthitTS = timestamp;
 }
 
 void ReadoutCell::Apply()
 {
-    if (AddHit(nexthit))
+    if (AddHit(nexthit,nexthitTS))
         hitflag = nexthitflag;
 }
 
@@ -240,7 +242,7 @@ bool ReadoutCell::LdPix()
 
     for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
     {
-        if (it->LoadFlag())
+        if (it->LoadFlag(-1))
         {
             returnval = true;
             std::cout << "flag1: " <<it->GetHitFlag1();
@@ -265,7 +267,7 @@ bool ReadoutCell::LdCol()
     }
 
     if(!ispptb)
-    {    
+    {
         for (auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
         {
             if (it->GetHitFlag2())
@@ -282,7 +284,7 @@ bool ReadoutCell::LdCol()
             }
         }
     }
-    else    //is a pptb chip
+    else    //is a PPtB chip
     {
         int pixeladdress = 0;
         std::string addrname;
@@ -332,8 +334,63 @@ Hit ReadoutCell::RdCol()
     }
 
     Hit hit;
-    std::cout << "meep " << this->hitqueue.size() << std::endl;
+    //std::cout << "meep " << this->hitqueue.size() << std::endl;
     return hit;
+}
+
+bool ReadoutCell::LoadPixelFlag(int timestamp, std::fstream* out)
+{
+    bool returnval = false;
+    //check child readoutcells for pixels:
+    for (auto it = rocvector.begin(); it!= rocvector.end(); it++)
+        returnval |= it->LoadPixelFlag(timestamp);
+
+    //check the pixels for hits:
+    for (auto it = pixelvector.begin(); it != pixelvector.end(); it++)
+    {
+        returnval |= it->LoadFlag(timestamp);
+
+        if(it->GetHit().GetTimeStamp() != -1)
+            std::cout << it->GetHit().GenerateString() << std::endl;
+    }
+
+    return returnval;
+}
+
+bool ReadoutCell::LoadPixel(int timestamp, std::fstream* out)
+{
+    bool returnval = false;
+
+    //check child readout cells for pixels:
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+        returnval |= it->LoadPixel(timestamp);
+
+    //check the pixels:
+    for(auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
+    {
+        Hit hit = it->GetHit();
+        if(hit.GetAddress(it->GetAddressName()) != -1)
+        {
+            returnval = true;
+            if(!AddHit(hit, timestamp))
+            {
+                //TODO: save not detected hit
+            }
+            it->ClearFlags();
+        }
+    }
+
+    return returnval;
+}
+
+bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::fstream* out)
+{
+
+}
+
+Hit ReadoutCell::ReadCell()
+{
+
 }
 
 int ReadoutCell::GetNumROCs()
