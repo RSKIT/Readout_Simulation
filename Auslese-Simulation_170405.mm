@@ -135,6 +135,23 @@
 </node>
 </node>
 </node>
+<node TEXT="Implementierungsm&#xf6;glichkeiten" ID="ID_262794874" CREATED="1491493983933" MODIFIED="1491493990182">
+<node TEXT="ein riesiger Haufen an Klassen" ID="ID_1697085057" CREATED="1491493991157" MODIFIED="1491494012976">
+<icon BUILTIN="button_cancel"/>
+</node>
+<node TEXT="eine ReadoutCell Klasse, die die wichtigen Funktionen aus untergeordneten Klassen bekommt" ID="ID_1548520148" CREATED="1491494014482" MODIFIED="1491494085085">
+<icon BUILTIN="button_ok"/>
+</node>
+</node>
+<node TEXT="auszulagernde Funktionen" ID="ID_1788095914" CREATED="1491494092270" MODIFIED="1491494104827">
+<node TEXT="Buffer" ID="ID_514053652" CREATED="1491494105805" MODIFIED="1491494108883"/>
+<node TEXT="Buffer-F&#xfc;llen" ID="ID_841244193" CREATED="1491494112578" MODIFIED="1491494119614">
+<node TEXT="PPtB/Column-Drain" ID="ID_1592797675" CREATED="1491494148167" MODIFIED="1491494157180"/>
+<node TEXT="&#xdc;berschreibmechanismus" ID="ID_1168934403" CREATED="1491494157446" MODIFIED="1491494165682"/>
+<node TEXT="Zero-Suppression" ID="ID_156176004" CREATED="1491494185073" MODIFIED="1491494189060"/>
+</node>
+<node TEXT="Buffer-Auslese (Reihenfolge)" ID="ID_20734354" CREATED="1491494120017" MODIFIED="1491494133336"/>
+</node>
 </node>
 <node TEXT="Simulator" POSITION="right" ID="ID_1322549647" CREATED="1491391175013" MODIFIED="1491391176867">
 <edge COLOR="#ff0000"/>
