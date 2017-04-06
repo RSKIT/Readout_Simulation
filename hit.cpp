@@ -1,25 +1,34 @@
 #include "hit.h"
 
-Hit::Hit() : eventindex(-1), timestamp(-1)
+Hit::Hit() : eventindex(-1), timestamp(-1), charge(-1)
 {
 	address = std::map<std::string, int>();
 }
 
-Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex)
+Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex), charge(hit.charge)
 {
 	for(auto it : hit.address)
 		address.insert(it);
+	for(auto it : hit.readouttimestamps)
+		readouttimestamps.insert(it);
 }
 
-int  Hit::GetTimeStamp()
+bool Hit::is_valid()
+{
+	return (timestamp >= 0 && eventindex >= 0 && charge >= 0 && address.size() > 0);
+}
+
+double  Hit::GetTimeStamp()
 {
 	return timestamp;
 }
 
-void Hit::SetTimeStamp(int timestamp)
+void Hit::SetTimeStamp(double timestamp)
 {
-	if(timestamp >= -1)
+	if(timestamp >= 0)
 		this->timestamp = timestamp;
+	else
+		this->timestamp = -1;
 }
 
 int Hit::GetEventIndex()
@@ -41,6 +50,19 @@ double Hit::GetDeadTimeEnd()
 void Hit::SetDeadTimeEnd(double time)
 {
 	deadtimeend = time;
+}
+
+double Hit::GetCharge()
+{
+	return charge;
+}
+
+void Hit::SetCharge(double charge)
+{
+	if(charge >= 0)
+		this->charge = charge;
+	else
+		this->charge = -1;
 }
 
 
@@ -124,23 +146,22 @@ std::string Hit::GenerateString(bool compact)
 
 	if(!compact)
 	{
-		s << "Event " << eventindex << " Timestamp " << timestamp << " Address";
+		s << "Event " << eventindex << " Timestamp " << timestamp
+		  << " DeadTimeEnd " << deadtimeend << " Charge " << charge
+		  << "; Address";
 
 		for(auto it : address)
-		{
 			s << " (" << it.first << ") " << it.second;
-		}
 
 		s << "; Readout:";
 
 		for(auto it: readouttimestamps)
-		{
 			s << " (" << it.first << ") " << it.second;
-		}
 	}
 	else
 	{
-		s << eventindex << " " << timestamp;
+		s << eventindex << " " << timestamp << " "
+		  << deadtimeend << " " << charge << ";";
 
 		//address:
 		for(auto it : address)
