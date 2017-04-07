@@ -10,15 +10,18 @@
 class Pixel
 {
 public:
-    Pixel(TCoord <double> position, TCoord <double> size,
+
+	typedef TCoord<double> double3d;
+
+    Pixel(double3d position, double3d size,
             std::string addressname, int address, double threshold);
 	Pixel();
 
 	
-	TCoord<double>	GetPosition();
+	double3d	GetPosition();
 	void		SetPosition(TCoord<double> position);
 	
-	TCoord<double>	GetSize();
+	double3d	GetSize();
 	void		SetSize(TCoord<double> size);
 	
 	double 		GetThreshold();
@@ -27,39 +30,41 @@ public:
 	double 		GetEfficiency();
 	void		SetEfficiency(double efficiency);
 
+	double 		GetDeadTimeScaling();
+	bool 		SetDeadTimeScaling(double factor);
+
+	double 		GetDetectionDelay();
+	bool 		SetDetectionDelay(double delay);
+
 	double		GetDeadTimeEnd();
-	void		SetDeadTimeEnd(double enddeadtime);
-	
-	bool 		GetHitFlag1();
-	void		SetHitFlag1(bool hitflag1);
-	
-	bool 		GetHitFlag2();
-	void		SetHitFlag2(bool hitflag2);
-	
+	void		SetDeadTimeEnd(double deadtimeend);
+
     std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
 	int 		GetAddress();
 	void		SetAddress(int address);
+
 	
-	Hit 		GetHit();
+	bool 		HitIsValid();
+	Hit 		GetHit(int timestamp = -1);
 	bool		CreateHit(Hit hit);
-	
-	bool		LoadFlag(int timestamp, std::fstream* out);
-	void		ClearFlags();
+	void		ClearHit();
+	Hit 		LoadHit(int timestamp);
 
 private:
-	TCoord<double> position;
-	TCoord<double> size;
-	double threshold;
-	double efficiency;
-	double deaduntil;	//point in time until the current "analouge hit signal" ends
-						// preventing new hits 
-	Hit hit;
-	bool hitflag1;
-	bool hitflag2;
+	double3d 	position;
+	double3d 	size;
+	double 		threshold;
+	double 		efficiency;
+	double 		deadtimescaling;
+	double 		detectiondelay;
+	double 		deadtimeend;	//to store the dead time when the hit is read out before the 
+								//  "signal" ends
+
+	Hit 		hit;
 	std::string addressname;
-	int address;
+	int 		address;
 
 
 };
