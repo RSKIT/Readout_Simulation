@@ -136,16 +136,19 @@ bool Pixel::CreateHit(Hit hit)
         return false;
 }
 	
-bool Pixel::LoadFlag(int timestamp)
+bool Pixel::LoadFlag(int timestamp, std::fstream* out)
 {
+	hit.AddReadoutTime(addressname, timestamp);
+
 	if (hitflag1 && !hitflag2)
 	{
 		hitflag2 = true;
-		hit.AddReadoutTime(addressname, timestamp);
 		return true;
 	}
 	else
 	{
+		if(out != 0 && out->is_open())
+			*out << hit.GenerateString(false) << std::endl;
 		//TODO: save not detected hit
 		return false;
 	}
