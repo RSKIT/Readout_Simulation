@@ -1,4 +1,5 @@
 #include "readoutcell_functions.h"
+#include "readoutcell.h"
 
 ROCBuffer::ROCBuffer(ReadoutCell* roc) : cell(roc)
 {
@@ -23,7 +24,7 @@ Hit ROCBuffer::GetHit()
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		cell->hitqueue.pop_front();
+		cell->hitqueue.erase(cell->hitqueue.begin());
 		return h;
 	}
 }
@@ -33,9 +34,14 @@ bool ROCBuffer::is_full()
 	return (cell->hitqueue.size() >= cell->hitqueuelength);
 }
 
+int ROCBuffer::GetNumHitsEnqueued()
+{
+	return -1;
+}
+
 FIFOBuffer::FIFOBuffer(ReadoutCell* roc) : ROCBuffer(roc)
 {
-
+	cell->hitqueue.clear();
 }
 
 bool FIFOBuffer::InsertHit(const Hit& hit)
@@ -56,9 +62,14 @@ Hit FIFOBuffer::GetHit()
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		cell->hitqueue.pop_front();
+		cell->hitqueue.erase(cell->hitqueue.begin());
 		return h;
 	}
+}
+
+int FIFOBuffer::GetNumHitsEnqueued()
+{
+	return cell->hitqueue.size();
 }
 
 PrioBuffer::PrioBuffer(ReadoutCell* roc) : ROCBuffer(roc)
@@ -68,7 +79,7 @@ PrioBuffer::PrioBuffer(ReadoutCell* roc) : ROCBuffer(roc)
 	else
 	{
 		cell->hitqueue.clear();
-		for(int i = 0; i < *bufferlength; ++i)
+		for(int i = 0; i < cell->hitqueuelength; ++i)
 			cell->hitqueue.push_back(Hit());
 	}
 }
@@ -100,6 +111,24 @@ Hit PrioBuffer::GetHit()
 	return Hit();
 }
 
+bool PrioBuffer::is_full()
+{
+	for(auto it = cell->hitqueue.begin(); it != cell->hitqueue.end(); ++it)
+		if(!it->is_valid())
+			return false;
+
+	return true;
+}
+
+int PrioBuffer::GetNumHitsEnqueued()
+{
+	int num = 0;
+	for(auto it = cell->hitqueue.begin(); it != cell->hitqueue.end(); ++it)
+		if(it->is_valid())
+			++num;
+
+	return num;
+}
 
 ROCReadout::ROCReadout(ReadoutCell* roc) : cell(roc)
 {
@@ -126,11 +155,11 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	bool hitfound = false;
 
 	//check all child ROCs for hits:
-	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++i)
+	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
 		Hit h  = it->buf.GetHit();
-		if(h.is_valid())
+		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
 			bool result = cell->buf.InsertHit(h);
@@ -154,4 +183,121 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	}
 
 	return hitfound;
+}
+
+NoOverWriteReadout::NoOverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
+{
+
+}
+
+bool NoOverWriteReadout::Read(int timestamp, std::fstream* out)
+{
+	//to save whether a hit was found
+	bool hitfound = false;
+
+	//check all child ROCs for hits:
+	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
+	{
+		//get a hit from the respective ROC:
+		Hit h  = it->buf.GetHit();
+		if(h.is_valid() || !cell->zerosuppression)
+		{
+			h.AddReadoutTime(cell->addressname, timestamp);
+			if(!cell->buf.InsertHit(h))
+			{
+				//log the losing of the hit:
+				if(out != 0 && out->is_open())
+					*out << h.GenerateString() << std::endl;
+
+			}
+			else
+				hitfound = true;
+		}
+	}
+
+	return hitfound;
+}
+
+OverWriteReadout::OverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
+{
+
+}
+
+bool OverWriteReadout::Read(int timestamp, std::fstream* out)
+{
+	//to save whether a hit was found
+	bool hitfound = false;
+
+	//check all child ROCs for hits:
+	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
+	{
+		//get a hit from the respective ROC:
+		Hit h  = it->buf.GetHit();
+		if(h.is_valid() || !cell->zerosuppression)
+		{
+			h.AddReadoutTime(cell->addressname, timestamp);
+			if(!cell->buf.InsertHit(h))
+			{
+				//replace the "oldest" hit:
+				Hit oldhit = cell->buf.GetHit();
+				cell->buf.InsertHit(h);
+				//log the losing of the hit:
+				oldhit.AddReadoutTime("overwritten", timestamp);
+				if(out != 0 && out->is_open())
+					*out << oldhit.GenerateString() << std::endl;
+			}
+			else
+				hitfound = true;
+		}
+	}
+
+	return hitfound;
+}
+
+PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
+{
+
+}
+
+bool PixelReadout::Read(int timestamp, std::fstream* out)
+{
+	return false;
+}
+
+PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
+{
+
+}
+
+bool PPtBReadout::Read(int timestamp, std::fstream* out)
+{
+	Hit h;
+
+	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+	{
+		Hit ph = it->GetHit(timestamp);
+		if(ph.is_valid())
+		{
+			ph.AddReadoutTime(cell->addressname, timestamp);
+
+			if(!h.is_valid())
+				h = ph;
+			else
+			{
+				h.SetAddress(it->GetAddressName(),
+								h.GetAddress(it->GetAddressName()) | it->GetAddress());
+			}
+
+			ph.AddReadoutTime("merged", timestamp);
+			if(out != 0 && out->is_open())
+				*out << ph.GenerateString() << std::endl;
+
+			it->ClearHit();
+		}
+	}
+
+	if(h.is_valid() || !cell->zerosuppression)
+		return cell->buf.InsertHit(h);
+	else
+		return false;
 }

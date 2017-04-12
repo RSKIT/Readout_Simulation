@@ -3,17 +3,44 @@
 
 #include <string>
 #include <vector>
-#include <queue>
+//#include <queue>
 
 #include "hit.h"
 #include "pixel.h"
+#include "readoutcell_functions.h"
 
 class ReadoutCell
 {
+	//classes for strategy design pattern:
+	friend class ROCBuffer;
+	friend class FIFOBuffer;
+	friend class PrioBuffer;
+
+	friend class ROCReadout;
+	friend class NoFullReadReadout;
+	friend class NoOverWriteReadout;
+	friend class OverWriteReadout;
+
+	friend class PixelReadout;
+	friend class PPtBReadout;
+
 public:
-    ReadoutCell(std::string addressname, int address, int hitqueuelength, bool pptb=false);
+	enum config {PPTB 				=  1,
+				 ZEROSUPPRESSION	=  2,
+				 FIFOBUFFER 		=  4,
+				 PRIOBUFFER     	=  8,
+				 NOREADONFULL 		= 16,
+				 NOOVERWRITE 		= 32,
+				 OVERWRITEONFULL 	= 64};
+
+	//TODO: change the constructors to include the different behaviours
+	//			also include Getter/Setter functions
+    ReadoutCell(std::string addressname, int address, int hitqueuelength,
+  				int configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL);
 	ReadoutCell();
 
+	int 		GetConfiguration();
+	void 		SetConfiguration(int newconfig);
 	
     std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
@@ -21,18 +48,12 @@ public:
 	int 		GetAddress();
 	void		SetAddress(int address);
 	
-	bool		GetHitflag();
-	void		SetHitflag(bool hitflag);
-	
     int			GetHitqueuelength();
 	void		SetHitqueuelength(int hitqueuelength);
-
-	bool 		GetPPtBState();
-	void 		SetPPtBState(bool pptb);
 	
 	bool		AddHit(Hit hit, int timestamp = -1);
 	Hit 		GetHit();
-	bool		PopHit();
+	int 		GetEnqueuedHits();
 
 	Pixel* 		GetPixel(int index);
 	Pixel*		GetPixelAddress(int address);
@@ -50,20 +71,8 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCsBegin();
 	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
-    bool		GetNextHitflag();
-    void		SetNextHitflag(bool nexthitflag);
-
-    Hit         GetNextHit();
-    void        SetNextHit(Hit nexthit, int timestamp = -1);
-
-    void        Apply();
-
     bool        PlaceHit(Hit hit);
-    bool        LdPix();
-    bool        LdCol();
-    Hit         RdCol();
 
-    bool 		LoadPixelFlag(int timestamp, std::fstream* out = 0);
     bool 		LoadPixel(int timestamp, std::fstream* out = 0);
     bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
     Hit 		ReadCell();
@@ -73,19 +82,21 @@ public:
     void ShiftCell(TCoord<double> distance);
 	
 private:
-	std::string addressname;
-	int address;
-	bool hitflag;
-	int hitqueuelength;
-	std::queue<Hit> hitqueue;
-	std::vector<Pixel> pixelvector;
-	std::vector<ReadoutCell> rocvector;
-    //structure to apply new hits synchronuous in all ROCs:
-    Hit nexthit;
-    bool nexthitflag;
-    int nexthitTS;
+	std::string 				addressname;
+	int 						address;
+	bool 						hitflag;
+	int 						hitqueuelength;
+	std::vector<Hit> 			hitqueue;
+	std::vector<Pixel> 			pixelvector;
+	std::vector<ReadoutCell> 	rocvector;
 
-    bool ispptb;
+	//function objects to change the behaviour of the Readout Cell:
+	ROCBuffer 		buf;			//readint/writing to the buffer
+	ROCReadout 		rocreadout;		//reading from the child ROCs
+	PixelReadout 	pixelreadout;	//reading from the pixels
+	bool 			zerosuppression;
+
+	int 			configuration;	//to save the readout settings according to the config enum
 
 };
 
