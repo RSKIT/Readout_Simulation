@@ -580,7 +580,7 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 							TCoord<double> pixelsize)
 {
 	//for a PPtB ROC, the pixel addresses have to be provided:
-	if(parentcell == 0 || parentcell->GetPPtBState())
+	if(parentcell == 0)
 		return;
 
 	int numelements;

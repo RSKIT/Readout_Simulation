@@ -234,6 +234,19 @@ Hit ReadoutCell::ReadCell()
     return buf.GetHit();
 }
 
+int ReadoutCell::HitsAvailable(std::string addressname)
+{
+    int result = 0;
+
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+        result += it->HitsAvailable(addressname);
+
+    if(addressname.compare(this->addressname) == 0)
+        result += buf.GetNumHitsEnqueued();
+
+    return result;
+}
+
 int ReadoutCell::GetNumROCs()
 {
 	return rocvector.size();

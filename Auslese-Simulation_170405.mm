@@ -1,6 +1,6 @@
 <map version="freeplane 1.3.0">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
-<node TEXT="Auslese-Simulation v2" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1491391171618"><hook NAME="MapStyle">
+<node TEXT="Auslese-Simulation v2" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1491391171618"><hook NAME="MapStyle" zoom="1.087">
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node">
