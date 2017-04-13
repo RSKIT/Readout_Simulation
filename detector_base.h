@@ -19,8 +19,6 @@ public:
 	DetectorBase(const DetectorBase& templ);
 	
 
-    enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};
-
     std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
 	
@@ -48,16 +46,18 @@ public:
     void 		StateMachineCkDown(int timestamp);
     void		StateMachine(int timestamp);
 
-    void        SetState(int nextstate);
-    int 		GetState();
-    int 		NextState();
-
     bool        PlaceHit(Hit hit);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	bool		SaveHit(Hit hit, bool compact = false);
+	bool		SaveBadHit(Hit hit, bool compact = false);
+
 	std::string	GetOutputFile();
 	void 		SetOutputFile(std::string filename);
 	void 		CloseOutputFile();
+
+	std::string	GetBadOutputFile();
+	void 		SetBadOutputFile(std::string filename);
+	void 		CloseBadOutputFile();
 
 	int 		GetHitCounter();
 	void		ResetHitCounter();
@@ -72,13 +72,16 @@ protected:
 	TCoord<double> position;
     TCoord<double> size;
 
-    int currentstate;
     bool    SizeOKROC(ReadoutCell* cell);
-    bool EnlargeSizeROC(ReadoutCell* cell);
+    bool 	EnlargeSizeROC(ReadoutCell* cell);
 
     int hitcounter;
     std::string outputfile;
     std::fstream fout;
+
+    int badhitcounter;
+    std::string badoutputfile;
+    std::fstream fbadout;
 
 };
 

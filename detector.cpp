@@ -1,95 +1,132 @@
 #include "detector.h"
 
-Detector::Detector() : DetectorBase()
+Detector::Detector() : DetectorBase(), currentstate(PullDown), nextstate(PullDown), delay(0)
 {
 
 }
 
 
-Detector::Detector(std::string addressname, int address) : DetectorBase(addressname, address)
+Detector::Detector(std::string addressname, int address) : DetectorBase(addressname, address),
+        currentstate(PullDown), nextstate(PullDown), delay(0)
 {
 
 }
 
-Detector::Detector(const Detector& templ) : DetectorBase(templ)
+Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(templ.currentstate),
+        nextstate(templ.nextstate), delay(templ.delay)
 {
 
 }
 
 void Detector::StateMachineCkUp(int timestamp)
 {
+    if(!fout.is_open())
+    {
+        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
+        if(!fout.is_open())
+        {
+            std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
+            return;
+        }
+    }
+
+    //to pause the state machine in any state:
+    if(delay > 0)
+    {
+        --delay;
+        return;
+    }
+
     switch(currentstate)
     {
         case PullDown:
-
-            /* generate hits & set flag1 in pixels <-- moved to main/simulator
-             * */
-
+            nextstate = LdPix;
             break;
 
         case LdPix:
-            std::cout << "-->LdPix<--" << std::endl;
-            /* iterate all pixels in all rocs
-             * flag1-->flag2*/
-            for (auto &it : rocvector)
-                if (it.LdPix())
-                    std::cout << "Pixel flag loaded" << std::endl;
-                else
-                    std::cout << "No pixel flag loaded" << std::endl;;
+            {
+            std::cout << "--> Load Pixels <--" << std::endl;
 
+            bool result = false;
+            for (auto &it : rocvector)
+            {
+                if (it.LoadPixel(timestamp, &fbadout))
+                {
+                    std::cout << it.GetAddressName() << " " << it.GetAddress() 
+                              << "Pixel flag loaded" << std::endl;
+                    result = true;
+                }
+                else
+                    std::cout << it.GetAddressName() << " " << it.GetAddress() 
+                              << "No pixel flag loaded" << std::endl;;
+            }
+
+                if(result)
+                    nextstate = LdCol;
+                else
+                    nextstate = PullDown;
+            }
             break;
 
         case LdCol:
-            std::cout << "-->LdCol<--" << std::endl;
-            /* get hit from first pix (prio logic) of each roc to rocqueue, done
-             * reset this pix' flags, done
-             * delete in pix
-             * set roc flag */
-            for (auto &it : rocvector)
-                it.LdCol();
+            {
+            std::cout << "--> Load Column <--" << std::endl;
 
+            for (auto &it : rocvector)
+                it.LoadCell("Column", timestamp, &fbadout);
+            }
             break;
 
         case RdCol:
-            std::cout << "-->RdCol<--" << std::endl;
-            /* if flag in roc,
-             * return first data (prio logic)
-             * pop data in roc,
-             * check if hitvector size !=0 --> hitflag
-             * */
+            {
+            std::cout << "--> Read Column <--" << std::endl;
+
+            bool result = false;
             for (auto &it: rocvector)
             {
-                Hit hit = it.RdCol();
-                //std::cout << hit.GenerateString()<< std::endl;
-
-                if (hit.GetEventIndex() == -1)
-                    std::cout << "NO HIT FOUND!!" << std::endl;
-                else
+                if(it.LoadCell("CU", timestamp, &fbadout))
                 {
-                    std::cout << "HIT FOUND: " << hit.GenerateString() << std::endl;
+                    result = true;
+
+                    Hit hit = it.GetHit();
                     hit.AddReadoutTime(addressname, timestamp);
                     SaveHit(hit, false);
                 }
-
             }
 
+            if(result)
+            {
+                int morehits = 0;
+                for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+                    morehits += it->HitsAvailable("Column");
+
+                if(morehits > 0)
+                {
+                    nextstate = RdCol;
+                    delay = 7;
+                }
+                else
+                    nextstate = PullDown;
+            }
+            else
+                nextstate = PullDown;
+
+            }
             break;
     }
-    NextState();
 }
 
 void Detector::StateMachineCkDown(int timestamp)
 {
-    
+    currentstate = nextstate;
 }
 
-int Detector::NextState()
+int Detector::GetState()
 {
-    switch(currentstate)
-    {
-        case PullDown   : return currentstate = LdPix;
-        case LdPix      : return currentstate = LdCol;
-        case LdCol      : return currentstate = RdCol;
-        case RdCol      : return currentstate = PullDown;
-    }
+    return currentstate;
+}
+
+int Detector::GetNextState()
+{
+    return nextstate;
 }

@@ -24,10 +24,13 @@ public:
     void	StateMachineCkUp(int timestamp);
     void	StateMachineCkDown(int timestamp);
 
-    int 	NextState();
+    int 	GetState();
+    int 	GetNextState();
     
 private:
-
+	int currentstate;
+	int nextstate;
+	int delay;
 };
 
 

@@ -1,20 +1,19 @@
 #include "pixel.h"
 
-Pixel::Pixel() : position(TCoord<double>{0,0,0}), size (TCoord<double>{0,0,0}), 
-	threshold(0), efficiency(0), hit(Hit()), hitflag1(false), hitflag2(false), 
-	addressname(""), address(0), deaduntil(0.)
+Pixel::Pixel() : position(double3d{0,0,0}), size (double3d{0,0,0}), 
+	threshold(0), efficiency(0), deadtimescaling(1), detectiondelay(0), deadtimeend(-1),
+	hit(Hit()), addressname(""), address(0)
 {
 	
 }
 
-Pixel::Pixel(TCoord <double> position, TCoord <double> size, 
+Pixel::Pixel(double3d position, double3d size, 
 	std::string addressname, int address, double threshold) : 
-	hitflag1(false), hitflag2(false), efficiency(1.0), deaduntil(0.)
+	efficiency(1.0), deadtimescaling(1), detectiondelay(0), deadtimeend(-1), hit(Hit())
 {
 	this->addressname = addressname;
 	this->address = address;	
-	hit = Hit();
-	hit.AddAddress(addressname, address);
+	//hit.AddAddress(addressname, address);
 	this->position = position;
 	this->size = size;
 	this->threshold = threshold;
@@ -25,7 +24,7 @@ TCoord<double> Pixel::GetPosition()
 	return position;
 }
 
-void Pixel::SetPosition(TCoord<double> position)
+void Pixel::SetPosition(double3d position)
 {
 	this->position = position;
 }
@@ -35,7 +34,7 @@ TCoord<double> Pixel::GetSize()
 	return size;
 }
 
-void Pixel::SetSize(TCoord<double> size)
+void Pixel::SetSize(double3d size)
 {
 	this->size = size;
 }
@@ -60,34 +59,46 @@ void Pixel::SetEfficiency(double efficiency)
 	this->efficiency = efficiency;
 }
 	
+double Pixel::GetDeadTimeScaling()
+{
+	return deadtimescaling;
+}
+
+bool Pixel::SetDeadTimeScaling(double factor)
+{
+	if(factor > 0)
+	{
+		deadtimescaling = factor;
+		return true;
+	}
+	else
+		return false;
+}
+
+double Pixel::GetDetectionDelay()
+{
+	return detectiondelay;
+}
+
+bool Pixel::SetDetectionDelay(double delay)
+{
+	if(delay > 0)
+	{
+		detectiondelay = delay;
+		return true;
+	}
+	else
+		return false;
+}
+
 double Pixel::GetDeadTimeEnd()
 {
-	return deaduntil;
+	return deadtimeend;
 }
 
-void Pixel::SetDeadTimeEnd(double enddeadtime)
+void Pixel::SetDeadTimeEnd(double deadtimeend)
 {
-	deaduntil = enddeadtime;
-}
-
-bool Pixel::GetHitFlag1()
-{
-	return hitflag1;
-}
-
-void Pixel::SetHitFlag1(bool hitflag1)
-{
-	this->hitflag1 = hitflag1;
-}
-	
-bool Pixel::GetHitFlag2()
-{
-	return hitflag2;
-}
-
-void Pixel::SetHitFlag2(bool hitflag2)
-{
-	this->hitflag2 = hitflag2;
+	this->deadtimeend = deadtimeend;
 }
 	
 std::string Pixel::GetAddressName()
@@ -110,53 +121,50 @@ void Pixel::SetAddress(int address)
 	this->address = address;
 }
 	
-Hit Pixel::GetHit()
+bool Pixel::HitIsValid()
 {
-    if (hitflag2)
-		return hit;
-    else
-        return Hit();
+	return hit.is_valid();
+}
+
+Hit Pixel::GetHit(int timestamp)
+{
+	if(timestamp != -1 && timestamp >= hit.GetDeadTimeEnd())
+		ClearHit();
+
+	return hit;
 }
 
 bool Pixel::CreateHit(Hit hit)
 {
-	if(hit.GetTimeStamp() <= this->deaduntil)
+	if(hit.GetTimeStamp() <= deadtimeend && deadtimeend != -1)
 	{
-		this->deaduntil = deaduntil;
+		if(deadtimeend < hit.GetDeadTimeEnd())
+			deadtimeend = hit.GetDeadTimeEnd();
 		return false;
 	}
-	else if (!hitflag1)
+	else if(!HitIsValid())
 	{
-        this->hit = hit;
-		SetHitFlag1(true);
-		this->deaduntil = hit.GetDeadTimeEnd();
-		return true;
-	}
-    else
-        return false;
-}
-	
-bool Pixel::LoadFlag(int timestamp, std::fstream* out)
-{
-	hit.AddReadoutTime(addressname, timestamp);
-
-	if (hitflag1 && !hitflag2)
-	{
-		hitflag2 = true;
+		deadtimeend = hit.GetDeadTimeEnd();
+		this->hit = hit;
 		return true;
 	}
 	else
-	{
-		if(out != 0 && out->is_open())
-			*out << hit.GenerateString(false) << std::endl;
-		//TODO: save not detected hit
 		return false;
-	}
 }
-	
-void Pixel::ClearFlags()
+
+void Pixel::ClearHit()
 {
-	hitflag1 = false;
-	hitflag2 = false;
+	hit.SetTimeStamp(-1);
+	hit.SetEventIndex(-1);
+	hit.SetDeadTimeEnd(-1);
+	hit.SetCharge(-1);
+	hit.ClearAddress();
 	hit.ClearReadoutTimes();
+}
+
+Hit Pixel::LoadHit(int timestamp)
+{
+	Hit h = GetHit(timestamp);
+	ClearHit();
+	return h;
 }
