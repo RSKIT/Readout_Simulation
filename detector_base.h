@@ -50,6 +50,7 @@ public:
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	bool		SaveHit(Hit hit, bool compact = false);
 	bool		SaveBadHit(Hit hit, bool compact = false);
+	int 		HitsEnqueued();
 
 	std::string	GetOutputFile();
 	void 		SetOutputFile(std::string filename);

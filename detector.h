@@ -26,6 +26,7 @@ public:
 
     int 	GetState();
     int 	GetNextState();
+    std::string GetCurrentStateName();
     
 private:
 	int currentstate;

@@ -237,7 +237,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 
 		//generate the template hit object for this event:
 		Hit hittemplate;
-		hittemplate.SetTimeStamp(int(time));
+		hittemplate.SetTimeStamp(time);
 		hittemplate.SetEventIndex(eventindex);
 		++eventindex;
 
@@ -247,7 +247,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		{
 			for(auto it = dit->GetROCVectorBegin(); it != dit->GetROCVectorEnd(); ++it)
 			{
-                                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
+                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
 
 				//copy the hits to the event queue:
 				for(auto it2 : hits)
@@ -457,7 +457,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
-                                                                                minsize, clustersize, numsigmas, print);
+                                        minsize, clustersize, numsigmas, print);
 
 			if(charge > it->GetThreshold() && generator()/double(RAND_MAX) <= it->GetEfficiency())
 			{
@@ -467,6 +467,9 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 
 				Hit phit = hit;
 				phit.AddAddress(it->GetAddressName(),it->GetAddress());
+				phit.SetCharge(charge);
+				phit.SetDeadTimeEnd(phit.GetTimeStamp() + 20);	
+								//TODO: change to an adequate function
 				globalhits.push_back(phit);
 			}
 		}

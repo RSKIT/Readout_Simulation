@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 #include "hit.h"
 
@@ -15,11 +16,11 @@ class ROCBuffer
 public:
 	ROCBuffer(ReadoutCell* roc);
 
-	bool 	InsertHit(const Hit& hit);
-	Hit 	GetHit();
+	virtual bool 	InsertHit(const Hit& hit);
+	virtual Hit 	GetHit();
 
-	bool 	is_full();
-	int 	GetNumHitsEnqueued();
+	virtual bool 	is_full();
+	virtual int 	GetNumHitsEnqueued();
 protected:
 	ReadoutCell* cell;
 };
@@ -33,6 +34,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit();
 
+	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
 private:
 };
@@ -68,7 +70,7 @@ public:
 	 * @param out 			- file for "lost" signals
 	 * @return [description]
 	 */
-	bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::fstream* out = 0);
 protected:
 	ReadoutCell* cell;
 };
@@ -109,7 +111,7 @@ class PixelReadout
 public:
 	PixelReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::fstream* out = 0);
 protected:
 	ReadoutCell* cell;
 };

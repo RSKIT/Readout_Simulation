@@ -6,6 +6,7 @@ ROCBuffer::ROCBuffer(ReadoutCell* roc) : cell(roc)
 	
 }
 
+
 bool ROCBuffer::InsertHit(const Hit& hit)
 {
 	if(cell->hitqueue.size() < cell->hitqueuelength)
@@ -16,6 +17,8 @@ bool ROCBuffer::InsertHit(const Hit& hit)
 	else
 		return false;
 }
+
+
 
 Hit ROCBuffer::GetHit()
 {
@@ -29,15 +32,20 @@ Hit ROCBuffer::GetHit()
 	}
 }
 
+
+
 bool ROCBuffer::is_full()
 {
 	return (cell->hitqueue.size() >= cell->hitqueuelength);
 }
 
+
+
 int ROCBuffer::GetNumHitsEnqueued()
 {
 	return -1;
 }
+
 
 FIFOBuffer::FIFOBuffer(ReadoutCell* roc) : ROCBuffer(roc)
 {
@@ -65,6 +73,11 @@ Hit FIFOBuffer::GetHit()
 		cell->hitqueue.erase(cell->hitqueue.begin());
 		return h;
 	}
+}
+
+bool FIFOBuffer::is_full()
+{
+	return (cell->hitqueue.size() >= cell->hitqueuelength);
 }
 
 int FIFOBuffer::GetNumHitsEnqueued()
@@ -135,10 +148,12 @@ ROCReadout::ROCReadout(ReadoutCell* roc) : cell(roc)
 
 }
 
+
 bool ROCReadout::Read(int timestamp, std::fstream* out)
 {
 	return false;
 }
+
 
 NoFullReadReadout::NoFullReadReadout(ReadoutCell* roc) : ROCReadout(roc)
 {
@@ -148,7 +163,7 @@ NoFullReadReadout::NoFullReadReadout(ReadoutCell* roc) : ROCReadout(roc)
 bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 {
 	//do not read at all if the buffer is already full:
-	if(cell->buf.is_full())
+	if(cell->buf->is_full())
 		return false;
 
 	//to save whether a hit was found
@@ -158,11 +173,11 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf.GetHit();
+		Hit h  = it->buf->GetHit();
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
-			bool result = cell->buf.InsertHit(h);
+			bool result = cell->buf->InsertHit(h);
 
 			//return on a writing error in own buffer:
 			if(!result)
@@ -177,7 +192,7 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 			hitfound |= result;
 
 			//do not continue reading, if the buffer is full
-			if(cell->buf.is_full())
+			if(cell->buf->is_full())
 				return hitfound;
 		}
 	}
@@ -199,11 +214,11 @@ bool NoOverWriteReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf.GetHit();
+		Hit h  = it->buf->GetHit();
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
-			if(!cell->buf.InsertHit(h))
+			if(!cell->buf->InsertHit(h))
 			{
 				//log the losing of the hit:
 				if(out != 0 && out->is_open())
@@ -232,15 +247,15 @@ bool OverWriteReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf.GetHit();
+		Hit h  = it->buf->GetHit();
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
-			if(!cell->buf.InsertHit(h))
+			if(!cell->buf->InsertHit(h))
 			{
 				//replace the "oldest" hit:
-				Hit oldhit = cell->buf.GetHit();
-				cell->buf.InsertHit(h);
+				Hit oldhit = cell->buf->GetHit();
+				cell->buf->InsertHit(h);
 				//log the losing of the hit:
 				oldhit.AddReadoutTime("overwritten", timestamp);
 				if(out != 0 && out->is_open())
@@ -259,10 +274,12 @@ PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 
 }
 
+
 bool PixelReadout::Read(int timestamp, std::fstream* out)
 {
 	return false;
 }
+
 
 PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
 {
@@ -276,6 +293,7 @@ bool PPtBReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
 		Hit ph = it->GetHit(timestamp);
+
 		if(ph.is_valid())
 		{
 			ph.AddReadoutTime(cell->addressname, timestamp);
@@ -297,7 +315,9 @@ bool PPtBReadout::Read(int timestamp, std::fstream* out)
 	}
 
 	if(h.is_valid() || !cell->zerosuppression)
-		return cell->buf.InsertHit(h);
+	{
+		return cell->buf->InsertHit(h);
+	}
 	else
 		return false;
 }

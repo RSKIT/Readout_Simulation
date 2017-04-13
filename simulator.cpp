@@ -221,13 +221,13 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	eventgenerator.PrintQueue();
 
 	int timestamp = 0;
-	int nextevent = eventgenerator.GetHit().GetTimeStamp();
+	double nextevent = eventgenerator.GetHit().GetTimeStamp();
 
 	int hitcounter = 0;
 
 	while(timestamp <= stoptime || (stoptime == -1 && stopdelay >= 0))
 	{
-		while(timestamp == nextevent)
+		while(timestamp >= nextevent && nextevent != -1)
 		{
 			//load the next event:
 			std::vector<Hit> event = eventgenerator.GetNextEvent();
@@ -256,9 +256,16 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 		//delay the stopping of the simulation for "stop-on-done" (see while()):
 		if(nextevent == -1)
-			--stopdelay;
+		{
+			//count the remaining events:
+			int hitcount = 0;
+			for(auto& it : detectors)
+				hitcount += it.HitsEnqueued();
+			if(hitcount == 0)
+				--stopdelay;
+		}
 
-		std::cout << "TS: " << timestamp << "; nextEvent: " << nextevent << "; stopdelay: "
+		std::cout << "        TS: " << timestamp << "; nextEvent: " << nextevent << "; stopdelay: "
 				  << stopdelay << std::endl;
 	}
 
@@ -310,10 +317,12 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	//check for an output file name for this detector:
 	nam = parent->Attribute("outputfile");
 	std::string outputfile = (nam != 0)?std::string(nam):"";
-
+	nam = parent->Attribute("losthitfile");
+	std::string badoutputfile = (nam != 0)?std::string(nam):"";
 
 	Detector det(addressname, address);
 	det.SetOutputFile(outputfile);
+	det.SetBadOutputFile(badoutputfile);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -496,13 +505,9 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(error != tinyxml2::XML_NO_ERROR)
 		queuelength = 1;
 
-	//check for PPtB setting:
-	bool pptb;
-	error = parent->QueryBoolAttribute("PPtB", &pptb);
-	if(error != tinyxml2::XML_NO_ERROR)
-		pptb = false;
+	//TODO: add configuration settings
 
-	ReadoutCell roc(addressname, address, queuelength, pptb);
+	ReadoutCell roc(addressname, address, queuelength, 23);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)

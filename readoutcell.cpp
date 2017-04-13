@@ -3,24 +3,44 @@
 
 ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
-	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(ROCBuffer(0)),
-    rocreadout(ROCReadout(0)), pixelreadout(PixelReadout(0))
+	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
+    rocreadout(0), pixelreadout(0)
 {
-	buf          = FIFOBuffer(this);
-    rocreadout   = NoFullReadReadout(this);
-    pixelreadout = PPtBReadout(this);
+	buf          = new FIFOBuffer(this);
+    rocreadout   = new NoFullReadReadout(this);
+    pixelreadout = new PPtBReadout(this);
 }
 
 ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelength, 
                             int configuration) : hitqueue(std::vector<Hit>()),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
-        buf(ROCBuffer(0)), rocreadout(ROCReadout(0)), pixelreadout(PixelReadout(0))
+        buf(0), rocreadout(0), pixelreadout(0)
 {
 	this->addressname = addressname;
 	this->address = address;
 	this->hitqueuelength = hitqueuelength;
 
     SetConfiguration(configuration);
+}
+
+ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname), 
+        address(roc.address), hitqueue(roc.hitqueue), hitqueuelength(roc.hitqueuelength),
+        pixelvector(roc.pixelvector), rocvector(roc.rocvector), buf(0), rocreadout(0), 
+        pixelreadout(0), configuration(roc.configuration), zerosuppression(roc.zerosuppression)
+{
+    SetConfiguration(configuration);
+}
+
+ReadoutCell::~ReadoutCell()
+{
+    /*
+    if(buf != 0)
+        delete buf;
+    if(rocreadout != 0)
+        delete rocreadout;
+    if(pixelreadout != 0)
+        delete pixelreadout;
+    */
 }
 
 int ReadoutCell::GetConfiguration()
@@ -30,28 +50,39 @@ int ReadoutCell::GetConfiguration()
 
 void ReadoutCell::SetConfiguration(int newconfig)
 {
+    std::cout << "ReadoutCell Configuration: " << newconfig << std::endl;
+
     configuration = newconfig;
 
     zerosuppression = newconfig & ZEROSUPPRESSION;
 
+    if(pixelreadout != 0)
+        delete pixelreadout;
+
     //if(newconfig & PPTB)  //always true at the moment, as no alternative available
-        pixelreadout = PPtBReadout(this);
+        pixelreadout = new PPtBReadout(this);
     
+    if(buf != 0)
+        delete buf;
+
     if(newconfig & PRIOBUFFER)
-        buf = PrioBuffer(this);
+        buf = new PrioBuffer(this);
     //else if(newconfig & FIFOBUFFER)
-    //    buf = FIFOBuffer(this);
+    //    buf = new FIFOBuffer(this);
     else
-        buf = FIFOBuffer(this);
+        buf = new FIFOBuffer(this);
+
+    if(rocreadout != 0)
+        delete rocreadout;
 
     //if(newconfig & NOREADONFULL)
-    //    rocreadout = NoFullReadReadout(this);
+    //    rocreadout = new NoFullReadReadout(this);
     /*else*/ if(newconfig & NOOVERWRITE)
-        rocreadout = NoOverWriteReadout(this);
+        rocreadout = new NoOverWriteReadout(this);
     else if(newconfig & OVERWRITEONFULL)
-        rocreadout = OverWriteReadout(this);
+        rocreadout = new OverWriteReadout(this);
     else
-        rocreadout = NoFullReadReadout(this);    
+        rocreadout = new NoFullReadReadout(this);    
 }
 
 std::string ReadoutCell::GetAddressName()
@@ -88,17 +119,17 @@ bool ReadoutCell::AddHit(Hit hit, int timestamp)
 {
 	hit.AddReadoutTime(addressname, timestamp);
 
-    return buf.InsertHit(hit);
+    return buf->InsertHit(hit);
 }
 
 Hit ReadoutCell::GetHit()
 {
-	return buf.GetHit();
+	return buf->GetHit();
 }
 
 int ReadoutCell::GetEnqueuedHits()
 {
-    return buf.GetNumHitsEnqueued();
+    return buf->GetNumHitsEnqueued();
 }
 
 Pixel* ReadoutCell::GetPixel(int index)
@@ -172,7 +203,7 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
-bool ReadoutCell::PlaceHit(Hit hit)
+bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
 {
     if (rocvector.size() > 0)
     {
@@ -180,8 +211,8 @@ bool ReadoutCell::PlaceHit(Hit hit)
         for (auto &it : rocvector)
         {
             int address = hit.GetAddress(addressname);
-            std::cout << "roc addressname: " << addressname << std::endl;
-            std::cout << "hit address: " << address << std::endl;
+            //std::cout << "roc addressname: " << addressname << std::endl;
+            //std::cout << "hit address: " << address << std::endl;
             if (it.GetAddress() == address)
                 return it.PlaceHit(hit);
         }
@@ -195,7 +226,13 @@ bool ReadoutCell::PlaceHit(Hit hit)
             int address = hit.GetAddress(addressname);
             if (it.GetAddress() == address)
             {
-                return it.CreateHit(hit);
+                bool result = it.CreateHit(hit);
+                if(fout != 0 && fout->is_open())
+                {
+                    hit.AddReadoutTime("PixelFull", hit.GetTimeStamp() + 1);
+                    *fout << hit.GenerateString() << std::endl;
+                }
+                return result;
             }
         }
         return false;
@@ -210,7 +247,7 @@ bool ReadoutCell::LoadPixel(int timestamp, std::fstream* out)
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
         result |= it->LoadPixel(timestamp, out);
 
-    result |= pixelreadout.Read(timestamp, out);
+    result |= pixelreadout->Read(timestamp, out);
 
     return result;
 }
@@ -224,14 +261,14 @@ bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::fstream*
     }
 
     if(addressname.compare(this->addressname) == 0)
-        result |= rocreadout.Read(timestamp, out);
+        result |= rocreadout->Read(timestamp, out);
 
     return result;
 }
 
 Hit ReadoutCell::ReadCell()
 {
-    return buf.GetHit();
+    return buf->GetHit();
 }
 
 int ReadoutCell::HitsAvailable(std::string addressname)
@@ -241,8 +278,8 @@ int ReadoutCell::HitsAvailable(std::string addressname)
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
         result += it->HitsAvailable(addressname);
 
-    if(addressname.compare(this->addressname) == 0)
-        result += buf.GetNumHitsEnqueued();
+    if(addressname.compare(this->addressname) == 0 || addressname.compare("") == 0)
+        result += buf->GetNumHitsEnqueued();
 
     return result;
 }
