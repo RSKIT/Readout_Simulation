@@ -2,15 +2,18 @@
 
 Hit::Hit() : eventindex(-1), timestamp(-1), charge(-1), deadtimeend(-1)
 {
-	address = std::map<std::string, int>();
+	address 			= std::map<std::string, int>();
+	readouttimestamps 	= std::map<std::string, int>();
 }
 
 Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex), 
 		deadtimeend(hit.deadtimeend), charge(hit.charge)
 {
-	for(auto it = hit.address.begin(); it != hit.address.end(); ++it)
+	for(std::map<std::string, int>::iterator it = hit.address.begin(); 
+				it != hit.address.end(); ++it)
 		address.insert(*it);
-	for(auto it = hit.readouttimestamps.begin(); it != hit.readouttimestamps.end(); ++it)
+	for(std::map<std::string, int>::iterator it = hit.readouttimestamps.begin(); 
+				it != hit.readouttimestamps.end(); ++it)
 		readouttimestamps.insert(*it);
 }
 
@@ -181,7 +184,7 @@ int Hit::GetReadoutTime(std::string name)
 
 bool Hit::SetReadoutTime(std::string name, int timestamp)
 {
-	auto it = readouttimestamps.find(name);
+	std::map<std::string, int>()::iterator it = readouttimestamps.find(name);
 	if(it == readouttimestamps.end())
 		return false;
 	else
@@ -211,12 +214,14 @@ std::string Hit::GenerateString(bool compact)
 		  << " DeadTimeEnd " << deadtimeend << " Charge " << charge
 		  << " ; Address:";
 
-		for(auto it = address.begin(); it != address.end(); ++it)
+		for(std::map<std::string, int>()::iterator it = address.begin(); 
+					it != address.end(); ++it)
 			s << " (" << it->first << ") " << it->second;
 
 		s << " ; Readout:";
 
-		for(auto it = readouttimestamps.begin(); it != readouttimestamps.end(); ++it)
+		for(std::map<std::string, int>()::iterator it = readouttimestamps.begin(); 
+					it != readouttimestamps.end(); ++it)
 			s << " (" << it->first << ") " << it->second;
 	}
 	else
@@ -225,12 +230,14 @@ std::string Hit::GenerateString(bool compact)
 		  << deadtimeend << " " << charge << " ;";
 
 		//address:
-		for(auto it = address.begin(); it != address.end(); ++it)
+		for(std::map<std::string, int>()::iterator it = address.begin(); 
+					it != address.end(); ++it)
 			s << " " << it->second;
 
 		//readouttimestamps:
 		s << " ;";
-		for(auto it = readouttimestamps.begin(); it != readouttimestamps.end(); ++it)
+		for(std::map<std::string, int>()::iterator it = readouttimestamps.begin(); 
+					it != readouttimestamps.end(); ++it)
 			s << " " << it->second;
 	}
 
