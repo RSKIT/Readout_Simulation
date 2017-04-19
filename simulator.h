@@ -34,8 +34,8 @@ public:
 	int GetStopDelay();
 	void SetStopDelay(int stopdelay);
 
-	Detector* GetDetector(int address);
-	void AddDetector(Detector& detector);
+	DetectorBase* GetDetector(int address);
+	void AddDetector(DetectorBase* detector);
 	void ClearDetectors();
 	int GetNumDetectors();
 
@@ -60,7 +60,7 @@ private:
 	void LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 
 						TCoord<double> pixelsize);
 
-    std::vector<Detector> detectors;
+    std::vector<DetectorBase*> detectors;
     EventGenerator eventgenerator;
     //event generation parameters for the event generator:
     int events;			//number of events

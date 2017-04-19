@@ -68,8 +68,8 @@ void Simulator::LoadInputFile(std::string filename)
 
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		it->EnlargeSize();
-		eventgenerator.AddDetector(&(*it));
+		(*it)->EnlargeSize();
+		eventgenerator.AddDetector(*it);
 	}
 
 }
@@ -130,37 +130,40 @@ void Simulator::SetStopDelay(int stopdelay)
 }
 
 
-Detector* Simulator::GetDetector(int address)
+DetectorBase* Simulator::GetDetector(int address)
 {
 	if(detectors.size() == 0)
 		return 0;
 
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		if(it->GetAddress() == address)
-			return &(*it);
+		if((*it)->GetAddress() == address)
+			return *it;
 	}
 
 	return 0;
 }
 	
-void Simulator::AddDetector(Detector& detector)
+void Simulator::AddDetector(DetectorBase* detector)
 {
 	std::cout << "Input:  "
-			  << detector.GetPosition() << " size: " << detector.GetSize() << std::endl;
-	detectors.push_back(detector);
+			  << detector->GetPosition() << " size: " << detector->GetSize() << std::endl;
+
+	detectors.push_back(detector->Clone());
 	auto it = detectors.end();
 	--it;
-	eventgenerator.AddDetector(&(*it));
+	eventgenerator.AddDetector(*it);
 
 	//auto it = --detectors.end();
 	std::cout << "Output: "
-			  << it->GetPosition() << " size: " << it->GetSize() << std::endl;
+			  << (*it)->GetPosition() << " size: " << (*it)->GetSize() << std::endl;
 }
 
 void Simulator::ClearDetectors()
 {
 	eventgenerator.ClearDetectors();
+	for(auto& it : detectors)
+		delete it;
 	detectors.clear();
 }
 
@@ -201,13 +204,13 @@ void Simulator::GenerateEvents(int events, double starttime)
 void Simulator::ClockUp(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
-		it->StateMachineCkUp(timestamp);
+		(*it)->StateMachineCkUp(timestamp);
 }
 
 void Simulator::ClockDown(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
-		it->StateMachineCkDown(timestamp);
+		(*it)->StateMachineCkDown(timestamp);
 }
 
 void Simulator::SimulateUntil(int stoptime, int delaystop)
@@ -239,7 +242,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			{
 				for(auto it = detectors.begin(); it != detectors.end(); ++it)
 				{
-					if(it->PlaceHit(hit))
+					if((*it)->PlaceHit(hit))
 						break;
 				}
 
@@ -260,7 +263,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			//count the remaining events:
 			int hitcount = 0;
 			for(auto& it : detectors)
-				hitcount += it.HitsEnqueued();
+				hitcount += it->HitsEnqueued();
 			if(hitcount == 0)
 				--stopdelay;
 		}
@@ -272,7 +275,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
-		dethitcounter += it->GetHitCounter();
+		dethitcounter += (*it)->GetHitCounter();
 
 	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
 			  << std::endl << "  read out signals: " << dethitcounter << std::endl
@@ -320,20 +323,20 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	nam = parent->Attribute("losthitfile");
 	std::string badoutputfile = (nam != 0)?std::string(nam):"";
 
-	Detector det(addressname, address);
-	det.SetOutputFile(outputfile);
-	det.SetBadOutputFile(badoutputfile);
+	DetectorBase* det = new Detector(addressname, address);	//TODO: change for different detectors
+	det->SetOutputFile(outputfile);
+	det->SetBadOutputFile(badoutputfile);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
 	{
 		std::string childname = std::string(child->Value());
 		if(childname.compare("ROC") == 0)
-			det.AddROC(LoadROC(child, pixelsize));
+			det->AddROC(LoadROC(child, pixelsize));
 		else if(childname.compare("Position")== 0)
-			det.SetPosition(LoadTCoord(child));
+			det->SetPosition(LoadTCoord(child));
 		else if(childname.compare("Size") == 0)
-			det.SetSize(LoadTCoord(child));
+			det->SetSize(LoadTCoord(child));
 		//else if(childname.compare("StateMachine"))	
 					//to include writing the StateMachine in the XML file
 			//LoadStateMachine(child, xmldet);
@@ -344,7 +347,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 			child = 0;
 	}
 
-	det.EnlargeSize();
+	det->EnlargeSize();
 
 	//xmldet.Setup(det);
 
@@ -457,7 +460,7 @@ std::string Simulator::PrintDetectors()
 	{
 		if(it != detectors.begin())
 			s << std::endl;
-		s << it->PrintDetector();
+		s << (*it)->PrintDetector();
 	}
 
 	return s.str();
@@ -505,9 +508,44 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(error != tinyxml2::XML_NO_ERROR)
 		queuelength = 1;
 
-	//TODO: add configuration settings
+	//Configuration of the ROC:
+	int configuration = 0;
+	
+	//PPtB Readout (without alternative at the moment):
+	bool pptb = true;
+	error = parent->QueryBoolAttribute("pptb", &pptb);
+	if(error != tinyxml2::XML_NO_ERROR)
+		pptb = true;
+	if(pptb)
+		configuration |= ReadoutCell::PPTB;
+	
+	//zero suppression:
+	bool zerosuppr = true;
+	error = parent->QueryBoolAttribute("zerosuppression", &zerosuppr);
+	if(error != tinyxml2::XML_NO_ERROR)
+		zerosuppr = true;
+	if(zerosuppr)
+		configuration |= ReadoutCell::ZEROSUPPRESSION;
 
-	ReadoutCell roc(addressname, address, queuelength, 23);
+	//buffer type:
+	nam = parent->Attribute("buffertype");
+	std::string buffertype = (nam != 0)?std::string(nam):"FIFOBuffer";
+	if(buffertype.compare("PrioBuffer") == 0)
+		configuration |= ReadoutCell::PRIOBUFFER;
+	else //if(buffertype.compare("FIFOBuffer") == 0)
+		configuration |= ReadoutCell::FIFOBUFFER;
+
+	//readout mechanism:
+	nam = parent->Attribute("readoutmechanism");
+	std::string readouttype = (nam != 0)?std::string(nam):"NoReadOnFull";
+	if(readouttype.compare("OverWrite") == 0)
+		configuration |= ReadoutCell::OVERWRITEONFULL;
+	else if(readouttype.compare("NoOverWrite") == 0)
+		configuration |= ReadoutCell::NOOVERWRITE;
+	else //if(readouttype.compare("NoReadOnFull") == 0)
+		configuration |= ReadoutCell::NOREADONFULL;
+
+	ReadoutCell roc(addressname, address, queuelength, configuration);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -537,6 +575,7 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	TCoord<double> size = pixelsize;
 	double threshold = 0.;
 	double efficiency = 1.;
+	double deadtimescaling = 1.;
 
 	static int lastaddress = -1;
 	int address;
@@ -546,6 +585,9 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 		address = ++lastaddress;
 	else
 		lastaddress = address;
+
+	const char* nam = parent->Attribute("addrname");
+	std::string addrname = (nam != 0)?std::string(nam):"pix";
 
 
 	tinyxml2::XMLElement* properties = parent->FirstChildElement();
@@ -568,6 +610,13 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 			if(error != tinyxml2::XML_NO_ERROR)
 				efficiency = 1.;
 		}
+		else if(name.compare("DeadTimeScaling") == 0)
+		{
+			tinyxml2::XMLError error = properties->QueryDoubleAttribute("factor", 
+														&deadtimescaling);
+			if(error != tinyxml2::XML_NO_ERROR)
+				deadtimescaling = 1.;
+		}
 
 		if(properties != parent->LastChildElement())
 			properties = properties->NextSiblingElement();
@@ -575,8 +624,9 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 			properties = 0;
 	}
 
-	Pixel pix(position, size, "pix", address, threshold);
+	Pixel pix(position, size, addrname, address, threshold);
 	pix.SetEfficiency(efficiency);
+	pix.SetDeadTimeScaling(deadtimescaling);
 
 	return pix;
 }

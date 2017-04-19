@@ -143,7 +143,7 @@ void Detector::StateMachineCkUp(int timestamp)
                     {
                         result = true;
 
-                        Hit hit = it.GetHit();
+                        Hit hit = it.GetHit();  //equivalent to ReadCell()
                         hit.AddReadoutTime(addressname, timestamp);
                         SaveHit(hit, false);
                     }
@@ -214,4 +214,9 @@ std::string Detector::GetCurrentStateName()
             s << currentstate;
             return s.str();
     }
+}
+
+DetectorBase* Detector::Clone()
+{
+    return new Detector(*this);
 }

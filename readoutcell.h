@@ -78,7 +78,7 @@ public:
 
     bool 		LoadPixel(int timestamp, std::fstream* out = 0);
     bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
-    Hit 		ReadCell();
+    Hit 		ReadCell();	//the same as GetHit()
     int 		HitsAvailable(std::string addressname);
 
     std::string PrintROC(std::string space);

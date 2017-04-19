@@ -27,6 +27,8 @@ public:
     int 	GetState();
     int 	GetNextState();
     std::string GetCurrentStateName();
+
+    DetectorBase* Clone();
     
 private:
 	int currentstate;

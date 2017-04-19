@@ -42,15 +42,16 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    void        StateMachineCkUp(int timestamp);
-    void 		StateMachineCkDown(int timestamp);
-    void		StateMachine(int timestamp);
+    virtual void        StateMachineCkUp(int timestamp);
+    virtual void 		StateMachineCkDown(int timestamp);
+    virtual void		StateMachine(int timestamp);
 
     bool        PlaceHit(Hit hit);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	bool		SaveHit(Hit hit, bool compact = false);
 	bool		SaveBadHit(Hit hit, bool compact = false);
 	int 		HitsEnqueued();
+	int 		HitsAvailable(std::string addressname);
 
 	std::string	GetOutputFile();
 	void 		SetOutputFile(std::string filename);
@@ -65,6 +66,11 @@ public:
 
     std::string PrintDetector();
     
+    virtual int 	GetState();
+    virtual int 	GetNextState();
+    virtual std::string GetCurrentStateName();
+
+    virtual DetectorBase* Clone();
 
 protected:
 	std::string addressname;

@@ -308,6 +308,15 @@ int DetectorBase::HitsEnqueued()
     return remaining;
 }
 
+int DetectorBase::HitsAvailable(std::string addressname)
+{
+    int hits = 0;
+    for(auto& it : rocvector)
+        hits += it.HitsAvailable(addressname);
+
+    return hits;
+}
+
 std::string DetectorBase::GetOutputFile()
 {
     return outputfile;
@@ -363,4 +372,24 @@ std::string DetectorBase::PrintDetector()
 		s << it.PrintROC(" ");
 
 	return s.str();
+}
+
+int DetectorBase::GetState()
+{
+    return -1;
+}
+
+int DetectorBase::GetNextState()
+{
+    return -1;
+}
+
+std::string DetectorBase::GetCurrentStateName()
+{
+    return "";
+}
+
+DetectorBase* DetectorBase::Clone()
+{
+    return new DetectorBase(*this);
 }
