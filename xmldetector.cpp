@@ -87,6 +87,7 @@ void Comparison::SetFirstComparison(const Comparison& comp)
 	if(firstcomp != 0)
 		delete firstcomp;
 	firstcomp = new Comparison(comp);
+	firstchoice = Comp;
 }
 
 Comparison* Comparison::GetSecondComparison()
@@ -99,6 +100,7 @@ void Comparison::SetSecondComparison(const Comparison& comp)
 	if(secondcomp != 0)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);
+	secondchoice = Comp;
 }
 
 double Comparison::GetFirstValue()
@@ -109,6 +111,7 @@ double Comparison::GetFirstValue()
 void   Comparison::SetFirstValue(double value)
 {
 	firstval = value;
+	firstchoice = Value;
 }
 
 double Comparison::GetSecondValue()
@@ -119,6 +122,7 @@ double Comparison::GetSecondValue()
 void   Comparison::SetSecondValue(double value)
 {
 	secondval = value;
+	secondchoice = Value;
 }
 
 RegisterAccess Comparison::GetFirstRegisterAccess()
@@ -129,6 +133,7 @@ RegisterAccess Comparison::GetFirstRegisterAccess()
 void   Comparison::SetFirstRegisterAccess(const RegisterAccess& regacc)
 {
 	firstreg = regacc;
+	firstchoice = Register;
 }
 
 RegisterAccess Comparison::GetSecondRegisterAccess()
@@ -139,6 +144,7 @@ RegisterAccess Comparison::GetSecondRegisterAccess()
 void   Comparison::SetSecondRegisterAccess(const RegisterAccess& regacc)
 {
 	secondreg = regacc;
+	secondchoice = Register;
 }
 
 void Comparison::EvalFirstRegister(double value)
@@ -485,6 +491,40 @@ DetectorBase* XMLDetector::Clone()
 	return new XMLDetector(*this);
 }
 
+void XMLDetector::AddCounter(std::string name, double value)
+{
+	SetCounter(name, value);
+}
+
+void XMLDetector::AddState(const StateMachineState& state)
+{
+	states.push_back(state);
+}
+
+StateMachineState* XMLDetector::GetState(int index)
+{
+	if(index < 0 || index >= states.size())
+		return 0;
+	else
+		return &states[index];
+}
+
+StateMachineState* XMLDetector::GetState(std::string statename)
+{
+	for(auto& it : states)
+	{
+		if(it.GetStateName().compare(statename) == 0)
+			return &it;
+	}
+	return 0;
+}
+
+void XMLDetector::ClearStates()
+{
+	states.clear();
+}
+
+
 void XMLDetector::SetCounter(std::string name, double value)
 {
 	auto it = counters.find(name);
@@ -578,6 +618,7 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
             	hit.AddReadoutTime(addressname, timestamp);
             	SaveHit(hit, false);
             	IncrementCounter("readhits");
+            	result = true;
             }
         }
 

@@ -165,6 +165,13 @@ public:
     std::string GetCurrentStateName();
 
     DetectorBase* Clone();
+
+    void AddCounter(std::string name, double value);
+
+    void AddState(const StateMachineState& state);
+    StateMachineState* GetState(int index);
+    StateMachineState* GetState(std::string statename);
+    void ClearStates();
 private:
 	int currentstate;
 	int nextstate;

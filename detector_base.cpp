@@ -26,6 +26,11 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
 
 }
 
+DetectorBase::~DetectorBase()
+{
+    CloseOutputFile();
+    CloseBadOutputFile();
+}
 
 std::string DetectorBase::GetAddressName()
 {

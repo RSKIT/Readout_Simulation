@@ -17,6 +17,7 @@ public:
     DetectorBase(std::string addressname, int address);
 	DetectorBase();
 	DetectorBase(const DetectorBase& templ);
+	~DetectorBase();
 	
 
     std::string GetAddressName();
