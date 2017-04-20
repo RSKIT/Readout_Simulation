@@ -21,8 +21,8 @@ public:
 
     enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};
 	
-    void	StateMachineCkUp(int timestamp);
-    void	StateMachineCkDown(int timestamp);
+    bool	StateMachineCkUp(int timestamp);
+    bool	StateMachineCkDown(int timestamp);
 
     int 	GetState();
     int 	GetNextState();
@@ -30,6 +30,7 @@ public:
 
     DetectorBase* Clone();
     
+    int GetNumStates();
 private:
 	int currentstate;
 	int nextstate;

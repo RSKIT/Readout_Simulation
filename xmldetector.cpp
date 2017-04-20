@@ -2,14 +2,15 @@
 
 Comparison::Comparison(int relation) : firstchoice(Value), secondchoice(Value), firstval(0), 
 		secondval(0), firstreg(RegisterAccess()), secondreg(RegisterAccess()), firstcomp(0),
-		secondcomp(0), firstregset(false), secondregset(false)
+		secondcomp(0), firstregset(false), secondregset(false), relation(0)
 {
 	this->relation = relation;
 }
 
 Comparison::Comparison(const Comparison& comp) : firstchoice(comp.firstchoice), 
 		secondchoice(comp.secondchoice), firstval(comp.firstval), secondval(comp.secondval),
-		firstreg(comp.firstreg), secondreg(comp.secondreg), firstregset(false), secondregset(false)
+		firstreg(comp.firstreg), secondreg(comp.secondreg), firstregset(false), 
+		secondregset(false), relation(comp.relation)
 {
 	if(comp.firstcomp != 0)
 		firstcomp = new Comparison(*comp.firstcomp);
@@ -294,9 +295,14 @@ int  StateTransition::GetNumRegisterChanges()
 	return counterchanges.size();
 }
 
-const std::vector<RegisterAccess>* StateTransition::GetRegisterChanges()
+/*const*/ std::vector<RegisterAccess>::iterator StateTransition::GetRegisterChangesBegin()
 {
-	return &counterchanges;
+	return counterchanges.begin();
+}
+
+/*const*/ std::vector<RegisterAccess>::iterator StateTransition::GetRegisterChangesEnd()
+{
+	return counterchanges.end();
 }
 
 bool StateTransition::Evaluate()
@@ -340,9 +346,14 @@ int  StateMachineState::GetNumRegisterChanges()
 	return registerchanges.size();
 }
 
-/*const*/ std::vector<RegisterAccess>* StateMachineState::GetRegisterChanges()
+/*const*/ std::vector<RegisterAccess>::iterator StateMachineState::GetRegisterChangesBegin()
 {
-	return &registerchanges;
+	return registerchanges.begin();
+}
+
+/*const*/ std::vector<RegisterAccess>::iterator StateMachineState::GetRegisterChangesEnd()
+{
+	return registerchanges.end();
 }
 
 void StateMachineState::ClearStateTransitions()
@@ -360,9 +371,14 @@ int  StateMachineState::GetNumStateTransitions()
 	return transitions.size();
 }
 
-/*const*/ std::vector<StateTransition>* StateMachineState::GetStateTransitions()
+/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsBegin()
 {
-	return &transitions;
+	return transitions.begin();
+}
+
+/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsEnd()
+{
+	return transitions.end();
 }
 
 /*************************
@@ -370,13 +386,13 @@ int  StateMachineState::GetNumStateTransitions()
  *************************/
 
 XMLDetector::XMLDetector(std::string addressname, int address)
-		: DetectorBase(addressname, address), currentstate(0), nextstate(0),
+		: DetectorBase(addressname, address), currentstate(0), nextstate(-1),
 		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
 }
 
-XMLDetector::XMLDetector() : DetectorBase(), currentstate(0), nextstate(0),
+XMLDetector::XMLDetector() : DetectorBase(), currentstate(0), nextstate(-1),
 		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
@@ -389,59 +405,68 @@ XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ),
 
 }
 
-void XMLDetector::StateMachineCkUp(int timestamp)
+bool XMLDetector::StateMachineCkUp(int timestamp)
 {
 	//check for valid state:
-	if(currentstate > states.size() || currentstate < 0)
+	if(currentstate >= states.size() || currentstate < 0)
 	{
 		std::cout << "State Machine Error" << std::endl;
-		return;
+		return false;
 	}
 
 	//make sure that the output files are opened:
-    if(!fout.is_open())
+    if(!fout.is_open() && outputfile != "")
     {
         fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
         if(!fout.is_open())
         {
             std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
-            return;
+            return false;
         }
     }
-    if(!fbadout.is_open())
+    if(!fbadout.is_open() && badoutputfile != "")
     {
         fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
         if(!fbadout.is_open())
         {
             std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
                       << std::endl;
-            return;
+            return false;
         }
     }
 
     //do not execute anything when a delay is active:
     if(GetCounter("delay") > 0)
     {
+    	std::cout << "Delay: " << GetCounter("delay") << std::endl;
     	DecrementCounter("delay");
-    	return;
+    	return true;
     }
 
 	StateMachineState* state = &states[currentstate];
 
+
+	std::cout << "State: " << state->GetStateName() << std::endl;
+
 	//change Registers, LoadPixels, LoadROCs,...:
-	auto itend = state->GetRegisterChanges()->end();
-	for(auto it = state->GetRegisterChanges()->begin(); it != itend; ++it)
+	auto itend = state->GetRegisterChangesEnd();
+	for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
 		ExecuteRegisterChanges(*it, timestamp);
 
 	//state transitions:
-	auto endtransitions = state->GetStateTransitions()->end();
-	for(auto it = state->GetStateTransitions()->begin(); it != endtransitions; ++it)
+	//nextstate = -1;
+
+	auto endtransitions = state->GetStateTransitionsEnd();
+	for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
 	{
 		FillComparison(it->GetComparison());
+
 		if(it->Evaluate())
 		{
-			auto itend = it->GetRegisterChanges()->end();
-			for(auto regit = it->GetRegisterChanges()->begin(); regit != itend; ++it)
+			SetCounter("delay", it->GetDelay());
+
+			auto itend = it->GetRegisterChangesEnd();
+			for(auto regit = it->GetRegisterChangesBegin(); regit != itend; ++regit)
 				ExecuteRegisterChanges(*regit, timestamp);
 
 			//find the next state:
@@ -459,13 +484,20 @@ void XMLDetector::StateMachineCkUp(int timestamp)
 			break;
 		}
 	}
+
+	return true;
 }
 
-void XMLDetector::StateMachineCkDown(int timestamp)
+bool XMLDetector::StateMachineCkDown(int timestamp)
 {
+    if(GetCounter("delay") > 0)
+    	return true;
+
     currentstate = nextstate;
     nextstate = -1;
     std::cout << "-- State Transition --" << std::endl;
+
+    return true;
 }
 
 int XMLDetector::GetState()
@@ -517,6 +549,11 @@ StateMachineState* XMLDetector::GetState(std::string statename)
 			return &it;
 	}
 	return 0;
+}
+
+int XMLDetector::GetNumStates()
+{
+	return states.size();
 }
 
 void XMLDetector::ClearStates()

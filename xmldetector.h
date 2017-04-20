@@ -107,7 +107,9 @@ public:
 	void ClearRegisterChanges();
 	void AddRegisterChange(RegisterAccess change);
 	int  GetNumRegisterChanges();
-	const std::vector<RegisterAccess>* GetRegisterChanges();
+	/*const*/ 
+	std::vector<RegisterAccess>::iterator GetRegisterChangesBegin();
+	std::vector<RegisterAccess>::iterator GetRegisterChangesEnd();
 
 	bool Evaluate();
 
@@ -133,12 +135,14 @@ public:
 	void ClearRegisterChanges();
 	void AddRegisterChange(RegisterAccess change);
 	int  GetNumRegisterChanges();
-	/*const*/ std::vector<RegisterAccess>* GetRegisterChanges();
+	std::vector<RegisterAccess>::iterator GetRegisterChangesBegin();
+	std::vector<RegisterAccess>::iterator GetRegisterChangesEnd();
 
 	void ClearStateTransitions();
 	void AddStateTransition(StateTransition transition);
 	int  GetNumStateTransitions();
-	/*const*/ std::vector<StateTransition>* GetStateTransitions();
+	std::vector<StateTransition>::iterator GetStateTransitionsBegin();
+	std::vector<StateTransition>::iterator GetStateTransitionsEnd();
 
 private:
 	std::string name;
@@ -157,8 +161,8 @@ public:
 	XMLDetector();
 	XMLDetector(const XMLDetector& templ);
 
-    void	StateMachineCkUp(int timestamp);
-    void	StateMachineCkDown(int timestamp);
+    bool	StateMachineCkUp(int timestamp);
+    bool	StateMachineCkDown(int timestamp);
 
     int 	GetState();
     int 	GetNextState();
@@ -171,6 +175,7 @@ public:
     void AddState(const StateMachineState& state);
     StateMachineState* GetState(int index);
     StateMachineState* GetState(std::string statename);
+    int GetNumStates();
     void ClearStates();
 private:
 	int currentstate;

@@ -43,9 +43,9 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    virtual void        StateMachineCkUp(int timestamp);
-    virtual void 		StateMachineCkDown(int timestamp);
-    virtual void		StateMachine(int timestamp);
+    virtual bool        StateMachineCkUp(int timestamp);
+    virtual bool 		StateMachineCkDown(int timestamp);
+    virtual bool		StateMachine(int timestamp);
 
     bool        PlaceHit(Hit hit);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
@@ -72,6 +72,8 @@ public:
     virtual std::string GetCurrentStateName();
 
     virtual DetectorBase* Clone();
+
+    virtual int GetNumStates();
 
 protected:
 	std::string addressname;

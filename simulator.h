@@ -44,8 +44,8 @@ public:
 	void InitEventGenerator();
 	void GenerateEvents(int events, double starttime = -1);
 
-    void ClockUp(int timestamp);
-    void ClockDown(int timestamp);
+    bool ClockUp(int timestamp);
+    bool ClockDown(int timestamp);
 
     void SimulateUntil(int stoptime = -1, int delaystop = 0);
 

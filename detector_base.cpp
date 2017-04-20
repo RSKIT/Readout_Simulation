@@ -199,20 +199,23 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
-void DetectorBase::StateMachine(int timestamp)
+bool DetectorBase::StateMachine(int timestamp)
 {
-    StateMachineCkUp(timestamp);
-    StateMachineCkDown(timestamp);
+    bool result = false;
+    result |= StateMachineCkUp(timestamp);
+    result |= StateMachineCkDown(timestamp);
+
+    return result;
 }
 
-void DetectorBase::StateMachineCkUp(int timestamp)
+bool DetectorBase::StateMachineCkUp(int timestamp)
 {
-
+    return false;
 }
 
-void DetectorBase::StateMachineCkDown(int timestamp)
+bool DetectorBase::StateMachineCkDown(int timestamp)
 {
-
+    return false;
 }
 
 bool DetectorBase::PlaceHit(Hit hit)
@@ -397,4 +400,9 @@ std::string DetectorBase::GetCurrentStateName()
 DetectorBase* DetectorBase::Clone()
 {
     return new DetectorBase(*this);
+}
+
+int DetectorBase::GetNumStates()
+{
+    return 0;
 }
