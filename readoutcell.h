@@ -38,6 +38,9 @@ public:
     ReadoutCell(std::string addressname, int address, int hitqueuelength,
   				int configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL);
 	ReadoutCell();
+	ReadoutCell(const ReadoutCell& roc);
+
+	~ReadoutCell();
 
 	int 		GetConfiguration();
 	void 		SetConfiguration(int newconfig);
@@ -71,11 +74,11 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCsBegin();
 	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
-    bool        PlaceHit(Hit hit);
+    bool        PlaceHit(Hit hit, std::fstream* fout = 0);
 
     bool 		LoadPixel(int timestamp, std::fstream* out = 0);
     bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
-    Hit 		ReadCell();
+    Hit 		ReadCell();	//the same as GetHit()
     int 		HitsAvailable(std::string addressname);
 
     std::string PrintROC(std::string space);
@@ -85,16 +88,15 @@ public:
 private:
 	std::string 				addressname;
 	int 						address;
-	bool 						hitflag;
 	int 						hitqueuelength;
 	std::vector<Hit> 			hitqueue;
 	std::vector<Pixel> 			pixelvector;
 	std::vector<ReadoutCell> 	rocvector;
 
 	//function objects to change the behaviour of the Readout Cell:
-	ROCBuffer 		buf;			//readint/writing to the buffer
-	ROCReadout 		rocreadout;		//reading from the child ROCs
-	PixelReadout 	pixelreadout;	//reading from the pixels
+	ROCBuffer*		buf;			//readint/writing to the buffer
+	ROCReadout*		rocreadout;		//reading from the child ROCs
+	PixelReadout*	pixelreadout;	//reading from the pixels
 	bool 			zerosuppression;
 
 	int 			configuration;	//to save the readout settings according to the config enum

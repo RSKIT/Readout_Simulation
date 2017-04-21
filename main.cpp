@@ -151,26 +151,6 @@ int main(int argc, char** argv)
 
         }
 
-
-
-        /*
-    	Hit a();
-    	ReadoutCell b();
-            Detector c("new", 1);
-           std::cout << "oldstate: " << c.GetState() << std::endl;
-           c.NextState();
-           std::cout << "newstate: " << c.GetState() << std::endl;
-    	
-    	
-    	TCoord <double> position{10,20,30};
-    	TCoord <double> size{1,2,3};
-    	std::string addressname = "row"; 
-    	int address = 5;
-    	double threshold = 1093;
-    	Pixel pix(position, size, addressname, address, threshold);
-    	std::string abc = pix.GetAddressName();
-            std::cout << "Hello World!" << abc << std::endl;
-        */
     }
 }
 

@@ -17,6 +17,7 @@ public:
     DetectorBase(std::string addressname, int address);
 	DetectorBase();
 	DetectorBase(const DetectorBase& templ);
+	~DetectorBase();
 	
 
     std::string GetAddressName();
@@ -42,14 +43,16 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    void        StateMachineCkUp(int timestamp);
-    void 		StateMachineCkDown(int timestamp);
-    void		StateMachine(int timestamp);
+    virtual bool        StateMachineCkUp(int timestamp);
+    virtual bool 		StateMachineCkDown(int timestamp);
+    virtual bool		StateMachine(int timestamp);
 
     bool        PlaceHit(Hit hit);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	bool		SaveHit(Hit hit, bool compact = false);
 	bool		SaveBadHit(Hit hit, bool compact = false);
+	int 		HitsEnqueued();
+	int 		HitsAvailable(std::string addressname);
 
 	std::string	GetOutputFile();
 	void 		SetOutputFile(std::string filename);
@@ -64,6 +67,13 @@ public:
 
     std::string PrintDetector();
     
+    virtual int 	GetState();
+    virtual int 	GetNextState();
+    virtual std::string GetCurrentStateName();
+
+    virtual DetectorBase* Clone();
+
+    virtual int GetNumStates();
 
 protected:
 	std::string addressname;

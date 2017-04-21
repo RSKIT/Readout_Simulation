@@ -24,7 +24,7 @@ class EventGenerator
 {
 public:
 	EventGenerator();
-	EventGenerator(Detector* detector);
+	EventGenerator(DetectorBase* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
 
 	/**
@@ -43,7 +43,7 @@ public:
 	 * 
 	 * @param detector       - the detector to add
 	 */
-	void AddDetector(Detector* detector);
+	void AddDetector(DetectorBase* detector);
 	/**
 	 * @brief removes all poointers to detectors from the event generator
 	 * @details
@@ -58,7 +58,7 @@ public:
 	 * @return               - a pointer to a detector or a null pointer in case of an index out 
 	 *                            of bounds
 	 */
-	Detector* GetDetectorByIndex(int index);
+	DetectorBase* GetDetectorByIndex(int index);
 	/**
 	 * @brief returns a pointer to a detector linked in the event generator, but uses the addess
 	 *             of the detector to find it
@@ -70,7 +70,7 @@ public:
 	 * @return               - a pointer to a detector or a null pointer if the address is not
 	 *                            used by the detectors linked to the event generator
 	 */
-	Detector* GetDetectorByAddress(int address);
+	DetectorBase* GetDetectorByAddress(int address);
 
 	std::string GetOutputFileName();
 	void        SetOutputFileName(std::string filename);
@@ -135,7 +135,7 @@ private:
 	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
 										TCoord<double> setpoint, bool print = false);
 
-	std::vector<Detector*> detectors;
+	std::vector<DetectorBase*> detectors;
 
 	int eventindex;	//index for the next event to generate
 

@@ -1,13 +1,15 @@
 #include "EventGenerator.h"
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
-					seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3)
+		seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
+		detectors(std::vector<DetectorBase*>())
 {
 	SetSeed(0);
 }
 
-EventGenerator::EventGenerator(Detector* detector) : filename(""), eventindex(0), clustersize(0),
-					eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3)
+EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
+		clustersize(0), eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), 
+		numsigmas(3)
 {
 	detectors.push_back(detector);
 
@@ -15,7 +17,8 @@ EventGenerator::EventGenerator(Detector* detector) : filename(""), eventindex(0)
 }
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
-					eventindex(0), chargescale(1), inclinationsigma(0.3)
+		eventindex(0), chargescale(1), inclinationsigma(0.3), 
+		detectors(std::vector<DetectorBase*>())
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -31,7 +34,7 @@ bool EventGenerator::IsReady()
 		return false;
 }
 
-void EventGenerator::AddDetector(Detector* detector)
+void EventGenerator::AddDetector(DetectorBase* detector)
 {
 	if(detector != 0)
 		detectors.push_back(detector);
@@ -42,7 +45,7 @@ void EventGenerator::ClearDetectors()
 	detectors.clear();
 }
 
-Detector* EventGenerator::GetDetectorByIndex(int index)
+DetectorBase* EventGenerator::GetDetectorByIndex(int index)
 {
 	if(index >= detectors.size() || index < 0)
 		return 0;
@@ -50,7 +53,7 @@ Detector* EventGenerator::GetDetectorByIndex(int index)
 		return detectors[index];
 }
 	
-Detector* EventGenerator::GetDetectorByAddress(int address)
+DetectorBase* EventGenerator::GetDetectorByAddress(int address)
 {
 	for(auto it : detectors)
 	{
@@ -158,7 +161,6 @@ int EventGenerator::GetCutOffFactor()
 
 void EventGenerator::SetCutOffFactor(int numsigmas)
 {
-	
 	if(numsigmas < 0)
 		this->numsigmas = -numsigmas;
 	else
@@ -174,7 +176,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 	//calculate the total extent of the detector arrangement:
 	TCoord<double> detectorstart = detectors.front()->GetPosition();
 	TCoord<double> detectorend   = detectorstart;
-	for(auto it : detectors)
+	for(auto& it : detectors)
 	{
 		for(int i=0;i<3;++i)
 		{
@@ -237,7 +239,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 
 		//generate the template hit object for this event:
 		Hit hittemplate;
-		hittemplate.SetTimeStamp(int(time));
+		hittemplate.SetTimeStamp(time);
 		hittemplate.SetEventIndex(eventindex);
 		++eventindex;
 
@@ -247,7 +249,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		{
 			for(auto it = dit->GetROCVectorBegin(); it != dit->GetROCVectorEnd(); ++it)
 			{
-                                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
+                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
 
 				//copy the hits to the event queue:
 				for(auto it2 : hits)
@@ -457,7 +459,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
-                                                                                minsize, clustersize, numsigmas, print);
+                                        minsize, clustersize, numsigmas, print);
 
 			if(charge > it->GetThreshold() && generator()/double(RAND_MAX) <= it->GetEfficiency())
 			{
@@ -467,6 +469,9 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 
 				Hit phit = hit;
 				phit.AddAddress(it->GetAddressName(),it->GetAddress());
+				phit.SetCharge(charge);
+				phit.SetDeadTimeEnd(phit.GetTimeStamp() + 20);	
+								//TODO: change to an adequate function
 				globalhits.push_back(phit);
 			}
 		}

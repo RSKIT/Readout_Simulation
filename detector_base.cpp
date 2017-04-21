@@ -20,12 +20,17 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
 
 DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addressname),
         address(templ.address), rocvector(templ.rocvector),
-        outputfile(templ.outputfile), fout(std::fstream()), badoutputfile(""), 
+        outputfile(templ.outputfile), fout(std::fstream()), badoutputfile(templ.badoutputfile), 
         fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size)
 {
 
 }
 
+DetectorBase::~DetectorBase()
+{
+    CloseOutputFile();
+    CloseBadOutputFile();
+}
 
 std::string DetectorBase::GetAddressName()
 {
@@ -178,7 +183,7 @@ bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
             corrected = true;
         }
 
-        std::cout << parentpos << " size: " << parentsize << std::endl;
+        //std::cout << parentpos << " size: " << parentsize << std::endl;
     }
     return corrected;
 }
@@ -194,20 +199,23 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
-void DetectorBase::StateMachine(int timestamp)
+bool DetectorBase::StateMachine(int timestamp)
 {
-    StateMachineCkUp(timestamp);
-    StateMachineCkDown(timestamp);
+    bool result = false;
+    result |= StateMachineCkUp(timestamp);
+    result |= StateMachineCkDown(timestamp);
+
+    return result;
 }
 
-void DetectorBase::StateMachineCkUp(int timestamp)
+bool DetectorBase::StateMachineCkUp(int timestamp)
 {
-
+    return false;
 }
 
-void DetectorBase::StateMachineCkDown(int timestamp)
+bool DetectorBase::StateMachineCkDown(int timestamp)
 {
-
+    return false;
 }
 
 bool DetectorBase::PlaceHit(Hit hit)
@@ -215,14 +223,26 @@ bool DetectorBase::PlaceHit(Hit hit)
     if (rocvector.size() < 1)
         return false;
 
+    //open output file for "lost" hits:
+    if(!fbadout.is_open())
+    {
+        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
+        if(!fbadout.is_open())
+        {
+            std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
+                      << std::endl;
+            return false;
+        }
+    }
+
     std::string addressname = rocvector.front().GetAddressName();
     for (auto &it : rocvector)
     {
         int address = hit.GetAddress(addressname);
-        std::cout << "roc addressname: " << addressname << std::endl;
-        std::cout << "hit getaddress: " << address << std::endl;
+        //std::cout << "roc addressname: " << addressname << std::endl;
+        //std::cout << "hit getaddress: " << address << std::endl;
         if (it.GetAddress() == address)
-            return it.PlaceHit(hit);
+            return it.PlaceHit(hit, &fbadout);
     }
 
     return false;
@@ -287,6 +307,23 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
     return true;
 }
 
+int DetectorBase::HitsEnqueued()
+{
+    int remaining = 0;
+    for(auto& it : rocvector)
+        remaining += it.HitsAvailable("");
+
+    return remaining;
+}
+
+int DetectorBase::HitsAvailable(std::string addressname)
+{
+    int hits = 0;
+    for(auto& it : rocvector)
+        hits += it.HitsAvailable(addressname);
+
+    return hits;
+}
 
 std::string DetectorBase::GetOutputFile()
 {
@@ -343,4 +380,29 @@ std::string DetectorBase::PrintDetector()
 		s << it.PrintROC(" ");
 
 	return s.str();
+}
+
+int DetectorBase::GetState()
+{
+    return -1;
+}
+
+int DetectorBase::GetNextState()
+{
+    return -1;
+}
+
+std::string DetectorBase::GetCurrentStateName()
+{
+    return "";
+}
+
+DetectorBase* DetectorBase::Clone()
+{
+    return new DetectorBase(*this);
+}
+
+int DetectorBase::GetNumStates()
+{
+    return 0;
 }
