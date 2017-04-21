@@ -26,6 +26,11 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
 
 }
 
+DetectorBase::~DetectorBase()
+{
+    CloseOutputFile();
+    CloseBadOutputFile();
+}
 
 std::string DetectorBase::GetAddressName()
 {
@@ -194,20 +199,23 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
-void DetectorBase::StateMachine(int timestamp)
+bool DetectorBase::StateMachine(int timestamp)
 {
-    StateMachineCkUp(timestamp);
-    StateMachineCkDown(timestamp);
+    bool result = false;
+    result |= StateMachineCkUp(timestamp);
+    result |= StateMachineCkDown(timestamp);
+
+    return result;
 }
 
-void DetectorBase::StateMachineCkUp(int timestamp)
+bool DetectorBase::StateMachineCkUp(int timestamp)
 {
-
+    return false;
 }
 
-void DetectorBase::StateMachineCkDown(int timestamp)
+bool DetectorBase::StateMachineCkDown(int timestamp)
 {
-
+    return false;
 }
 
 bool DetectorBase::PlaceHit(Hit hit)
@@ -308,6 +316,15 @@ int DetectorBase::HitsEnqueued()
     return remaining;
 }
 
+int DetectorBase::HitsAvailable(std::string addressname)
+{
+    int hits = 0;
+    for(auto& it : rocvector)
+        hits += it.HitsAvailable(addressname);
+
+    return hits;
+}
+
 std::string DetectorBase::GetOutputFile()
 {
     return outputfile;
@@ -363,4 +380,29 @@ std::string DetectorBase::PrintDetector()
 		s << it.PrintROC(" ");
 
 	return s.str();
+}
+
+int DetectorBase::GetState()
+{
+    return -1;
+}
+
+int DetectorBase::GetNextState()
+{
+    return -1;
+}
+
+std::string DetectorBase::GetCurrentStateName()
+{
+    return "";
+}
+
+DetectorBase* DetectorBase::Clone()
+{
+    return new DetectorBase(*this);
+}
+
+int DetectorBase::GetNumStates()
+{
+    return 0;
 }

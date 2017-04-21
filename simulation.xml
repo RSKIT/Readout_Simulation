@@ -19,6 +19,18 @@
 				</ROC>
 			</NTimes>			
 		</ROC>
+		<StateMachine>
+			<State name="test">
+				<Action what="cout" parameter="Hello World" value="1"/>
+				<StateTransition nextstate="test" delay="2">
+					<Action what="cout" parameter="peep" value="1"/>
+					<Condition relation="Equal">
+						<Lvalue value="1"/>
+						<Rvalue value="1"/>
+					</Condition>
+				</StateTransition>
+			</State>
+		</StateMachine>
 	</Detector>
 	<EventGenerator>
 		<Seed x0="0"/>
@@ -29,7 +41,7 @@
 		<InclinationSigma sigma="0.15"/>
 		<ChargeScale scale="1"/>
 		<MinSize diagonal="2."/>
-		<NumEvents n="100"/>
+		<NumEvents n="1"/>
 		<EventStart t="0"/>
 	</EventGenerator>
 </Simulation>

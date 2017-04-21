@@ -306,9 +306,12 @@ bool PPtBReadout::Read(int timestamp, std::fstream* out)
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());
 			}
 
-			ph.AddReadoutTime("merged", timestamp);
-			if(out != 0 && out->is_open())
-				*out << ph.GenerateString() << std::endl;
+			if(cell->GetNumPixels() > 1)
+			{
+				ph.AddReadoutTime("merged", timestamp);
+				if(out != 0 && out->is_open())
+					*out << ph.GenerateString() << std::endl;
+			}
 
 			it->ClearHit();
 		}

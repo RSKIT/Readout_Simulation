@@ -12,6 +12,7 @@ sources = [ 'tinyxml2.cpp',
 			'readoutcell.cpp',
 			'detector_base.cpp',
 			'detector.cpp',
+			'xmldetector.cpp',
 			'simulator.cpp',
 			'EventGenerator.cpp'
 			]

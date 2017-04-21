@@ -18,25 +18,25 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 }
 
-void Detector::StateMachineCkUp(int timestamp)
+bool Detector::StateMachineCkUp(int timestamp)
 {
-    if(!fout.is_open())
+    if(!fout.is_open() && outputfile != "")
     {
         fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
         if(!fout.is_open())
         {
             std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
-            return;
+            return false;
         }
     }
-    if(!fbadout.is_open())
+    if(!fbadout.is_open() && badoutputfile != "")
     {
         fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
         if(!fbadout.is_open())
         {
             std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
                       << std::endl;
-            return;
+            return false;
         }
     }
 
@@ -46,7 +46,7 @@ void Detector::StateMachineCkUp(int timestamp)
     if(delay > 0)
     {
         --delay;
-        return;
+        return true;
     }
 
     switch(currentstate)
@@ -143,7 +143,7 @@ void Detector::StateMachineCkUp(int timestamp)
                     {
                         result = true;
 
-                        Hit hit = it.GetHit();
+                        Hit hit = it.GetHit();  //equivalent to ReadCell()
                         hit.AddReadoutTime(addressname, timestamp);
                         SaveHit(hit, false);
                     }
@@ -179,12 +179,15 @@ void Detector::StateMachineCkUp(int timestamp)
             }
             break;
     }
+
+    return true;
 }
 
-void Detector::StateMachineCkDown(int timestamp)
+bool Detector::StateMachineCkDown(int timestamp)
 {
     currentstate = nextstate;
     std::cout << "-- State Transition --" << std::endl;
+    return true;
 }
 
 int Detector::GetState()
@@ -214,4 +217,14 @@ std::string Detector::GetCurrentStateName()
             s << currentstate;
             return s.str();
     }
+}
+
+DetectorBase* Detector::Clone()
+{
+    return new Detector(*this);
+}
+
+int Detector::GetNumStates()
+{
+    return 4;
 }

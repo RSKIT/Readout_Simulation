@@ -50,7 +50,7 @@ int ReadoutCell::GetConfiguration()
 
 void ReadoutCell::SetConfiguration(int newconfig)
 {
-    std::cout << "ReadoutCell Configuration: " << newconfig << std::endl;
+    //std::cout << "ReadoutCell Configuration: " << newconfig << std::endl;
 
     configuration = newconfig;
 
