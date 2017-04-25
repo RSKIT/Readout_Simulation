@@ -223,6 +223,7 @@ bool Simulator::ClockDown(int timestamp)
 
 void Simulator::SimulateUntil(int stoptime, int delaystop)
 {
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	if(events > 0)
 	{
 		eventgenerator.GenerateEvents(starttime, events);
@@ -230,6 +231,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	}
 
 	eventgenerator.PrintQueue();
+
+	std::chrono::steady_clock::time_point endEventGen = std::chrono::steady_clock::now();
 
 	int timestamp = 0;
 	double nextevent = eventgenerator.GetHit().GetTimeStamp();
@@ -282,6 +285,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				  << stopdelay << std::endl;
 	}
 
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
@@ -290,6 +295,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
 			  << std::endl << "  read out signals: " << dethitcounter << std::endl
 			  << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+
+	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -947,4 +955,56 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 	std::cout << "Create Relation: " << comp.GetRelation() << std::endl;
 
 	return comp;
+}
+
+std::string Simulator::TimesToInterval(TimePoint start, TimePoint end)
+{
+	long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+	std::stringstream timetext("");
+	bool started = false;
+
+	if(duration > 86400000)	//1 day
+	{
+		timetext << duration/86400000 << " days";
+		duration %= 86400000;
+		started = true;
+	}
+	if(duration > 3600000)	//1 hour
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/3600000 << " hours";
+		duration %= 3600000;
+	}
+	if(duration > 60000)	//1 minute
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/60000 << " minutes";
+		duration %= 60000;
+	}
+	if(duration > 1000)
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/1000 << " seconds";
+		duration %= 1000;
+	}
+
+	if(started)
+		timetext << " ";
+	if(duration != 0)
+		timetext << duration << " milliseconds";
+
+	if(!started && duration == 0)
+		return "0 milliseconds";
+
+	return timetext.str();
 }

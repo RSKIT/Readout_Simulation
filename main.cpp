@@ -21,10 +21,10 @@ int main(int argc, char** argv)
         Simulator sim(argv[1]);
         sim.LoadInputFile();
 
-        std::cout << "Detectors: " << sim.GetNumDetectors() << std::endl;
-        std::cout << sim.PrintDetectors() << std::endl;
+        //std::cout << "Detectors: " << sim.GetNumDetectors() << std::endl;
+        //std::cout << sim.PrintDetectors() << std::endl;
 
-        sim.InitEventGenerator();
+        //sim.InitEventGenerator();
 
         sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
     }

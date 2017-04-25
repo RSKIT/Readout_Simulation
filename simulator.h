@@ -2,6 +2,7 @@
 #define _SIMULATOR
 
 #include <vector>
+#include <chrono>
 
 #include "detector.h"
 #include "xmldetector.h"
@@ -13,6 +14,8 @@
 class Simulator
 {
 public:
+	typedef std::chrono::steady_clock::time_point TimePoint;
+
 	Simulator();
 	Simulator(std::string filename);
 
@@ -67,6 +70,8 @@ private:
 	RegisterAccess 		LoadRegisterChange(tinyxml2::XMLElement* registerchange);
 	StateTransition 	LoadStateTransition(tinyxml2::XMLElement* transition);
 	Comparison 			LoadComparison(tinyxml2::XMLElement* comparison);
+
+	std::string 		TimesToInterval(TimePoint start, TimePoint end);
 
     std::vector<DetectorBase*> detectors;
     EventGenerator eventgenerator;
