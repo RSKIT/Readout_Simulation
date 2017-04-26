@@ -16,6 +16,12 @@ public:
 	std::string what;
 	std::string parameter;
 	double value;
+
+	RegisterAccess() {
+		what = "";
+		parameter = "";
+		value = 0;
+	}
 };
 
 class Comparison
@@ -74,6 +80,8 @@ public:
 	bool ReadyForEvaluation();
 
 	bool Evaluate();
+
+	std::string PrintComparison(std::string spaces="") const;
 private:
 	int relation;
 
@@ -94,6 +102,7 @@ class StateTransition
 {
 public:
 	StateTransition();
+	StateTransition(const StateTransition& trans);
 
 	std::string GetNextState();
 	void SetNextState(std::string nextstate);

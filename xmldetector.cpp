@@ -1,38 +1,75 @@
 #include "xmldetector.h"
 
-Comparison::Comparison(int relation) : firstchoice(Value), secondchoice(Value), firstval(0), 
-		secondval(0), firstreg(RegisterAccess()), secondreg(RegisterAccess()), firstcomp(0),
-		secondcomp(0), firstregset(false), secondregset(false), relation(0)
+Comparison::Comparison(int relation) : 
+					firstchoice(Value), 
+					secondchoice(Value), 
+
+					firstval(0), 
+					secondval(0), 
+
+					firstreg(RegisterAccess()), 
+					secondreg(RegisterAccess()), 
+
+					firstcomp(NULL),
+					secondcomp(NULL), 
+
+					firstregset(false), 
+					secondregset(false), 
+
+					relation(0)
 {
 	this->relation = relation;
 }
 
-Comparison::Comparison(const Comparison& comp) : firstchoice(comp.firstchoice), 
-		secondchoice(comp.secondchoice), firstval(comp.firstval), secondval(comp.secondval),
-		firstreg(comp.firstreg), secondreg(comp.secondreg), firstregset(false), 
-		secondregset(false), relation(comp.relation)
+Comparison::Comparison(const Comparison& comp) : 
+					firstchoice(comp.firstchoice), 
+					secondchoice(comp.secondchoice),
+
+					firstval(comp.firstval), 
+					secondval(comp.secondval),
+
+					firstreg(comp.firstreg), 
+					secondreg(comp.secondreg),
+
+					firstcomp(NULL),
+					secondcomp(NULL), 
+					
+					firstregset(false), 
+					secondregset(false), 
+
+
+
+					relation(comp.relation)
 {
-	if(comp.firstcomp != 0)
-		firstcomp = new Comparison(*comp.firstcomp);
+
+	firstcomp = NULL;
+	secondcomp = NULL;
+	
+	if(comp.firstcomp != NULL) {
+		std::cout << "More FC: " << comp.firstcomp << std::endl;
+		firstcomp = new Comparison(*(comp.firstcomp));
+		std::cout << "Done FC copy: " << firstcomp << ", own FC is " << firstcomp->firstcomp << std::endl;
+	}
 	else
-		firstcomp = 0;
-	if(comp.secondcomp != 0)
-		secondcomp = new Comparison(*comp.secondcomp);
+		firstcomp = NULL;
+
+	if(comp.secondcomp != NULL)
+		secondcomp = new Comparison(*(comp.secondcomp));
 	else
-		secondcomp = 0;
+		secondcomp = NULL;
 }
 
 Comparison::~Comparison()
 {
 	if(firstcomp != 0)
 	{
-		firstcomp->~Comparison();
 		delete firstcomp;
+		firstcomp = NULL;
 	}
 	if(secondcomp != 0)
 	{
-		secondcomp->~Comparison();
 		delete secondcomp;
+		secondcomp = NULL;
 	}
 }
 
@@ -240,6 +277,33 @@ bool Comparison::Evaluate()
 	}
 }
 
+std::string Comparison::PrintComparison(std::string spaces) const
+{
+	std::stringstream s("");
+
+	s << spaces << "Comparison: (relation: " << relation << "):\n"
+	  << spaces << " Lvalue:\n" << spaces;
+
+	s << "  value:  " << firstval << std::endl;
+
+	s << spaces  << "  RegAcc: " << firstreg.what << std::endl;
+
+	if(firstcomp != NULL) {
+		std::cout << "Entering FC with: " << firstcomp << std::endl;
+		std::cout.flush();
+		s << firstcomp->PrintComparison(spaces + "  ");
+	}
+
+	s << spaces << " Rvalue:\n" << spaces;
+
+	s << "  value:  " << secondval << std::endl << spaces
+	  << "  RegAcc: " << secondreg.what << std::endl;
+	if(secondcomp != NULL)
+		s << secondcomp->PrintComparison(spaces + "  ");
+
+	return s.str();
+}
+
 /*****************************
  *  StateTransition Methods  *
  *****************************/
@@ -248,6 +312,15 @@ StateTransition::StateTransition() : nextstate(""), delay(0),
 		counterchanges(std::vector<RegisterAccess>()), condition(Comparison())
 {
 
+}
+
+StateTransition::StateTransition(const StateTransition& trans) : nextstate(trans.nextstate),
+		delay(trans.delay)
+{
+	for(auto& it : trans.counterchanges)
+		counterchanges.push_back(it);
+
+	condition = Comparison(trans.condition);
 }
 
 std::string StateTransition::GetNextState()
@@ -277,7 +350,8 @@ Comparison* StateTransition::GetComparison()
 
 void StateTransition::SetComparison(const Comparison& comp)
 {
-	condition = comp;
+	condition = Comparison(comp);
+
 }
 
 void StateTransition::ClearRegisterChanges()
@@ -364,6 +438,8 @@ void StateMachineState::ClearStateTransitions()
 void StateMachineState::AddStateTransition(StateTransition transition)
 {
 	transitions.push_back(transition);
+
+	std::cout << "peep" << std::endl;
 }
 
 int  StateMachineState::GetNumStateTransitions()

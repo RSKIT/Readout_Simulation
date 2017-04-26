@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Simulation>
+	<SimulationEnd t="-1" stopdelay="20"/>
+	<Standardpixel x="60" y="50" z ="30"/>
+	<Detector addrname="Detector" outputfile="readhits_M2.dat" losthitfile="losthits_M2.dat">
+		<ROC queuelength ="1" addrname="CU">
+			<NTimes n="28" x="120" y="0" z="0">
+				<ROC queuelength="1" addrname="EoC">
+					<NTimes n="2" x="60" y="0" z="0">
+						<NTimes n="20" x="0" y="800" z="0">
+							<ROC queuelength="4" addrname="Group">
+								<Pixel addrname="PixelDiode" addr="17">
+									<Position x="0" y="0" z="0"/>
+									<Threshold thr="1"/>
+									<Efficiency n="1.0"/> <!-- not necessary; only for != 1 -->
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="18">
+									<Position x="0" y="50" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="20">
+									<Position x="0" y="100" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="24">
+									<Position x="0" y="150" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="33">
+									<Position x="0" y="200" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="34">
+									<Position x="0" y="250" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="36">
+									<Position x="0" y="300" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="40">
+									<Position x="0" y="350" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="65">
+									<Position x="0" y="400" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="66">
+									<Position x="0" y="450" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="68">
+									<Position x="0" y="500" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="72">
+									<Position x="0" y="550" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="129">
+									<Position x="0" y="600" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="130">
+									<Position x="0" y="650" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="132">
+									<Position x="0" y="700" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+								<Pixel addrname="PixelDiode" addr="136">
+									<Position x="0" y="750" z="0"/>
+									<Threshold thr="1"/>
+								</Pixel>
+							</ROC>
+						</NTimes>
+					</NTimes>
+				</ROC>
+			</NTimes>			
+		</ROC>
+		<StateMachine>
+			<State name="PullDown">
+				<StateTransition nextstate="LoadColumn" delay="1">
+					<Condition relation="Equal">
+						<Lvalue value="1"/>
+						<Rvalue value="1"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="LoadColumn">
+				<Action what="loadcell" parameter="EoC"/>
+				<StateTransition nextstate="LoadColumn" delay="0">
+					<Condition relation="Smaller">
+						<Lvalue>
+							<Action what="getcountervalue" parameter="LdColrounds"/>
+						</Lvalue>
+						<Rvalue value="4"/>
+					</Condition>
+					<Action what="incrementcounter" parameter="LdColrounds" value="1"/>
+				</StateTransition>
+				<StateTransition nextstate="LoadPixel" delay="1">
+					<Action what="setcounter" parameter="LdColrounds" value="0"/>
+					<Condition relation="LargerEqual">
+						<Lvalue>
+							<Action what="getcountervalue" parameter="LdColrounds"/>
+						</Lvalue>
+						<Rvalue value="4"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="LoadPixel">
+				<Action what="loadpixel"/>
+				<StateTransition nextstate="LoadPixel" delay="0">
+					<Action what="incrementcounter" parameter="LdPixrounds" value="1"/>
+					<Condition relation="And">
+						<Lvalue>
+							<Condition relation="Smaller">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="LdPixrounds"/>
+								</Lvalue>
+								<Rvalue value="63"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="Equal">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="EoC"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+					<Action what="cout" parameter="peep" value="1"/>
+				</StateTransition>
+				<StateTransition nextstate="PullDown" delay="1">
+					<Action what="setcounter" parameter="LdPixrounds" value="0"/>
+					<Condition relation="Equal">
+						<Lvalue>
+							<Action what="hitsavailable" parameter="EoC"/>
+						</Lvalue>
+						<Rvalue value="0"/>
+					</Condition>
+				</StateTransition>
+				<StateTransition nextstate="ReadColumn" delay="1">
+					<Action what="setcounter" parameter="LdPixrounds" value="0"/>
+					<Condition relation="Larger">
+						<Lvalue>
+							<Action what="hitsavailable" parameter="EoC"/>
+						</Lvalue>
+						<Rvalue value="0"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="ReadColumn">
+				<Action what="loadcell" parameter="CU"/>
+				<Action what="readcell"/>
+				<StateTransition nextstate="ReadColumn" delay="1">
+					<Condition relation="AND">
+						<Lvalue>
+							<Condition relation="Larger">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="EoC"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="Smaller">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="RdColrounds"/>
+								</Lvalue>
+								<Rvalue value="63"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+					<Action what="incrementcounter" parameter="RdColrounds" value="1"/>
+				</StateTransition>
+				<StateTransition nextstate="PullDown" delay="1">
+					<Condition relation="Or">
+						<Lvalue>
+							<Condition relation="Equal">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="EoC"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="LargerEqual">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="RdColrounds"/>
+								</Lvalue>
+								<Rvalue value="63"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+					<Action what="setcounter" parameter="RdColrounds" value="0"/>
+				</StateTransition>
+			</State>
+		</StateMachine>
+	</Detector>
+	<EventGenerator>
+		<Seed x0="0"/>
+		<Output filename="eventgen_M2.dat"/>
+		<EventRate f="0.01"/>
+		<ClusterSize sigma="20."/>
+		<CutOffFactor numsigmas="5"/>
+		<InclinationSigma sigma="0.15"/>
+		<ChargeScale scale="1."/>
+		<MinSize diagonal="2."/>
+		<NumEvents n="50"/>
+		<EventStart t="0."/>
+	</EventGenerator>
+</Simulation>

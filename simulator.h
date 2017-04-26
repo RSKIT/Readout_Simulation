@@ -62,7 +62,8 @@ private:
 								std::string defaultaddressname = "ROC");
 	Pixel 			LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsize);
 	void 			LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 
-						TCoord<double> pixelsize);
+						TCoord<double> pixelsize, 
+						TCoord<double> globalshift = TCoord<double>::Null);
 
 	//Statemachine-Loading:
 	XMLDetector* 	LoadStateMachine(DetectorBase* detector, tinyxml2::XMLElement* statemachine);

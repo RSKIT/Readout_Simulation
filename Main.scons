@@ -1,6 +1,6 @@
 #! python
 
-env = Environment(CCFLAGS="-std=c++11")
+env = Environment(CCFLAGS="-std=c++11 -g")
 
 mainfile = 'main.cpp'
 
