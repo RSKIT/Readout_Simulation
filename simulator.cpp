@@ -882,6 +882,15 @@ StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 			Comparison c = LoadComparison(child);
 
 			trans.SetComparison(c);
+
+			if(trans.GetComparison()->GetFirstComparison() != 0)
+			{
+				Comparison* fc = trans.GetComparison()->GetFirstComparison();
+				Comparison* cfc = c.GetFirstComparison();
+				std::cout << "firstcomp:      " << fc << " c: " << cfc << std::endl;
+				std::cout << "firstfirstcomp: " << fc->GetFirstComparison() 
+							<< " c: " << cfc->GetFirstComparison() << std::endl;
+			}
 			//Comparison c2 = c;
 
 			//std::cout << c2.PrintComparison(" ");

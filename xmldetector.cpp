@@ -31,13 +31,8 @@ Comparison::Comparison(const Comparison& comp) :
 					firstreg(comp.firstreg), 
 					secondreg(comp.secondreg),
 
-					firstcomp(NULL),
-					secondcomp(NULL), 
-					
 					firstregset(false), 
 					secondregset(false), 
-
-
 
 					relation(comp.relation)
 {
@@ -48,7 +43,8 @@ Comparison::Comparison(const Comparison& comp) :
 	if(comp.firstcomp != NULL) {
 		std::cout << "More FC: " << comp.firstcomp << std::endl;
 		firstcomp = new Comparison(*(comp.firstcomp));
-		std::cout << "Done FC copy: " << firstcomp << ", own FC is " << firstcomp->firstcomp << std::endl;
+		std::cout << "Done FC copy: " << firstcomp << ", own FC is " << firstcomp->firstcomp
+				  << std::endl;
 	}
 	else
 		firstcomp = NULL;
@@ -71,6 +67,34 @@ Comparison::~Comparison()
 		delete secondcomp;
 		secondcomp = NULL;
 	}
+}
+
+Comparison& Comparison::operator=(const Comparison& comp)
+{
+	std::cout << "equality operator!" << std::endl;
+
+	relation = comp.relation;
+
+	firstchoice = comp.firstchoice;
+	secondchoice = comp.secondchoice;
+
+	firstval = comp.firstval;
+	secondval = comp.secondval;
+
+	firstreg = comp.firstreg;
+	secondreg = comp.secondreg;
+
+	firstregset = false;
+	secondregset = false;
+
+	if(comp.firstcomp != NULL)
+		firstcomp = new Comparison(*comp.firstcomp);
+	else
+		firstcomp = NULL;
+	if(comp.secondcomp != NULL)
+		secondcomp = new Comparison(*comp.secondcomp);
+
+	return *this;
 }
 
 int  Comparison::GetRelation()
@@ -122,7 +146,7 @@ Comparison* Comparison::GetFirstComparison()
 
 void Comparison::SetFirstComparison(const Comparison& comp)
 {
-	if(firstcomp != 0)
+	if(firstcomp != NULL)
 		delete firstcomp;
 	firstcomp = new Comparison(comp);
 	firstchoice = Comp;
@@ -135,7 +159,7 @@ Comparison* Comparison::GetSecondComparison()
 
 void Comparison::SetSecondComparison(const Comparison& comp)
 {
-	if(secondcomp != 0)
+	if(secondcomp != NULL)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);
 	secondchoice = Comp;
@@ -202,7 +226,7 @@ bool Comparison::ReadyForEvaluation()
 	switch(firstchoice)
 	{
 		case(Comp):
-			if(firstcomp == 0)
+			if(firstcomp == NULL)
 				return false;
 			else if(!firstcomp->ReadyForEvaluation())
 				return false;
@@ -220,7 +244,7 @@ bool Comparison::ReadyForEvaluation()
 	switch(secondchoice)
 	{
 		case(Comp):
-			if(secondcomp == 0)
+			if(secondcomp == NULL)
 				return false;
 			else if(!secondcomp->ReadyForEvaluation())
 				return false;

@@ -51,6 +51,8 @@ public:
 
 	~Comparison();
 
+	Comparison& operator=(const Comparison& comp);
+
 	int  GetRelation();
 	void SetRelation(int operand);
 
