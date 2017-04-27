@@ -118,6 +118,13 @@ void Comparison::SetFirstComparison(const Comparison& comp)
 	firstchoice = Comp;
 }
 
+void Comparison::SetFirstComparison(Comparison* comp)
+{
+	if(firstcomp != NULL)
+		delete firstcomp;
+	firstcomp = comp;
+}
+
 Comparison* Comparison::GetSecondComparison()
 {
 	return secondcomp;
@@ -129,6 +136,13 @@ void Comparison::SetSecondComparison(const Comparison& comp)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);
 	secondchoice = Comp;
+}
+
+void Comparison::SetSecondComparison(Comparison* comp)
+{
+	if(secondcomp != NULL)
+		delete secondcomp;
+	secondcomp = comp;
 }
 
 double Comparison::GetFirstValue()
@@ -299,7 +313,7 @@ std::string Comparison::PrintComparison(std::string spaces) const
  *****************************/
 
 StateTransition::StateTransition() : nextstate(""), delay(0), 
-		counterchanges(std::vector<RegisterAccess>()), condition(Comparison())
+		counterchanges(std::vector<RegisterAccess>()), condition(new Comparison())
 {
 
 }
@@ -310,7 +324,7 @@ StateTransition::StateTransition(const StateTransition& trans) : nextstate(trans
 	for(auto& it : trans.counterchanges)
 		counterchanges.push_back(it);
 
-	condition = Comparison(trans.condition);
+	condition = new Comparison(*(trans.condition));
 }
 
 std::string StateTransition::GetNextState()
@@ -335,13 +349,17 @@ void StateTransition::SetDelay(int delay)
 
 Comparison* StateTransition::GetComparison()
 {
-	return &condition;
+	return condition;
 }
 
 void StateTransition::SetComparison(const Comparison& comp)
 {
-	condition = comp;
+	condition = new Comparison(comp);
+}
 
+void StateTransition::SetComparison(Comparison* comp)
+{
+	condition = comp;
 }
 
 void StateTransition::ClearRegisterChanges()
@@ -371,7 +389,7 @@ int  StateTransition::GetNumRegisterChanges()
 
 bool StateTransition::Evaluate()
 {
-	return condition.Evaluate();
+	return condition->Evaluate();
 }
 
 
@@ -380,7 +398,7 @@ bool StateTransition::Evaluate()
  *******************************/
 
 StateMachineState::StateMachineState() : name(""), registerchanges(std::vector<RegisterAccess>()),
-		transitions(std::vector<StateTransition>())
+		transitions(std::vector<StateTransition*>())
 {
 
 }
@@ -427,9 +445,12 @@ void StateMachineState::ClearStateTransitions()
 
 void StateMachineState::AddStateTransition(StateTransition transition)
 {
-	transitions.push_back(transition);
+	transitions.push_back(new StateTransition(transition));
+}
 
-	std::cout << "peep" << std::endl;
+void StateMachineState::AddStateTransition(StateTransition* transition)
+{
+	transitions.push_back(transition);
 }
 
 int  StateMachineState::GetNumStateTransitions()
@@ -437,12 +458,12 @@ int  StateMachineState::GetNumStateTransitions()
 	return transitions.size();
 }
 
-/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsBegin()
+/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsBegin()
 {
 	return transitions.begin();
 }
 
-/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsEnd()
+/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsEnd()
 {
 	return transitions.end();
 }
@@ -453,22 +474,22 @@ int  StateMachineState::GetNumStateTransitions()
 
 XMLDetector::XMLDetector(std::string addressname, int address)
 		: DetectorBase(addressname, address), currentstate(0), nextstate(-1),
-		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
+		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
 }
 
 XMLDetector::XMLDetector() : DetectorBase(), currentstate(0), nextstate(-1),
-		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
+		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
 }
 
 XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ), 
-		currentstate(templ.currentstate), nextstate(templ.nextstate), states(templ.states),
-		counters(templ.counters)
+		currentstate(templ.currentstate), nextstate(templ.nextstate), counters(templ.counters)
 {
-
+	for(auto& it : templ.states)
+		states.push_back(new StateMachineState(*it));
 }
 
 bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
@@ -509,7 +530,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
     	return true;
     }
 
-	StateMachineState* state = &states[currentstate];
+	StateMachineState* state = states[currentstate];
 
 
 	std::cout << "State: " << state->GetStateName() << std::endl;
@@ -525,21 +546,21 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 	auto endtransitions = state->GetStateTransitionsEnd();
 	for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
 	{
-		FillComparison(it->GetComparison());
+		FillComparison((*it)->GetComparison());
 
-		if(it->Evaluate())
+		if((*it)->Evaluate())
 		{
-			SetCounter("delay", it->GetDelay());
+			SetCounter("delay", (*it)->GetDelay());
 
-			auto itend = it->GetRegisterChangesEnd();
-			for(auto regit = it->GetRegisterChangesBegin(); regit != itend; ++regit)
+			auto itend = (*it)->GetRegisterChangesEnd();
+			for(auto regit = (*it)->GetRegisterChangesBegin(); regit != itend; ++regit)
 				ExecuteRegisterChanges(*regit, timestamp);
 
 			//find the next state:
 			int index = 0;
 			for(auto stateit = states.begin(); stateit != states.end(); ++stateit)
 			{
-				if(stateit->GetStateName().compare(it->GetNextState()) == 0)
+				if((*stateit)->GetStateName().compare((*it)->GetNextState()) == 0)
 				{
 					nextstate = index;
 					break;
@@ -584,7 +605,7 @@ std::string XMLDetector::GetCurrentStateName()
 	if(currentstate < 0 || currentstate >= states.size())
 		return "";
 	else
-		return states[currentstate].GetStateName();
+		return states[currentstate]->GetStateName();
 }
 
 DetectorBase* XMLDetector::Clone()
@@ -599,6 +620,11 @@ void XMLDetector::AddCounter(std::string name, double value)
 
 void XMLDetector::AddState(const StateMachineState& state)
 {
+	states.push_back(new StateMachineState(state));
+}
+
+void XMLDetector::AddState(StateMachineState* state)
+{
 	states.push_back(state);
 }
 
@@ -607,15 +633,15 @@ StateMachineState* XMLDetector::GetState(int index)
 	if(index < 0 || index >= states.size())
 		return 0;
 	else
-		return &states[index];
+		return states[index];
 }
 
 StateMachineState* XMLDetector::GetState(std::string statename)
 {
 	for(auto& it : states)
 	{
-		if(it.GetStateName().compare(statename) == 0)
-			return &it;
+		if(it->GetStateName().compare(statename) == 0)
+			return it;
 	}
 	return 0;
 }

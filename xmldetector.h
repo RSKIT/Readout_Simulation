@@ -63,8 +63,10 @@ public:
 
 	Comparison* GetFirstComparison();
 	void SetFirstComparison(const Comparison& comp);
+	void SetFirstComparison(Comparison* comp);
 	Comparison* GetSecondComparison();
 	void SetSecondComparison(const Comparison& comp);
+	void SetSecondComparison(Comparison* comp);
 
 	double GetFirstValue();
 	void   SetFirstValue(double value);
@@ -114,6 +116,7 @@ public:
 
 	Comparison* GetComparison();
 	void SetComparison(const Comparison& comp);
+	void SetComparison(Comparison* comp);
 
 	void ClearRegisterChanges();
 	void AddRegisterChange(RegisterAccess change);
@@ -128,7 +131,7 @@ private:
 	std::string nextstate;
 	int delay;
 
-	Comparison condition;
+	Comparison* condition;
 
 	std::vector<RegisterAccess> counterchanges;
 
@@ -151,15 +154,16 @@ public:
 
 	void ClearStateTransitions();
 	void AddStateTransition(StateTransition transition);
+	void AddStateTransition(StateTransition* transition);
 	int  GetNumStateTransitions();
-	std::vector<StateTransition>::iterator GetStateTransitionsBegin();
-	std::vector<StateTransition>::iterator GetStateTransitionsEnd();
+	std::vector<StateTransition*>::iterator GetStateTransitionsBegin();
+	std::vector<StateTransition*>::iterator GetStateTransitionsEnd();
 
 private:
 	std::string name;
 
 	std::vector<RegisterAccess>  registerchanges;
-	std::vector<StateTransition> transitions;
+	std::vector<StateTransition*> transitions;
 };
 
 
@@ -184,6 +188,7 @@ public:
     void AddCounter(std::string name, double value);
 
     void AddState(const StateMachineState& state);
+    void AddState(StateMachineState* state);
     StateMachineState* GetState(int index);
     StateMachineState* GetState(std::string statename);
     int GetNumStates();
@@ -191,7 +196,7 @@ public:
 private:
 	int currentstate;
 	int nextstate;
-	std::vector<StateMachineState> states;
+	std::vector<StateMachineState*> states;
 	std::map<std::string, double>  counters;
 
 	void SetCounter(std::string name, double value);

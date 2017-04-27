@@ -269,7 +269,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			break;
 
 		std::cout << "peep" << std::endl;
-		
+
 		if(!ClockDown(timestamp))
 			break;
 
@@ -820,11 +820,11 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 	return det;
 }
 
-StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
+StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 {
 	std::cout << "    LoadState: "; // << std::endl;
 
-	StateMachineState state;
+	StateMachineState* state = new StateMachineState();
 
 	if(stateelement == 0)
 		return state;
@@ -840,7 +840,7 @@ StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 		statename = s.str();
 	}
 
-	state.SetStateName(statename);
+	state->SetStateName(statename);
 
 	std::cout << statename << std::endl;
 
@@ -849,15 +849,10 @@ StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 	{
 		std::string value = std::string(child->Value());
 		if(value.compare("Action") == 0)
-			state.AddRegisterChange(LoadRegisterChange(child));
+			state->AddRegisterChange(LoadRegisterChange(child));
 		else if(value.compare("StateTransition") == 0)
 		{
-			StateTransition trans = LoadStateTransition(child);
-			std::cout << "peepbeforePushback" << std::endl;
-			std::cout << trans.GetComparison()->PrintComparison();
-			state.AddStateTransition(trans);
-			std::cout << "peepafterPushback" << std::endl;
-			//state.AddStateTransition(LoadStateTransition(child));
+			state->AddStateTransition(LoadStateTransition(child));
 		}
 
 		if(child != stateelement->LastChildElement())
@@ -865,6 +860,8 @@ StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 		else
 			child = 0;
 	}
+
+	return state;
 }
 
 RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchange)
@@ -891,36 +888,36 @@ RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchang
 	return regacc;
 }
 
-StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
+StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 {
 	std::cout << "      LoadStateTransition to "; // << std::endl;
 
-	StateTransition trans;
+	StateTransition* trans = new StateTransition();
 
 	if(transition == 0)
 		return trans;
 
 	//name of the next state:
 	const char* nam = transition->Attribute("nextstate");
-	trans.SetNextState((nam != 0)?std::string(nam):"");
+	trans->SetNextState((nam != 0)?std::string(nam):"");
 
-	std::cout << trans.GetNextState() << std::endl;
+	std::cout << trans->GetNextState() << std::endl;
 
 	//transition delay:
 	int delay;
 	tinyxml2::XMLError error = transition->QueryIntAttribute("delay", &delay);
 	if(error != tinyxml2::XML_NO_ERROR)
 		delay = 0;
-	trans.SetDelay(delay);
+	trans->SetDelay(delay);
 
 	tinyxml2::XMLElement* child = transition->FirstChildElement();
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
 		if(value.compare("Action") == 0)
-			trans.AddRegisterChange(LoadRegisterChange(child));
+			trans->AddRegisterChange(LoadRegisterChange(child));
 		else if(value.compare("Condition") == 0)
-			trans.SetComparison(LoadComparison(child));
+			trans->SetComparison(LoadComparison(child));
 
 		if(child != transition->LastChildElement())
 			child = child->NextSiblingElement();
@@ -931,38 +928,38 @@ StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 	return trans;
 }
 
-Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
+Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 {
 	std::cout << "      LoadComparison" << std::endl;
 
-	Comparison comp;
+	Comparison* comp = new Comparison();
 	if(comparison == 0)
 		return comp;
 
 	const char* nam = comparison->Attribute("relation");
 	std::string rel = (nam != 0)?std::string(nam):"";
 	if(rel.compare("Smaller") == 0)
-		comp.SetRelation(Comparison::Smaller);
+		comp->SetRelation(Comparison::Smaller);
 	else if(rel.compare("SmallerEqual") == 0)
-		comp.SetRelation(Comparison::SmallerEqual);
+		comp->SetRelation(Comparison::SmallerEqual);
 	else if(rel.compare("Larger") == 0)
-		comp.SetRelation(Comparison::Larger);
+		comp->SetRelation(Comparison::Larger);
 	else if(rel.compare("LargerEqual") == 0)
-		comp.SetRelation(Comparison::LargerEqual);
+		comp->SetRelation(Comparison::LargerEqual);
 	else if(rel.compare("Equal") == 0)
-		comp.SetRelation(Comparison::Equal);
+		comp->SetRelation(Comparison::Equal);
 	else if(rel.compare("NotEqual") == 0)
-		comp.SetRelation(Comparison::NotEqual);
+		comp->SetRelation(Comparison::NotEqual);
 	else if(rel.compare("Or") == 0)
-		comp.SetRelation(Comparison::Or);
+		comp->SetRelation(Comparison::Or);
 	else if(rel.compare("And") == 0)
-		comp.SetRelation(Comparison::And);
+		comp->SetRelation(Comparison::And);
 	else if(rel.compare("Xor") == 0)
-		comp.SetRelation(Comparison::Xor);
+		comp->SetRelation(Comparison::Xor);
 	else
 	{
 		std::cout << "Error: Missing relation" << std::endl;
-		comp.SetRelation(-1);
+		comp->SetRelation(-1);
 	}
 
 	tinyxml2::XMLElement* child = comparison->FirstChildElement();
@@ -973,7 +970,7 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		{
 			double lval;
 			if(child->QueryDoubleAttribute("value", &lval) == tinyxml2::XML_NO_ERROR)
-				comp.SetFirstValue(lval);
+				comp->SetFirstValue(lval);
 			else
 			{
 				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
@@ -981,9 +978,9 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 				{
 					std::string val = std::string(grandchild->Value());
 					if(val.compare("Action") == 0)
-						comp.SetFirstRegisterAccess(LoadRegisterChange(grandchild));
+						comp->SetFirstRegisterAccess(LoadRegisterChange(grandchild));
 					else if(val.compare("Condition") == 0)
-						comp.SetFirstComparison(LoadComparison(grandchild));
+						comp->SetFirstComparison(LoadComparison(grandchild));
 					else
 						std::cout << "Error: Missing LValue" << std::endl;
 				}
@@ -993,7 +990,7 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		{
 			double rval;
 			if(child->QueryDoubleAttribute("value", &rval) == tinyxml2::XML_NO_ERROR)
-				comp.SetSecondValue(rval);
+				comp->SetSecondValue(rval);
 			else
 			{
 				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
@@ -1001,9 +998,9 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 				{
 					std::string val = std::string(grandchild->Value());
 					if(val.compare("Action") == 0)
-						comp.SetSecondRegisterAccess(LoadRegisterChange(grandchild));
+						comp->SetSecondRegisterAccess(LoadRegisterChange(grandchild));
 					else if(val.compare("Condition") == 0)
-						comp.SetSecondComparison(LoadComparison(grandchild));
+						comp->SetSecondComparison(LoadComparison(grandchild));
 					else
 						std::cout << "Error: Missing RValue" << std::endl;
 				}
@@ -1017,9 +1014,9 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 			child = 0;
 	}
 
-	std::cout << "       Create Relation: " << comp.GetRelation() << std::endl;
+	std::cout << "       Create Relation: " << comp->GetRelation() << std::endl;
 
-	std::cout << "comparisonLoader:" << std::endl << comp.PrintComparison(" ");
+	std::cout << "comparisonLoader:" << std::endl << comp->PrintComparison(" ");
 
 	return comp;
 }

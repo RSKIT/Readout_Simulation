@@ -67,10 +67,10 @@ private:
 
 	//Statemachine-Loading:
 	XMLDetector* 	LoadStateMachine(DetectorBase* detector, tinyxml2::XMLElement* statemachine);
-	StateMachineState 	LoadState(tinyxml2::XMLElement* stateelement);
+	StateMachineState* 	LoadState(tinyxml2::XMLElement* stateelement);
 	RegisterAccess 		LoadRegisterChange(tinyxml2::XMLElement* registerchange);
-	StateTransition 	LoadStateTransition(tinyxml2::XMLElement* transition);
-	Comparison 			LoadComparison(tinyxml2::XMLElement* comparison);
+	StateTransition* 	LoadStateTransition(tinyxml2::XMLElement* transition);
+	Comparison*			LoadComparison(tinyxml2::XMLElement* comparison);
 
 	std::string 		TimesToInterval(TimePoint start, TimePoint end);
 

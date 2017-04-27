@@ -141,6 +141,8 @@ bool PrioBuffer::InsertHit(const Hit& hit)
 		if(!cell->hitqueue[i].is_valid())
 		{
 			cell->hitqueue[i] = hit;
+			//add in which buffer the hit was put:
+			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName()+"_bufferNumber", i);
 			return true;
 		}
 	}
