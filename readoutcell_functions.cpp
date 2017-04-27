@@ -20,32 +20,38 @@ bool ROCBuffer::InsertHit(const Hit& hit)
 
 
 
-Hit ROCBuffer::GetHit()
+Hit ROCBuffer::GetHit(int timestamp, bool remove)
 {
 	if(cell->hitqueue.size() == 0)
 		return Hit();
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		cell->hitqueue.erase(cell->hitqueue.begin());
-		return h;
+		if(h.is_available(timestamp))
+		{
+			if(remove)
+				cell->hitqueue.erase(cell->hitqueue.begin());
+			return h;
+		}
+		else
+			return Hit();
 	}
 }
 
-
+bool ROCBuffer::NoTriggerRemoveHits(int timestamp, std::fstream* fbadout)
+{
+	return false;
+}
 
 bool ROCBuffer::is_full()
 {
 	return (cell->hitqueue.size() >= cell->hitqueuelength);
 }
 
-
-
 int ROCBuffer::GetNumHitsEnqueued()
 {
 	return -1;
 }
-
 
 FIFOBuffer::FIFOBuffer(ReadoutCell* roc) : ROCBuffer(roc)
 {
@@ -63,16 +69,47 @@ bool FIFOBuffer::InsertHit(const Hit& hit)
 		return false;
 }
 
-Hit FIFOBuffer::GetHit()
+Hit FIFOBuffer::GetHit(int timestamp, bool remove)
 {
 	if(cell->hitqueue.size() == 0)
 		return Hit();
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		cell->hitqueue.erase(cell->hitqueue.begin());
-		return h;
+		if(h.is_available(timestamp))
+		{
+			if(remove)
+				cell->hitqueue.erase(cell->hitqueue.begin());
+			return h;
+		}
+		else
+			return Hit();
 	}
+}
+
+bool FIFOBuffer::NoTriggerRemoveHits(int timestamp, std::fstream* fbadout)
+{
+	bool delsomething = false;
+	auto it = cell->hitqueue.begin();
+	while(it != cell->hitqueue.end())
+	{
+		if(it->GetAvailableTime() == timestamp)
+		{
+			if(fbadout != 0 && fbadout->is_open())
+			{
+				it->AddReadoutTime("noTrigger", timestamp);
+				*fbadout << it->GenerateString(false) << std::endl;
+			}
+			
+			it = cell->hitqueue.erase(it);
+
+			delsomething = true;
+		}
+		else
+			++it;
+	}
+
+	return delsomething;
 }
 
 bool FIFOBuffer::is_full()
@@ -110,18 +147,44 @@ bool PrioBuffer::InsertHit(const Hit& hit)
 	return false;
 }
 
-Hit PrioBuffer::GetHit()
+Hit PrioBuffer::GetHit(int timestamp, bool remove)
 {
 	for(int i = 0; i < cell->hitqueuelength; ++i)
 	{
-		if(cell->hitqueue[i].is_valid())
+		if(cell->hitqueue[i].is_valid() && cell->hitqueue[i].is_available(timestamp))
 		{
 			Hit h = cell->hitqueue[i];
-			cell->hitqueue[i] = Hit();
+			if(remove)
+				cell->hitqueue[i] = Hit();
 			return h;
 		}
 	}
 	return Hit();
+}
+
+bool PrioBuffer::NoTriggerRemoveHits(int timestamp, std::fstream* fbadout)
+{
+	bool delsomething = false;
+	auto it = cell->hitqueue.begin();
+	while(it != cell->hitqueue.end())
+	{
+		if(it->GetAvailableTime() == timestamp)
+		{
+			if(fbadout != 0 && fbadout->is_open())
+			{
+				it->AddReadoutTime("noTrigger", timestamp);
+				*fbadout << it->GenerateString(false) << std::endl;
+			}
+			
+			*it = Hit();
+
+			delsomething = true;
+		}
+		
+		++it;
+	}
+
+	return delsomething;
 }
 
 bool PrioBuffer::is_full()
@@ -173,7 +236,7 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf->GetHit();
+		Hit h  = it->buf->GetHit(timestamp);
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
@@ -214,7 +277,7 @@ bool NoOverWriteReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf->GetHit();
+		Hit h  = it->buf->GetHit(timestamp);
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
@@ -247,14 +310,14 @@ bool OverWriteReadout::Read(int timestamp, std::fstream* out)
 	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
 	{
 		//get a hit from the respective ROC:
-		Hit h  = it->buf->GetHit();
+		Hit h  = it->buf->GetHit(timestamp);
 		if(h.is_valid() || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
 			if(!cell->buf->InsertHit(h))
 			{
 				//replace the "oldest" hit:
-				Hit oldhit = cell->buf->GetHit();
+				Hit oldhit = cell->buf->GetHit(timestamp);
 				cell->buf->InsertHit(h);
 				//log the losing of the hit:
 				oldhit.AddReadoutTime("overwritten", timestamp);

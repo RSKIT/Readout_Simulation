@@ -91,6 +91,7 @@
 			</State>
 			<State name="LoadColumn">
 				<Action what="loadcell" parameter="EoC"/>
+				<Action what="printhitsavailable" parameter="EoC" value="1"/>
 				<StateTransition nextstate="LoadColumn" delay="0">
 					<Condition relation="Smaller">
 						<Lvalue>
@@ -112,6 +113,7 @@
 			</State>
 			<State name="LoadPixel">
 				<Action what="loadpixel"/>
+				<Action what="printhitsavailable" parameter="Group" value="1"/>
 				<StateTransition nextstate="LoadPixel" delay="0">
 					<Action what="incrementcounter" parameter="LdPixrounds" value="1"/>
 					<Condition relation="And">
@@ -120,7 +122,7 @@
 								<Lvalue>
 									<Action what="getcountervalue" parameter="LdPixrounds"/>
 								</Lvalue>
-								<Rvalue value="63"/>
+								<Rvalue value="2"/> <!-- maximum: 63 -->
 							</Condition>
 						</Lvalue>
 						<Rvalue>
@@ -132,7 +134,6 @@
 							</Condition>
 						</Rvalue>
 					</Condition>
-					<Action what="cout" parameter="peep" value="1"/>
 				</StateTransition>
 				<StateTransition nextstate="PullDown" delay="1">
 					<Action what="setcounter" parameter="LdPixrounds" value="0"/>
@@ -155,9 +156,12 @@
 			</State>
 			<State name="ReadColumn">
 				<Action what="loadcell" parameter="CU"/>
+				<Action what="printhitsavailable" parameter="CU" value="1"/>
 				<Action what="readcell"/>
+				<Action what="cout" parameter="bool readcell =" value="0"/>
+				<Action what="printcounter" parameter="readcell" value="1"/>
 				<StateTransition nextstate="ReadColumn" delay="1">
-					<Condition relation="AND">
+					<Condition relation="And">
 						<Lvalue>
 							<Condition relation="Larger">
 								<Lvalue>
@@ -171,7 +175,7 @@
 								<Lvalue>
 									<Action what="getcountervalue" parameter="RdColrounds"/>
 								</Lvalue>
-								<Rvalue value="63"/>
+								<Rvalue value="1"/> <!-- maximum: 63 -->
 							</Condition>
 						</Rvalue>
 					</Condition>
@@ -192,7 +196,7 @@
 								<Lvalue>
 									<Action what="getcountervalue" parameter="RdColrounds"/>
 								</Lvalue>
-								<Rvalue value="63"/>
+								<Rvalue value="1"/>
 							</Condition>
 						</Rvalue>
 					</Condition>

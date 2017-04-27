@@ -2,14 +2,17 @@
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
 		seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
-		detectors(std::vector<DetectorBase*>())
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerturnontimes(std::list<int>())
 {
 	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
 		clustersize(0), eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), 
-		numsigmas(3)
+		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
+		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>())
 {
 	detectors.push_back(detector);
 
@@ -18,7 +21,9 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
 		eventindex(0), chargescale(1), inclinationsigma(0.3), 
-		detectors(std::vector<DetectorBase*>())
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerturnontimes(std::list<int>())
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -167,6 +172,85 @@ void EventGenerator::SetCutOffFactor(int numsigmas)
 		this->numsigmas = numsigmas;
 }
 
+double EventGenerator::GetTriggerProbability()
+{
+	return triggerprobability;
+}
+
+void EventGenerator::SetTriggerProbability(double probability)
+{
+	triggerprobability = probability;
+}
+
+int EventGenerator::GetTriggerDelay()
+{
+	return triggerdelay;
+}
+
+void EventGenerator::SetTriggerDelay(int delay)
+{
+	if(delay <= 0)
+		triggerdelay = 0;
+	else
+		triggerdelay = delay;
+}
+
+int EventGenerator::GetTriggerLength()
+{
+	return triggerlength;
+}
+
+void EventGenerator::SetTriggerLength(int length)
+{
+	if(length <= 0)
+		triggerlength = 0;
+	else
+		triggerlength = length;
+}
+
+int EventGenerator::GetTriggerOffTime()
+{
+	return triggerturnofftime;
+}
+
+void EventGenerator::SetTriggerOffTime(int timestamp)
+{
+	triggerturnofftime = timestamp;
+}
+
+void EventGenerator::AddOnTimeStamp(int timestamp)
+{
+	triggerturnontimes.push_back(timestamp);
+}
+
+int EventGenerator::GetNumOnTimeStamps()
+{
+	return triggerturnontimes.size();
+}
+
+void EventGenerator::SortTimeStamps()
+{
+	triggerturnontimes.sort();
+}
+
+bool EventGenerator::GetTriggerState(int timestamp)
+{
+	if(triggerturnontimes.size() == 0)
+		return true;
+
+	if(timestamp == triggerturnontimes.front())
+	{
+		triggerstate = true;
+		triggerturnofftime = timestamp + triggerlength;
+		triggerturnontimes.pop_front();
+	}
+	else if(timestamp == triggerturnofftime)
+		triggerstate = false;
+
+	std::cout << "peep-trigger" << std::endl;
+
+	return triggerstate;
+}
 
 void EventGenerator::GenerateEvents(double firsttime, int numevents)
 {
@@ -236,6 +320,17 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 			fout << "# Event " << eventindex << std::endl
 				 << "# Trajectory: g: x(t) = " << setpoint << " + t * " << direction << std::endl
 				 << "# Time: " << time << std::endl;
+
+		//generate the trigger for this event:
+		if(generator()/double(RAND_MAX) < triggerprobability)
+		{
+			//if the trigger arrives slightly after the clock transition it will be recognised
+			//  one timestamp later -> +0.9 timestamps
+			triggerturnontimes.push_back(int(time + triggerdelay + 0.9));
+			if(fout.is_open())
+				fout << "# Trigger: " << int(time + triggerdelay + 0.9) << " - " 
+					 << int(time + triggerdelay + 0.9 + triggerlength) << std::endl;
+		}
 
 		//generate the template hit object for this event:
 		Hit hittemplate;

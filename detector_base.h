@@ -43,9 +43,9 @@ public:
     bool        SizeOK();
     bool        EnlargeSize();
 	
-    virtual bool        StateMachineCkUp(int timestamp);
-    virtual bool 		StateMachineCkDown(int timestamp);
-    virtual bool		StateMachine(int timestamp);
+    virtual bool        StateMachineCkUp(int timestamp, bool trigger = true);
+    virtual bool 		StateMachineCkDown(int timestamp, bool trigger = true);
+    virtual bool		StateMachine(int timestamp, bool trigger = true);
 
     bool        PlaceHit(Hit hit);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);

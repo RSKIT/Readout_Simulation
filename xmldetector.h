@@ -172,8 +172,8 @@ public:
 	XMLDetector();
 	XMLDetector(const XMLDetector& templ);
 
-    bool	StateMachineCkUp(int timestamp);
-    bool	StateMachineCkDown(int timestamp);
+    bool	StateMachineCkUp(int timestamp, bool trigger = true);
+    bool	StateMachineCkDown(int timestamp, bool trigger = true);
 
     int 	GetState();
     int 	GetNextState();

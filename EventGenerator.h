@@ -11,6 +11,7 @@
 #include <random>
 #include <math.h>
 #include <deque>
+#include <list>
 
 #include "TCoord.h"
 #include "hit.h"
@@ -97,6 +98,24 @@ public:
 	int  GetCutOffFactor();
 	void SetCutOffFactor(int numsigmas);
 
+	double	GetTriggerProbability();
+	void	SetTriggerProbability(double probability);
+
+	int		GetTriggerDelay();
+	void	SetTriggerDelay(int delay);
+
+	int		GetTriggerLength();
+	void	SetTriggerLength(int length);
+
+	int		GetTriggerOffTime();
+	void	SetTriggerOffTime(int timestamp);
+
+	void	AddOnTimeStamp(int timestamp);
+	int		GetNumOnTimeStamps();
+	void 	SortTimeStamps();
+
+	bool 	GetTriggerState(int timestamp);
+
 	void GenerateEvents(double firsttime = 0, int numevents = 1);
 	void ClearEventQueue();
 
@@ -156,6 +175,15 @@ private:
 
 
 	std::deque<Hit> clusterparts;
+
+	//trigger signal generation:
+	double triggerprobability;	//generation probability for a trigger to an event
+	int triggerdelay;		//delay of the trigger signal after the hit implantation
+	int triggerlength;		//length of the trigger signal in timestamps
+	bool triggerstate;		//state of the trigger
+
+	std::list<int> triggerturnontimes;
+	int triggerturnofftime;
 };
 
 

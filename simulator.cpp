@@ -205,7 +205,7 @@ bool Simulator::ClockUp(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		if(!(*it)->StateMachineCkUp(timestamp))
+		if(!(*it)->StateMachineCkUp(timestamp, eventgenerator.GetTriggerState(timestamp)))
 			return false;
 	}
 	return true;
@@ -215,7 +215,7 @@ bool Simulator::ClockDown(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		if(!(*it)->StateMachineCkDown(timestamp))
+		if(!(*it)->StateMachineCkDown(timestamp, eventgenerator.GetTriggerState(timestamp)))
 			return false;
 	}
 	return true;
@@ -233,6 +233,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	eventgenerator.PrintQueue();
 
 	std::chrono::steady_clock::time_point endEventGen = std::chrono::steady_clock::now();
+
+	//eventgenerator.SortTimeStamps();	//sort the trigger turn on timestamps
 
 	int timestamp = 0;
 	double nextevent = eventgenerator.GetHit().GetTimeStamp();
@@ -265,6 +267,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 		if(!ClockUp(timestamp))
 			break;
+
+		std::cout << "peep" << std::endl;
+		
 		if(!ClockDown(timestamp))
 			break;
 
@@ -463,6 +468,30 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
 				starttime = 0;	
 		}
+		else if(name.compare("TriggerProbability") == 0)
+		{
+			double probability = 0;
+			if(element->QueryDoubleAttribute("p", &probability) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerProbability(0);
+			else
+				eventgenerator.SetTriggerProbability(probability);
+		}
+		else if(name.compare("TriggerDelay") == 0)
+		{
+			int delay = 0;
+			if(element->QueryIntAttribute("delay", &delay) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerDelay(0);
+			else
+				eventgenerator.SetTriggerDelay(delay);
+		}
+		else if(name.compare("TriggerLength") == 0)
+		{
+			int length = 0;
+			if(element->QueryIntAttribute("length", &length) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerLength(0);
+			else
+				eventgenerator.SetTriggerLength(length);
+		}
 
 
 		if(element != eventgen->LastChildElement())
@@ -564,7 +593,20 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	else //if(readouttype.compare("NoReadOnFull") == 0)
 		configuration |= ReadoutCell::NOREADONFULL;
 
+	//Readout Delay:
+	int readoutdelay = 0;
+	if(parent->QueryIntAttribute("ReadoutDelay", &readoutdelay) != tinyxml2::XML_NO_ERROR)
+		readoutdelay = 0;
+
+	//Triggered ROC:
+	bool triggeredroc = false;
+	if(parent->QueryBoolAttribute("Triggered", & triggeredroc) != tinyxml2::XML_NO_ERROR)
+		triggeredroc = false;
+
 	ReadoutCell roc(addressname, address, queuelength, configuration);
+
+	roc.SetReadoutDelay(readoutdelay);
+	roc.SetTriggeredFlag(triggeredroc);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -878,35 +920,13 @@ StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 		if(value.compare("Action") == 0)
 			trans.AddRegisterChange(LoadRegisterChange(child));
 		else if(value.compare("Condition") == 0)
-		{
-			Comparison c = LoadComparison(child);
-
-			trans.SetComparison(c);
-
-			if(trans.GetComparison()->GetFirstComparison() != 0)
-			{
-				Comparison* fc = trans.GetComparison()->GetFirstComparison();
-				Comparison* cfc = c.GetFirstComparison();
-				std::cout << "firstcomp:      " << fc << " c: " << cfc << std::endl;
-				std::cout << "firstfirstcomp: " << fc->GetFirstComparison() 
-							<< " c: " << cfc->GetFirstComparison() << std::endl;
-			}
-			//Comparison c2 = c;
-
-			//std::cout << c2.PrintComparison(" ");
-			std::cout << "statetransitionloader direct:" << std::endl;
-			std::cout << trans.GetComparison()->PrintComparison(" ");
-
-		}
+			trans.SetComparison(LoadComparison(child));
 
 		if(child != transition->LastChildElement())
 			child = child->NextSiblingElement();
 		else
 			child = 0;
 	}
-
-	std::cout << "statetransitionloader:" << std::endl;
-	std::cout << trans.GetComparison()->PrintComparison(" ");
 
 	return trans;
 }

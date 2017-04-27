@@ -40,10 +40,16 @@ public:
 	ReadoutCell();
 	ReadoutCell(const ReadoutCell& roc);
 
-	~ReadoutCell();
+	//~ReadoutCell();
 
 	int 		GetConfiguration();
 	void 		SetConfiguration(int newconfig);
+
+	int 		GetReadoutDelay();
+	void 		SetReadoutDelay(int delay);
+
+	bool 		GetTriggeredFlag();
+	void 		SetTriggeredFlag(bool triggered);
 	
     std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
@@ -55,7 +61,7 @@ public:
 	void		SetHitqueuelength(int hitqueuelength);
 	
 	bool		AddHit(Hit hit, int timestamp = -1);
-	Hit 		GetHit();
+	Hit 		GetHit(int timestamp = -1, bool remove = true);
 	int 		GetEnqueuedHits();
 
 	Pixel* 		GetPixel(int index);
@@ -78,12 +84,14 @@ public:
 
     bool 		LoadPixel(int timestamp, std::fstream* out = 0);
     bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
-    Hit 		ReadCell();	//the same as GetHit()
+    Hit 		ReadCell(int timestamp = -1, bool remove = true);	//the same as GetHit()
     int 		HitsAvailable(std::string addressname);
 
     std::string PrintROC(std::string space);
 
-    void ShiftCell(TCoord<double> distance);
+    void 		ShiftCell(TCoord<double> distance);
+
+    void 		NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
 	
 private:
 	std::string 				addressname;
@@ -98,6 +106,9 @@ private:
 	ROCReadout*		rocreadout;		//reading from the child ROCs
 	PixelReadout*	pixelreadout;	//reading from the pixels
 	bool 			zerosuppression;
+
+	int 			readoutdelay;
+	bool 			triggered;
 
 	int 			configuration;	//to save the readout settings according to the config enum
 

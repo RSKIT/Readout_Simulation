@@ -1,51 +1,19 @@
 #include "xmldetector.h"
 
-Comparison::Comparison(int relation) : 
-					firstchoice(Value), 
-					secondchoice(Value), 
-
-					firstval(0), 
-					secondval(0), 
-
-					firstreg(RegisterAccess()), 
-					secondreg(RegisterAccess()), 
-
-					firstcomp(NULL),
-					secondcomp(NULL), 
-
-					firstregset(false), 
-					secondregset(false), 
-
-					relation(0)
+Comparison::Comparison(int relation) : firstchoice(Value), secondchoice(Value), firstval(0),
+		secondval(0), firstreg(RegisterAccess()), secondreg(RegisterAccess()), firstcomp(NULL),
+		secondcomp(NULL), firstregset(false), secondregset(false), relation(0)
 {
 	this->relation = relation;
 }
 
-Comparison::Comparison(const Comparison& comp) : 
-					firstchoice(comp.firstchoice), 
-					secondchoice(comp.secondchoice),
-
-					firstval(comp.firstval), 
-					secondval(comp.secondval),
-
-					firstreg(comp.firstreg), 
-					secondreg(comp.secondreg),
-
-					firstregset(false), 
-					secondregset(false), 
-
-					relation(comp.relation)
+Comparison::Comparison(const Comparison& comp) : firstchoice(comp.firstchoice), 
+		secondchoice(comp.secondchoice), firstval(comp.firstval), secondval(comp.secondval),
+		firstreg(comp.firstreg), secondreg(comp.secondreg),	firstregset(false), 
+		secondregset(false), relation(comp.relation)
 {
-
-	firstcomp = NULL;
-	secondcomp = NULL;
-	
-	if(comp.firstcomp != NULL) {
-		std::cout << "More FC: " << comp.firstcomp << std::endl;
+	if(comp.firstcomp != NULL)
 		firstcomp = new Comparison(*(comp.firstcomp));
-		std::cout << "Done FC copy: " << firstcomp << ", own FC is " << firstcomp->firstcomp
-				  << std::endl;
-	}
 	else
 		firstcomp = NULL;
 
@@ -71,8 +39,6 @@ Comparison::~Comparison()
 
 Comparison& Comparison::operator=(const Comparison& comp)
 {
-	std::cout << "equality operator!" << std::endl;
-
 	relation = comp.relation;
 
 	firstchoice = comp.firstchoice;
@@ -374,7 +340,7 @@ Comparison* StateTransition::GetComparison()
 
 void StateTransition::SetComparison(const Comparison& comp)
 {
-	condition = Comparison(comp);
+	condition = comp;
 
 }
 
@@ -505,7 +471,7 @@ XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ),
 
 }
 
-bool XMLDetector::StateMachineCkUp(int timestamp)
+bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 {
 	//check for valid state:
 	if(currentstate >= states.size() || currentstate < 0)
@@ -588,8 +554,11 @@ bool XMLDetector::StateMachineCkUp(int timestamp)
 	return true;
 }
 
-bool XMLDetector::StateMachineCkDown(int timestamp)
+bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 {
+	for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+		it->NoTriggerRemoveHits(timestamp, &fbadout);
+
     if(GetCounter("delay") > 0)
     	return true;
 
@@ -749,8 +718,8 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
 	    bool result = false;
         for (auto &it: rocvector)
         {
-            Hit hit = it.GetHit();  //equivalent to ReadCell()
-            if(!hit.is_valid())
+            Hit hit = it.GetHit(timestamp);  //equivalent to ReadCell()
+            if(hit.is_valid())
             {
             	hit.AddReadoutTime(addressname, timestamp);
             	SaveHit(hit, false);

@@ -199,21 +199,21 @@ bool DetectorBase::EnlargeSize()
     return corrected;
 }
 
-bool DetectorBase::StateMachine(int timestamp)
+bool DetectorBase::StateMachine(int timestamp, bool trigger)
 {
-    bool result = false;
-    result |= StateMachineCkUp(timestamp);
-    result |= StateMachineCkDown(timestamp);
+    bool result = true;
+    result &= StateMachineCkUp(timestamp, trigger);
+    result &= StateMachineCkDown(timestamp, trigger);
 
     return result;
 }
 
-bool DetectorBase::StateMachineCkUp(int timestamp)
+bool DetectorBase::StateMachineCkUp(int timestamp, bool trigger)
 {
     return false;
 }
 
-bool DetectorBase::StateMachineCkDown(int timestamp)
+bool DetectorBase::StateMachineCkDown(int timestamp, bool trigger)
 {
     return false;
 }

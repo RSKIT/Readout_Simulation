@@ -18,7 +18,7 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 }
 
-bool Detector::StateMachineCkUp(int timestamp)
+bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 {
     if(!fout.is_open() && outputfile != "")
     {
@@ -183,7 +183,7 @@ bool Detector::StateMachineCkUp(int timestamp)
     return true;
 }
 
-bool Detector::StateMachineCkDown(int timestamp)
+bool Detector::StateMachineCkDown(int timestamp, bool trigger)
 {
     currentstate = nextstate;
     std::cout << "-- State Transition --" << std::endl;

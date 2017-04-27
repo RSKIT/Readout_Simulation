@@ -17,7 +17,9 @@ public:
 	ROCBuffer(ReadoutCell* roc);
 
 	virtual bool 	InsertHit(const Hit& hit);
-	virtual Hit 	GetHit();
+	virtual Hit 	GetHit(int timestamp, bool remove = true);
+
+	virtual bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
 
 	virtual bool 	is_full();
 	virtual int 	GetNumHitsEnqueued();
@@ -32,7 +34,9 @@ public:
 	FIFOBuffer(ReadoutCell* roc);
 
 	bool 	InsertHit(const Hit& hit);
-	Hit 	GetHit();
+	Hit 	GetHit(int timestamp, bool remove = true);
+
+	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
@@ -46,7 +50,9 @@ public:
 	PrioBuffer(ReadoutCell* roc);
 
 	bool 	InsertHit(const Hit& hit);
-	Hit 	GetHit();
+	Hit 	GetHit(int timestamp, bool remove = true);
+
+	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();
