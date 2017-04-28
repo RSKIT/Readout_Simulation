@@ -25,6 +25,7 @@ public:
     bool	StateMachineCkDown(int timestamp, bool trigger = true);
 
     int 	GetState();
+    void    SetState(int index);
     int 	GetNextState();
     std::string GetCurrentStateName();
 

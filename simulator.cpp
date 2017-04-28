@@ -268,8 +268,6 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		if(!ClockUp(timestamp))
 			break;
 
-		std::cout << "peep" << std::endl;
-
 		if(!ClockDown(timestamp))
 			break;
 
@@ -590,6 +588,8 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		configuration |= ReadoutCell::OVERWRITEONFULL;
 	else if(readouttype.compare("NoOverWrite") == 0)
 		configuration |= ReadoutCell::NOOVERWRITE;
+	else if(readouttype.compare("OneByOne") == 0)
+		configuration |= ReadoutCell::ONEBYONEREADOUT;
 	else //if(readouttype.compare("NoReadOnFull") == 0)
 		configuration |= ReadoutCell::NOREADONFULL;
 
@@ -807,15 +807,17 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 			}
 		}
 		else if(value.compare("State") == 0)
-		{
-			det->AddState(LoadState(child));
-		}
+					det->AddState(LoadState(child));
 
 		if(child != statemachine->LastChildElement())
 			child = child->NextSiblingElement();
 		else
 			child = 0;
 	}
+
+	while(det->GetState(det->GetState())->GetStateName().compare("synchronisation") == 0 
+		&& det->GetState() < det->GetNumStates())
+		det->SetState(det->GetState()+1);
 
 	return det;
 }

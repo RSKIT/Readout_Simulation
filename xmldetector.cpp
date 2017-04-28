@@ -83,6 +83,7 @@ bool Comparison::SetFirstChoice(int choice)
 	if(choice >= 0 && choice < 4)
 	{
 		firstchoice = choice;
+		firstregset = false;
 		return true;
 	}
 	else
@@ -99,6 +100,7 @@ bool Comparison::SetSecondChoice(int choice)
 	if(choice >= 0 && choice < 4)
 	{
 		secondchoice = choice;
+		secondregset = false;
 		return true;
 	}
 	else
@@ -116,6 +118,7 @@ void Comparison::SetFirstComparison(const Comparison& comp)
 		delete firstcomp;
 	firstcomp = new Comparison(comp);
 	firstchoice = Comp;
+	firstregset = false;
 }
 
 void Comparison::SetFirstComparison(Comparison* comp)
@@ -123,6 +126,8 @@ void Comparison::SetFirstComparison(Comparison* comp)
 	if(firstcomp != NULL)
 		delete firstcomp;
 	firstcomp = comp;
+	firstchoice = Comp;
+	firstregset = false;
 }
 
 Comparison* Comparison::GetSecondComparison()
@@ -136,6 +141,7 @@ void Comparison::SetSecondComparison(const Comparison& comp)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);
 	secondchoice = Comp;
+	secondregset = false;
 }
 
 void Comparison::SetSecondComparison(Comparison* comp)
@@ -143,6 +149,8 @@ void Comparison::SetSecondComparison(Comparison* comp)
 	if(secondcomp != NULL)
 		delete secondcomp;
 	secondcomp = comp;
+	secondchoice = Comp;
+	secondregset = false;
 }
 
 double Comparison::GetFirstValue()
@@ -176,6 +184,7 @@ void   Comparison::SetFirstRegisterAccess(const RegisterAccess& regacc)
 {
 	firstreg = regacc;
 	firstchoice = Register;
+	firstregset = false;
 }
 
 RegisterAccess Comparison::GetSecondRegisterAccess()
@@ -187,18 +196,21 @@ void   Comparison::SetSecondRegisterAccess(const RegisterAccess& regacc)
 {
 	secondreg = regacc;
 	secondchoice = Register;
+	secondregset = false;
 }
 
 void Comparison::EvalFirstRegister(double value)
 {
 	firstregset = true;
-	firstval = value;
+	if(firstchoice != Value)
+		firstval = value;
 }
 
 void Comparison::EvalSecondRegister(double value)
 {
 	secondregset = true;
-	secondval = value;
+	if(secondchoice != Value)
+		secondval = value;
 }
 
 bool Comparison::ReadyForEvaluation()
@@ -247,14 +259,14 @@ bool Comparison::Evaluate()
 	if(!ReadyForEvaluation())
 		return false;
 
-	firstregset  = false;
-	secondregset = false;
-
 	if(firstchoice == Comp)
 		firstval = (firstcomp->Evaluate())?1:0;
 
 	if(secondchoice == Comp)
 		secondval = (secondcomp->Evaluate())?1:0;
+
+	firstregset  = false;
+	secondregset = false;
 
 	switch(relation)
 	{
@@ -286,19 +298,16 @@ std::string Comparison::PrintComparison(std::string spaces) const
 	std::stringstream s("");
 
 	s << spaces << "Comparison: (relation: " << relation << "):\n"
-	  << spaces << " Lvalue:\n" << spaces;
+	  << spaces << " Lvalue: " << firstchoice << "\n" << spaces;
 
 	s << "  value:  " << firstval << std::endl;
 
 	s << spaces  << "  RegAcc: " << firstreg.what << std::endl;
 
-	if(firstcomp != NULL) {
-		std::cout << "Entering FC with: " << firstcomp << std::endl;
-		std::cout.flush();
+	if(firstcomp != NULL)
 		s << firstcomp->PrintComparison(spaces + "  ");
-	}
 
-	s << spaces << " Rvalue:\n" << spaces;
+	s << spaces << " Rvalue: " << secondchoice << "\n" << spaces;
 
 	s << "  value:  " << secondval << std::endl << spaces
 	  << "  RegAcc: " << secondreg.what << std::endl;
@@ -572,6 +581,17 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 		}
 	}
 
+	if(nextstate == -1)
+	{
+		std::cout << "Debug Output for all Transitions:" << std::endl;
+		for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
+		{
+			std::cout << "Transition to: " << (*it)->GetNextState() << std::endl;
+			std::cout << (*it)->GetComparison()->PrintComparison("  ");
+		}
+
+	}
+
 	return true;
 }
 
@@ -580,6 +600,18 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 	for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
 		it->NoTriggerRemoveHits(timestamp, &fbadout);
 
+	//execute special actions for making signals synchronous if they are defined:
+	StateMachineState* state = GetState("synchronisation");
+	if(state != 0)
+	{
+		//change Registers, LoadPixels, LoadROCs,...:
+		auto itend = state->GetRegisterChangesEnd();
+		for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
+			ExecuteRegisterChanges(*it, timestamp);
+	}
+
+	//execute a state transition for the "normal" state machine part:
+	//do not execute a state change on a delay:
     if(GetCounter("delay") > 0)
     	return true;
 
@@ -593,6 +625,12 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 int XMLDetector::GetState()
 {
 	return currentstate;
+}
+
+void XMLDetector::SetState(int index)
+{
+	if(index >= 0 && index < states.size())
+		currentstate = index;
 }
 
 int XMLDetector::GetNextState()
@@ -775,6 +813,7 @@ void XMLDetector::FillComparison(Comparison* comp)
 			comp->EvalFirstRegister(value);
 			break;
 		case(Comparison::Value):
+			comp->EvalFirstRegister(-1);
 			break;
 		default:
 			break;
@@ -790,10 +829,13 @@ void XMLDetector::FillComparison(Comparison* comp)
 			comp->EvalSecondRegister(value);
 			break;
 		case(Comparison::Value):
+			comp->EvalSecondRegister(-1);
 			break;
 		default:
 			break;
 	}
+
+
 
 	return;
 }

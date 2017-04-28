@@ -20,18 +20,20 @@ class ReadoutCell
 	friend class NoFullReadReadout;
 	friend class NoOverWriteReadout;
 	friend class OverWriteReadout;
+	friend class OneByOneReadout;
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
 
 public:
-	enum config {PPTB 				=  1,
-				 ZEROSUPPRESSION	=  2,
-				 FIFOBUFFER 		=  4,
-				 PRIOBUFFER     	=  8,
-				 NOREADONFULL 		= 16,
-				 NOOVERWRITE 		= 32,
-				 OVERWRITEONFULL 	= 64};
+	enum config {PPTB 				=   1,
+				 ZEROSUPPRESSION	=   2,
+				 FIFOBUFFER 		=   4,
+				 PRIOBUFFER     	=   8,
+				 NOREADONFULL 		=  16,
+				 NOOVERWRITE 		=  32,
+				 OVERWRITEONFULL 	=  64,
+				 ONEBYONEREADOUT 	= 128};
 
 	//TODO: change the constructors to include the different behaviours
 	//			also include Getter/Setter functions

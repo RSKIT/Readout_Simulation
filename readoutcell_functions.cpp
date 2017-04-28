@@ -30,7 +30,12 @@ Hit ROCBuffer::GetHit(int timestamp, bool remove)
 		if(h.is_available(timestamp))
 		{
 			if(remove)
+			{
 				cell->hitqueue.erase(cell->hitqueue.begin());
+				//for OneByOneReadout also the child has to be cleared:
+				if(cell->rocreadout->ClearChild())
+					cell->rocvector[0].buf->GetHit(timestamp, remove);
+			}
 			return h;
 		}
 		else
@@ -79,7 +84,12 @@ Hit FIFOBuffer::GetHit(int timestamp, bool remove)
 		if(h.is_available(timestamp))
 		{
 			if(remove)
+			{
 				cell->hitqueue.erase(cell->hitqueue.begin());
+				//for OneByOneReadout also the child has to be cleared:
+				if(cell->rocreadout->ClearChild())
+					cell->rocvector[0].GetHit(timestamp, remove);
+			}
 			return h;
 		}
 		else
@@ -157,7 +167,12 @@ Hit PrioBuffer::GetHit(int timestamp, bool remove)
 		{
 			Hit h = cell->hitqueue[i];
 			if(remove)
+			{
 				cell->hitqueue[i] = Hit();
+				//for OneByOneReadout also the child has to be cleared:
+				if(cell->rocreadout->ClearChild())
+					cell->rocvector[0].hitqueue[i] = Hit();
+			}
 			return h;
 		}
 	}
@@ -219,6 +234,10 @@ bool ROCReadout::Read(int timestamp, std::fstream* out)
 	return false;
 }
 
+bool ROCReadout::ClearChild()
+{
+	return false;
+}
 
 NoFullReadReadout::NoFullReadReadout(ReadoutCell* roc) : ROCReadout(roc)
 {
@@ -265,6 +284,11 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	return hitfound;
 }
 
+bool NoFullReadReadout::ClearChild()
+{
+	return false;
+}
+
 NoOverWriteReadout::NoOverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
 {
 
@@ -296,6 +320,11 @@ bool NoOverWriteReadout::Read(int timestamp, std::fstream* out)
 	}
 
 	return hitfound;
+}
+
+bool NoOverWriteReadout::ClearChild()
+{
+	return false;
 }
 
 OverWriteReadout::OverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
@@ -332,6 +361,53 @@ bool OverWriteReadout::Read(int timestamp, std::fstream* out)
 	}
 
 	return hitfound;
+}
+
+bool OverWriteReadout::ClearChild()
+{
+	return false;
+}
+
+OneByOneReadout::OneByOneReadout(ReadoutCell* roc) : ROCReadout(roc)
+{
+
+}
+
+bool OneByOneReadout::Read(int timestamp, std::fstream* out)
+{
+	bool hitfound = false;
+
+	if(cell->rocvector.size() != 1)
+	{
+		std::cout << "Error: Wrong number of children at " << cell->GetAddressName() << " "
+				  << cell->GetAddress() << std::endl;
+		return false;
+	}
+
+	if(cell->rocvector[0].hitqueuelength != cell->hitqueuelength)
+	{
+		std::cout << "Error: Non-Matching buffer sizes at " << cell->GetAddressName() << " "
+				  << cell->GetAddress() << std::endl;
+				  return false;
+	}
+
+	ReadoutCell* child = &(cell->rocvector[0]);
+	for(int i = 0; i < cell->hitqueuelength; ++i)
+	{
+		if(!cell->hitqueue[i].is_valid() && child->hitqueue[i].is_valid())
+		{
+			cell->hitqueue[i] = child->hitqueue[i];
+			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName(), timestamp);
+			hitfound = true;
+		}
+	}
+
+	return hitfound;
+}
+
+bool OneByOneReadout::ClearChild()
+{
+	return true;
 }
 
 PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)

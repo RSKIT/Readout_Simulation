@@ -83,6 +83,8 @@ void ReadoutCell::SetConfiguration(int newconfig)
         rocreadout = new NoOverWriteReadout(this);
     else if(newconfig & OVERWRITEONFULL)
         rocreadout = new OverWriteReadout(this);
+    else if(newconfig & ONEBYONEREADOUT)
+        rocreadout = new OneByOneReadout(this);
     else
         rocreadout = new NoFullReadReadout(this);    
 }

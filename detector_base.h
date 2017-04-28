@@ -68,6 +68,7 @@ public:
     std::string PrintDetector();
     
     virtual int 	GetState();
+    virtual void 	SetState(int index);
     virtual int 	GetNextState();
     virtual std::string GetCurrentStateName();
 

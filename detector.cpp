@@ -195,6 +195,12 @@ int Detector::GetState()
     return currentstate;
 }
 
+void Detector::SetState(int index)
+{
+    if(index >= 0 && index < 4)
+        currentstate = index;
+}
+
 int Detector::GetNextState()
 {
     return nextstate;

@@ -8,72 +8,74 @@
 				<ROC queuelength="1" addrname="EoC">
 					<NTimes n="2" x="60" y="0" z="0">
 						<NTimes n="20" x="0" y="800" z="0">
-							<ROC queuelength="4" addrname="Group">
-								<Pixel addrname="PixelDiode" addr="17">
-									<Position x="0" y="0" z="0"/>
-									<Threshold thr="1"/>
-									<Efficiency n="1.0"/> <!-- not necessary; only for != 1 -->
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="18">
-									<Position x="0" y="50" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="20">
-									<Position x="0" y="100" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="24">
-									<Position x="0" y="150" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="33">
-									<Position x="0" y="200" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="34">
-									<Position x="0" y="250" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="36">
-									<Position x="0" y="300" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="40">
-									<Position x="0" y="350" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="65">
-									<Position x="0" y="400" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="66">
-									<Position x="0" y="450" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="68">
-									<Position x="0" y="500" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="72">
-									<Position x="0" y="550" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="129">
-									<Position x="0" y="600" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="130">
-									<Position x="0" y="650" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="132">
-									<Position x="0" y="700" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
-								<Pixel addrname="PixelDiode" addr="136">
-									<Position x="0" y="750" z="0"/>
-									<Threshold thr="1"/>
-								</Pixel>
+							<ROC queuelength="4" addrname="Group2" buffertype="PrioBuffer" readouttype="OneByOne">
+								<ROC queuelength="4" addrname="Group1" buffertype="PrioBuffer">
+									<Pixel addrname="PixelDiode" addr="17">
+										<Position x="0" y="0" z="0"/>
+										<Threshold thr="1"/>
+										<Efficiency n="1.0"/> <!-- not necessary; only for != 1 -->
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="18">
+										<Position x="0" y="50" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="20">
+										<Position x="0" y="100" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="24">
+										<Position x="0" y="150" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="33">
+										<Position x="0" y="200" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="34">
+										<Position x="0" y="250" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="36">
+										<Position x="0" y="300" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="40">
+										<Position x="0" y="350" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="65">
+										<Position x="0" y="400" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="66">
+										<Position x="0" y="450" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="68">
+										<Position x="0" y="500" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="72">
+										<Position x="0" y="550" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="129">
+										<Position x="0" y="600" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="130">
+										<Position x="0" y="650" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="132">
+										<Position x="0" y="700" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+									<Pixel addrname="PixelDiode" addr="136">
+										<Position x="0" y="750" z="0"/>
+										<Threshold thr="1"/>
+									</Pixel>
+								</ROC>
 							</ROC>
 						</NTimes>
 					</NTimes>
@@ -81,6 +83,14 @@
 			</NTimes>			
 		</ROC>
 		<StateMachine>
+			<State name="synchronisation">
+				<Action what="loadpixel"/>
+				<!-- this is a special state executed on every "falling edge" of the clock.
+				     It is not supposed to be part of the actual state machine, however it can
+				     be a part of it. In the first case, it does not need any state transition,
+				     in the second case however the state transitions are necessary.
+				 -->
+			</State>
 			<State name="PullDown">
 				<StateTransition nextstate="LoadColumn" delay="1">
 					<Condition relation="Equal">
@@ -112,8 +122,8 @@
 				</StateTransition>
 			</State>
 			<State name="LoadPixel">
-				<Action what="loadpixel"/>
-				<Action what="printhitsavailable" parameter="Group" value="1"/>
+				<Action what="loadcell" parameter="Group2"/>
+				<Action what="printhitsavailable" parameter="Group2" value="1"/>
 				<StateTransition nextstate="LoadPixel" delay="0">
 					<Action what="incrementcounter" parameter="LdPixrounds" value="1"/>
 					<Condition relation="And">
@@ -156,10 +166,8 @@
 			</State>
 			<State name="ReadColumn">
 				<Action what="loadcell" parameter="CU"/>
-				<Action what="printhitsavailable" parameter="CU" value="1"/>
 				<Action what="readcell"/>
-				<Action what="cout" parameter="bool readcell =" value="0"/>
-				<Action what="printcounter" parameter="readcell" value="1"/>
+				<Action what="printhitsavailable" parameter="CU" value="1"/>
 				<StateTransition nextstate="ReadColumn" delay="1">
 					<Condition relation="And">
 						<Lvalue>

@@ -77,6 +77,7 @@ public:
 	 * @return [description]
 	 */
 	virtual bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool ClearChild();
 protected:
 	ReadoutCell* cell;
 };
@@ -88,6 +89,7 @@ public:
 	NoFullReadReadout(ReadoutCell* roc);
 
 	bool Read(int timestamp, std::fstream* out = 0);
+	bool ClearChild();
 };
 
 //read and delete hits if the own buffer is full, but do not overwrite the own data
@@ -97,6 +99,7 @@ public:
 	NoOverWriteReadout(ReadoutCell* roc);
 
 	bool Read(int timestamp, std::fstream* out = 0);
+	bool ClearChild();
 };
 
 //read and delete child data and overwrite own data with new data
@@ -106,6 +109,16 @@ public:
 	OverWriteReadout(ReadoutCell* roc);
 
 	bool Read(int timestamp, std::fstream* out = 0);
+	bool ClearChild();
+};
+
+class OneByOneReadout : public ROCReadout
+{
+public:
+	OneByOneReadout(ReadoutCell* roc);
+
+	bool Read(int timestamp, std::fstream* out = 0);
+	bool ClearChild();
 };
 
 //---- End ROC Readout Classes ----

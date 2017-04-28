@@ -387,6 +387,11 @@ int DetectorBase::GetState()
     return -1;
 }
 
+void DetectorBase::SetState(int index)
+{
+
+}
+
 int DetectorBase::GetNextState()
 {
     return -1;
