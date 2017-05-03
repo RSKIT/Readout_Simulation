@@ -3,7 +3,7 @@
 	<SimulationEnd t="-1" stopdelay="20"/>
 	<Standardpixel x="60" y="50" z ="30"/>
 	<Detector addrname="Detector" outputfile="readhits_M2.dat" losthitfile="losthits_M2.dat">
-		<ROC queuelength ="1" addrname="CU" ReadoutDelay="-1">
+		<ROC queuelength ="1" addrname="CU" ReadoutDelay="-1"><!-- delay=-1 to read out at the same clock cycle as the hit was written inside -->
 			<NTimes n="28" x="120" y="0" z="0">
 				<ROC queuelength="1" addrname="EoC">
 					<NTimes n="2" x="60" y="0" z="0">
@@ -231,16 +231,16 @@
 	<EventGenerator>
 		<Seed x0="0"/>
 		<Output filename="eventgen_M2.dat"/>
-		<EventRate f="0.01"/>
+		<EventRate f="0.01"/><!-- absolute rate; or with absolute="0" rate per area in 1/(s*µm²)-->
 		<ClusterSize sigma="20."/>
 		<CutOffFactor numsigmas="5"/>
 		<InclinationSigma sigma="0.15"/>
 		<ChargeScale scale="1."/>
 		<MinSize diagonal="2."/>
-		<NumEvents n="5"/>
+		<NumEvents n="5000"/>
 		<EventStart t="0."/>
 		<TriggerProbability p="1."/>
-		<TriggerDelay delay="30"/>
-		<TriggerLength length="30"/>
+		<TriggerDelay delay="15"/>
+		<TriggerLength length="10"/>
 	</EventGenerator>
 </Simulation>

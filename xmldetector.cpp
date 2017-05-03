@@ -599,7 +599,7 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 {
 	if(!trigger)
 	{
-		std::cout << "remove hits (missing trigger)" << std::endl;
+		//std::cout << "remove hits (missing trigger)" << std::endl;
 		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
 			it->NoTriggerRemoveHits(timestamp, &fbadout);
 	}

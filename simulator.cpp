@@ -423,8 +423,13 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("EventRate") == 0)
 		{
 			double rate;
-			eventgenerator.SetEventRate((element->QueryDoubleAttribute("f",&rate) 
-											== tinyxml2::XML_NO_ERROR)?rate:0);
+			if(element->QueryDoubleAttribute("f",&rate) != tinyxml2::XML_NO_ERROR)
+				rate = 0;
+			bool totalrate;
+			if(element->QueryBoolAttribute("absolute", &totalrate) != tinyxml2::XML_NO_ERROR)
+				totalrate = true;
+			eventgenerator.SetEventRate(rate, totalrate);
+
 		}
 		else if(name.compare("ClusterSize") == 0)
 		{

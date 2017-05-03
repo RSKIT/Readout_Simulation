@@ -4,7 +4,7 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>())
+		triggerturnontimes(std::list<int>()), totalrate(true)
 {
 	SetSeed(0);
 }
@@ -12,7 +12,8 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
 		clustersize(0), eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), 
 		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
-		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>())
+		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
+		totalrate(true)
 {
 	detectors.push_back(detector);
 
@@ -23,7 +24,7 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		eventindex(0), chargescale(1), inclinationsigma(0.3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>())
+		triggerturnontimes(std::list<int>()), totalrate(true)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -129,9 +130,10 @@ double EventGenerator::GetEventRate()
 	return eventrate;
 }
 
-void EventGenerator::SetEventRate(double rate)
+void EventGenerator::SetEventRate(double rate, bool total)
 {
 	eventrate = rate;
+	totalrate = total;
 }
 
 double EventGenerator::GetChargeScaling()
@@ -287,6 +289,9 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		}
 	}
 
+	double detectorarea = (detectorend[0] - detectorstart[0]) 
+							* (detectorend[1] - detectorstart[1]);
+
 	std::fstream fout;
 	fout.open(filename.c_str(), std::ios::out | std::ios::app);
 
@@ -322,7 +327,10 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 							+ detectorstart[i];
 
 		//generate the next time stamp:
-		time += -log(generator()/double(RAND_MAX)) / eventrate;
+		if(totalrate)
+			time += -log(generator()/double(RAND_MAX)) / eventrate;
+		else
+			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
 
 		//save the parameters of the hit in the file for the events:
 		if(fout.is_open())

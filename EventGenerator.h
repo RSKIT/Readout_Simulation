@@ -87,7 +87,7 @@ public:
 	void   SetClusterSize(double size);
 
 	double GetEventRate();
-	void   SetEventRate(double rate);
+	void   SetEventRate(double rate, bool total = false);
 
 	double GetChargeScaling();
 	void   SetChargeScaling(double scalefactor);
@@ -161,6 +161,7 @@ private:
 
 	double clustersize;
 	double eventrate;
+	bool   totalrate;
 
 	std::default_random_engine generator;	//a uniform random generator
 	int seed;
