@@ -35,8 +35,6 @@ public:
 				 OVERWRITEONFULL 	=  64,
 				 ONEBYONEREADOUT 	= 128};
 
-	//TODO: change the constructors to include the different behaviours
-	//			also include Getter/Setter functions
     ReadoutCell(std::string addressname, int address, int hitqueuelength,
   				int configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL);
 	ReadoutCell();
@@ -48,10 +46,10 @@ public:
 	void 		SetConfiguration(int newconfig);
 
 	int 		GetReadoutDelay();
-	void 		SetReadoutDelay(int delay);
+	void 		SetReadoutDelay(int delay);	//be careful: negative numbers allowed
 
-	bool 		GetTriggeredFlag();
-	void 		SetTriggeredFlag(bool triggered);
+	bool 		GetTriggered();
+	void 		SetTriggered(bool triggered);
 	
     std::string GetAddressName();
 	void		SetAddressName(std::string addressname);
@@ -82,7 +80,7 @@ public:
 	std::vector<ReadoutCell>::iterator GetROCsBegin();
 	std::vector<ReadoutCell>::iterator GetROCsEnd();
 
-    bool        PlaceHit(Hit hit, std::fstream* fout = 0);
+    bool        PlaceHit(Hit hit, int timestamp, std::fstream* fout = 0);
 
     bool 		LoadPixel(int timestamp, std::fstream* out = 0);
     bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);

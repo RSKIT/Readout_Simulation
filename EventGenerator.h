@@ -112,7 +112,8 @@ public:
 
 	void	AddOnTimeStamp(int timestamp);
 	int		GetNumOnTimeStamps();
-	void 	SortTimeStamps();
+	void 	SortOnTimeStamps();
+	void 	ClearOnTimeStamps();
 
 	bool 	GetTriggerState(int timestamp);
 

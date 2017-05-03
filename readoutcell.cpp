@@ -4,17 +4,20 @@
 ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
-    rocreadout(0), pixelreadout(0), readoutdelay(0)
+    rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false)
 {
 	buf          = new FIFOBuffer(this);
     rocreadout   = new NoFullReadReadout(this);
     pixelreadout = new PPtBReadout(this);
+
+    configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL;
 }
 
 ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelength, 
                             int configuration) : hitqueue(std::vector<Hit>()),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
-        buf(0), rocreadout(0), pixelreadout(0), readoutdelay(0)
+        buf(0), rocreadout(0), pixelreadout(0), zerosuppression(true), readoutdelay(0), 
+        triggered(false)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -26,10 +29,10 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
 ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname), 
         address(roc.address), hitqueue(roc.hitqueue), hitqueuelength(roc.hitqueuelength),
         pixelvector(roc.pixelvector), rocvector(roc.rocvector), buf(0), rocreadout(0), 
-        pixelreadout(0), configuration(roc.configuration), zerosuppression(roc.zerosuppression),
-        readoutdelay(roc.readoutdelay)
+        pixelreadout(0), zerosuppression(roc.zerosuppression), readoutdelay(roc.readoutdelay),
+        triggered(roc.triggered)
 {
-    SetConfiguration(configuration);
+    SetConfiguration(roc.configuration);
 }
 
 /*ReadoutCell::~ReadoutCell()
@@ -96,19 +99,19 @@ int ReadoutCell::GetReadoutDelay()
 
 void ReadoutCell::SetReadoutDelay(int delay)
 {
-    if(delay <= 0)
-        readoutdelay = 0;
-    else
+    //if(delay <= 0)
+    //    readoutdelay = 0;
+    //else
         readoutdelay = delay;
 
 }
 
-bool ReadoutCell::GetTriggeredFlag()
+bool ReadoutCell::GetTriggered()
 {
     return triggered;
 }
 
-void ReadoutCell::SetTriggeredFlag(bool triggered)
+void ReadoutCell::SetTriggered(bool triggered)
 {
     this->triggered = triggered;
 }
@@ -232,7 +235,7 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
-bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
+bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::fstream* fout)
 {
     if (rocvector.size() > 0)
     {
@@ -243,7 +246,7 @@ bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
             //std::cout << "roc addressname: " << addressname << std::endl;
             //std::cout << "hit address: " << address << std::endl;
             if (it.GetAddress() == address)
-                return it.PlaceHit(hit);
+                return it.PlaceHit(hit, timestamp, fout);
         }
         return false;
     }
@@ -256,7 +259,7 @@ bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
             if (it.GetAddress() == address)
             {
                 bool result = it.CreateHit(hit);
-                if(fout != 0 && fout->is_open())
+                if(!result && fout != 0 && fout->is_open())
                 {
                     hit.AddReadoutTime("PixelFull", hit.GetTimeStamp() + 1);
                     *fout << hit.GenerateString() << std::endl;
@@ -307,8 +310,12 @@ int ReadoutCell::HitsAvailable(std::string addressname)
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
         result += it->HitsAvailable(addressname);
 
-    if(addressname.compare(this->addressname) == 0 || addressname.compare("") == 0)
+    if(addressname.compare(this->addressname) == 0)
         result += buf->GetNumHitsEnqueued();
+    //take into account that for e.g. OneByOneReadout hits can be counted 2 times:
+    else if(addressname.compare("") == 0 && !rocreadout->ClearChild())
+        result += buf->GetNumHitsEnqueued();
+    
 
     return result;
 }

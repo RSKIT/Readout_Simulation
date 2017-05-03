@@ -47,7 +47,7 @@ public:
     virtual bool 		StateMachineCkDown(int timestamp, bool trigger = true);
     virtual bool		StateMachine(int timestamp, bool trigger = true);
 
-    bool        PlaceHit(Hit hit);
+    bool        PlaceHit(Hit hit, int timestamp);
 	void 		SaveHit(Hit hit, std::string filename, bool compact);
 	bool		SaveHit(Hit hit, bool compact = false);
 	bool		SaveBadHit(Hit hit, bool compact = false);

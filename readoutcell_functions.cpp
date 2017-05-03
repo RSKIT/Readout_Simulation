@@ -27,7 +27,7 @@ Hit ROCBuffer::GetHit(int timestamp, bool remove)
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		if(h.is_available(timestamp))
+		if(h.is_valid() && h.is_available(timestamp))
 		{
 			if(remove)
 			{
@@ -81,7 +81,7 @@ Hit FIFOBuffer::GetHit(int timestamp, bool remove)
 	else
 	{
 		Hit h = cell->hitqueue.front();
-		if(h.is_available(timestamp))
+		if(h.is_valid() && h.is_available(timestamp))
 		{
 			if(remove)
 			{
@@ -258,9 +258,10 @@ bool NoFullReadReadout::Read(int timestamp, std::fstream* out)
 	{
 		//get a hit from the respective ROC:
 		Hit h  = it->buf->GetHit(timestamp);
-		if(h.is_valid() || !cell->zerosuppression)
+		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
+			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			bool result = cell->buf->InsertHit(h);
 
 			//return on a writing error in own buffer:
@@ -304,15 +305,18 @@ bool NoOverWriteReadout::Read(int timestamp, std::fstream* out)
 	{
 		//get a hit from the respective ROC:
 		Hit h  = it->buf->GetHit(timestamp);
-		if(h.is_valid() || !cell->zerosuppression)
+		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
+			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
 			{
-				//log the losing of the hit:
+				//log the loss of the hit:
 				if(out != 0 && out->is_open())
+				{
+					h.AddReadoutTime("noSpace", timestamp);
 					*out << h.GenerateString() << std::endl;
-
+				}
 			}
 			else
 				hitfound = true;
@@ -342,18 +346,21 @@ bool OverWriteReadout::Read(int timestamp, std::fstream* out)
 	{
 		//get a hit from the respective ROC:
 		Hit h  = it->buf->GetHit(timestamp);
-		if(h.is_valid() || !cell->zerosuppression)
+		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
 			h.AddReadoutTime(cell->addressname, timestamp);
+			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
 			{
 				//replace the "oldest" hit:
 				Hit oldhit = cell->buf->GetHit(timestamp);
 				cell->buf->InsertHit(h);
-				//log the losing of the hit:
-				oldhit.AddReadoutTime("overwritten", timestamp);
+				//log the loss of the hit:
 				if(out != 0 && out->is_open())
+				{
+					oldhit.AddReadoutTime("overwritten", timestamp);
 					*out << oldhit.GenerateString() << std::endl;
+				}
 			}
 			else
 				hitfound = true;
@@ -394,12 +401,17 @@ bool OneByOneReadout::Read(int timestamp, std::fstream* out)
 	ReadoutCell* child = &(cell->rocvector[0]);
 	for(int i = 0; i < cell->hitqueuelength; ++i)
 	{
-		if(!cell->hitqueue[i].is_valid() && child->hitqueue[i].is_valid())
+		if(!cell->hitqueue[i].is_valid() && child->hitqueue[i].is_valid() 
+				&& child->hitqueue[i].is_available(timestamp))
 		{
+			//std::cout << "1by1 ok" << std::endl;
 			cell->hitqueue[i] = child->hitqueue[i];
 			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName(), timestamp);
+			cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			hitfound = true;
 		}
+		else if(child->hitqueue[i].is_valid() && !child->hitqueue[i].is_available(timestamp))
+			std::cout << "available from: " << child->hitqueue[i].GetAvailableTime() << std::endl;
 	}
 
 	return hitfound;
@@ -435,9 +447,10 @@ bool PPtBReadout::Read(int timestamp, std::fstream* out)
 	{
 		Hit ph = it->GetHit(timestamp);
 
-		if(ph.is_valid())
+		if(ph.is_valid() && ph.is_available(timestamp))
 		{
 			ph.AddReadoutTime(cell->addressname, timestamp);
+			ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 
 			if(!h.is_valid())
 				h = ph;

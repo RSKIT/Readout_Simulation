@@ -597,8 +597,12 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 
 bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 {
-	for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
-		it->NoTriggerRemoveHits(timestamp, &fbadout);
+	if(!trigger)
+	{
+		std::cout << "remove hits (missing trigger)" << std::endl;
+		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+			it->NoTriggerRemoveHits(timestamp, &fbadout);
+	}
 
 	//execute special actions for making signals synchronous if they are defined:
 	StateMachineState* state = GetState("synchronisation");

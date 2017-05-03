@@ -69,7 +69,7 @@ public:
 	 * @brief provides the delay from implanting the hit into a readoutcell until it can be
 	 *                  read out again
 	 * @details
-	 * @return     - the delay in timestamps
+	 * @return     - the point in time in units of timestamps
 	 */
 	int 	GetAvailableTime();
 	void 	SetAvailableTime(int timestamp);

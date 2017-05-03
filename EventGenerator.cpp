@@ -221,6 +221,7 @@ void EventGenerator::SetTriggerOffTime(int timestamp)
 void EventGenerator::AddOnTimeStamp(int timestamp)
 {
 	triggerturnontimes.push_back(timestamp);
+	triggerstate = false;
 }
 
 int EventGenerator::GetNumOnTimeStamps()
@@ -228,9 +229,14 @@ int EventGenerator::GetNumOnTimeStamps()
 	return triggerturnontimes.size();
 }
 
-void EventGenerator::SortTimeStamps()
+void EventGenerator::SortOnTimeStamps()
 {
 	triggerturnontimes.sort();
+}
+
+void EventGenerator::ClearOnTimeStamps()
+{
+	triggerturnontimes.clear();
 }
 
 bool EventGenerator::GetTriggerState(int timestamp)
@@ -243,11 +249,14 @@ bool EventGenerator::GetTriggerState(int timestamp)
 		triggerstate = true;
 		triggerturnofftime = timestamp + triggerlength;
 		triggerturnontimes.pop_front();
+
+		std::cout << "Trigger on" << std::endl;
 	}
 	else if(timestamp == triggerturnofftime)
+	{
 		triggerstate = false;
-
-	std::cout << "peep-trigger" << std::endl;
+		std::cout << "Trigger off" << std::endl;
+	}
 
 	return triggerstate;
 }
@@ -326,7 +335,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		{
 			//if the trigger arrives slightly after the clock transition it will be recognised
 			//  one timestamp later -> +0.9 timestamps
-			triggerturnontimes.push_back(int(time + triggerdelay + 0.9));
+			AddOnTimeStamp(int(time + triggerdelay + 0.9));
 			if(fout.is_open())
 				fout << "# Trigger: " << int(time + triggerdelay + 0.9) << " - " 
 					 << int(time + triggerdelay + 0.9 + triggerlength) << std::endl;

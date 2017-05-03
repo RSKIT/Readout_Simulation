@@ -218,13 +218,13 @@ bool DetectorBase::StateMachineCkDown(int timestamp, bool trigger)
     return false;
 }
 
-bool DetectorBase::PlaceHit(Hit hit)
+bool DetectorBase::PlaceHit(Hit hit, int timestamp)
 {
     if (rocvector.size() < 1)
         return false;
 
     //open output file for "lost" hits:
-    if(!fbadout.is_open())
+    if(!fbadout.is_open() && badoutputfile != "")
     {
         fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
         if(!fbadout.is_open())
@@ -242,7 +242,7 @@ bool DetectorBase::PlaceHit(Hit hit)
         //std::cout << "roc addressname: " << addressname << std::endl;
         //std::cout << "hit getaddress: " << address << std::endl;
         if (it.GetAddress() == address)
-            return it.PlaceHit(hit, &fbadout);
+            return it.PlaceHit(hit, timestamp, &fbadout);
     }
 
     return false;

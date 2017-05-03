@@ -255,7 +255,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			{
 				for(auto it = detectors.begin(); it != detectors.end(); ++it)
 				{
-					if((*it)->PlaceHit(hit))
+					if((*it)->PlaceHit(hit, timestamp))
 						break;
 				}
 
@@ -344,7 +344,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	nam = parent->Attribute("losthitfile");
 	std::string badoutputfile = (nam != 0)?std::string(nam):"";
 
-	DetectorBase* det = new Detector(addressname, address);	//TODO: change for different detectors
+	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
 
@@ -381,7 +381,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 
 TCoord<double> Simulator::LoadTCoord(tinyxml2::XMLElement* coordinate)
 {
-	std::cout << "  LoadTCoord" << std::endl;	//TODO: remove this line
+	std::cout << "  LoadTCoord" << std::endl;
 
 	TCoord<double> coord;
 	tinyxml2::XMLError error;
@@ -606,7 +606,7 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	ReadoutCell roc(addressname, address, queuelength, configuration);
 
 	roc.SetReadoutDelay(readoutdelay);
-	roc.SetTriggeredFlag(triggeredroc);
+	roc.SetTriggered(triggeredroc);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
