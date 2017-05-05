@@ -3,7 +3,7 @@
 	<SimulationEnd t="-1" stopdelay="20"/>
 	<Standardpixel x="80" y="81" z ="30"/>
 	<Detector addrname="Detector" outputfile="readhits.dat" losthitfile="losthits.dat">
-		<ROC queuelength ="1" addrname="CU">
+		<ROC queuelength ="1" addrname="CU" ReadoutDelay="-1">
 			<NTimes n="128" x="80" y="0" z="0"> <!-- not possible for PPtB ROCs -->
 				<ROC queuelength="1" addrname="Column">
 					<NTimes n="200" x="0" y="81" z="0">
@@ -19,39 +19,6 @@
 				</ROC>
 			</NTimes>
 		</ROC>
-		<!--<StateMachine>
-			<State name="test">
-				<Action what="cout" parameter="Hello World" value="1"/>
-				<StateTransition nextstate="test2" delay="2">
-					<Action what="cout" parameter="peep" value="1"/>
-					<Condition relation="Equal">
-						<Lvalue value="1"/>
-						<Rvalue value="1"/>
-					</Condition>
-				</StateTransition>
-			</State>
-			<State name="test2">
-				<Action what="printcounter" parameter="rounds" value="1"/>
-				<StateTransition nextstate="test" delay="2">
-					<Action what="incrementcounter" parameter="rounds" value="1"/>
-					<Condition relation="Smaller">
-						<Lvalue>
-							<Action what="getcountervalue" parameter="rounds"/>
-						</Lvalue>
-						<Rvalue value="2"/>
-					</Condition>
-				</StateTransition>
-				<StateTransition nextstate="test2" delay="2">
-					<Action what="setcounter" parameter="rounds" value="0"/>
-					<Condition relation="LargerEqual">
-						<Lvalue>
-							<Action what="getcountervalue" parameter="rounds"/>
-						</Lvalue>
-						<Rvalue value="2"/>
-					</Condition>
-				</StateTransition>
-			</State>
-		</StateMachine>-->
 	</Detector>
 	<EventGenerator>
 		<Seed x0="0"/>

@@ -248,7 +248,7 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::fstream* fout)
             if (it.GetAddress() == address)
                 return it.PlaceHit(hit, timestamp, fout);
         }
-        return false;
+        //return false; //this way a readoutcell with ROCs and pixels is possible
     }
     else if (pixelvector.size() > 0)
     {
@@ -266,6 +266,13 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::fstream* fout)
                 }
                 return result;
             }
+        }
+
+        //if the hit was valid, the execution would not be reach this point, so the hit is invalid
+        if(fout != 0 && fout->is_open())
+        {
+            hit.AddReadoutTime("PixelNotFound", hit.GetTimeStamp() + 1);
+            *fout << hit.GenerateString() << std::endl;
         }
         return false;
     }
