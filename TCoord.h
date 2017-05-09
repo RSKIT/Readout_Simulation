@@ -1,3 +1,28 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2014  Stefan Backens,
+                      Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+    It originates from a drift chamber simulation written by a group of
+    students in the Lecture "Collaborative Software Design for Physicists" 
+    in Winter Semester 14/15.
+    This class was implemented by Stefan Backens.
+*/
+
 #ifndef TCOORD_H
 #define TCOORD_H
 
@@ -6,11 +31,11 @@
 #include <iostream>
 
 
-typedef double commaType;    //auf diese Weise kann man einfacher auf double umstellen
+typedef double commaType;
 
-/** Klasse für Vektoren
-  * vorgesehen für Ganzzahlen <int>
-  * oder für Gleitkommazahlen <commaType> */
+/** Class for geometric vectors
+  * foreseen for integers <int>
+  * and floating point numbers <commaType> */
 template <typename S>
 class TCoord
 {
