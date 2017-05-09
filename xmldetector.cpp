@@ -123,6 +123,9 @@ void Comparison::SetFirstComparison(const Comparison& comp)
 
 void Comparison::SetFirstComparison(Comparison* comp)
 {
+	//prevent eternal recursion until crash:
+	if(this == comp)
+		return;
 	if(firstcomp != NULL)
 		delete firstcomp;
 	firstcomp = comp;
@@ -137,6 +140,9 @@ Comparison* Comparison::GetSecondComparison()
 
 void Comparison::SetSecondComparison(const Comparison& comp)
 {
+	//prevent eternal recursion until crash:
+	if(this == &comp)
+		return;
 	if(secondcomp != NULL)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);

@@ -130,6 +130,11 @@ double EventGenerator::GetEventRate()
 	return eventrate;
 }
 
+bool EventGenerator::GetEventRateGlobal()
+{
+	return totalrate;
+}
+
 void EventGenerator::SetEventRate(double rate, bool total)
 {
 	eventrate = rate;

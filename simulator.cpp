@@ -74,16 +74,6 @@ void Simulator::LoadInputFile(std::string filename)
 
 }
 
-std::string Simulator::GetSaveFileName()
-{
-	return outputfile;
-}
-
-void Simulator::SetLoadFileName(std::string filename)
-{
-	outputfile = filename;
-}
-
 int Simulator::GetNumEventsToGenerate()
 {
 	return events;
