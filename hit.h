@@ -1,3 +1,25 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #ifndef _HIT
 #define _HIT
 
@@ -25,6 +47,13 @@ public:
 	 * @return     - true if the event is valid, false if a parameter is not set
 	 */
 	bool 	is_valid();
+	/**
+	 * @brief determines whether the hit can be read out or not, does not affect is_valid()
+	 * @details 
+	 * @param timestamp      - timestamp to test
+	 * @return     - true if the availablity delay has passed, false otherwise
+	 */
+	bool 	is_available(int timestamp  = 0);
 
 	/**
 	 * @brief provides the time stamp of the hit
@@ -57,6 +86,15 @@ public:
 	 */
 	double 	GetCharge();
 	void	SetCharge(double charge);
+
+	/**
+	 * @brief provides the delay from implanting the hit into a readoutcell until it can be
+	 *                  read out again
+	 * @details
+	 * @return     - the point in time in units of timestamps
+	 */
+	int 	GetAvailableTime();
+	void 	SetAvailableTime(int timestamp);
 
 	/**
 	 * @brief adds an address-name - address pair to the hit
@@ -149,6 +187,8 @@ private:
 	double 	timestamp;
 	double 	deadtimeend;
 	double 	charge;
+
+	int availablefrom;		//timestamp from which on the hit is available for output
 
 	std::map<std::string, int> address;
 	std::map<std::string, int> readouttimestamps;

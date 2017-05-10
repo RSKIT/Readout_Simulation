@@ -1,20 +1,45 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "readoutcell_functions.h"
 #include "readoutcell.h"
 
 ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
-    rocreadout(0), pixelreadout(0)
+    rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false)
 {
 	buf          = new FIFOBuffer(this);
     rocreadout   = new NoFullReadReadout(this);
     pixelreadout = new PPtBReadout(this);
+
+    configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL;
 }
 
 ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelength, 
                             int configuration) : hitqueue(std::vector<Hit>()),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
-        buf(0), rocreadout(0), pixelreadout(0)
+        buf(0), rocreadout(0), pixelreadout(0), zerosuppression(true), readoutdelay(0), 
+        triggered(false)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -26,22 +51,24 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
 ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname), 
         address(roc.address), hitqueue(roc.hitqueue), hitqueuelength(roc.hitqueuelength),
         pixelvector(roc.pixelvector), rocvector(roc.rocvector), buf(0), rocreadout(0), 
-        pixelreadout(0), configuration(roc.configuration), zerosuppression(roc.zerosuppression)
+        pixelreadout(0), zerosuppression(roc.zerosuppression), readoutdelay(roc.readoutdelay),
+        triggered(roc.triggered)
 {
-    SetConfiguration(configuration);
+    SetConfiguration(roc.configuration);
 }
 
-ReadoutCell::~ReadoutCell()
+/*ReadoutCell::~ReadoutCell()
 {
-    /*
+    
     if(buf != 0)
         delete buf;
     if(rocreadout != 0)
         delete rocreadout;
     if(pixelreadout != 0)
         delete pixelreadout;
-    */
+    
 }
+*/
 
 int ReadoutCell::GetConfiguration()
 {
@@ -81,8 +108,34 @@ void ReadoutCell::SetConfiguration(int newconfig)
         rocreadout = new NoOverWriteReadout(this);
     else if(newconfig & OVERWRITEONFULL)
         rocreadout = new OverWriteReadout(this);
+    else if(newconfig & ONEBYONEREADOUT)
+        rocreadout = new OneByOneReadout(this);
     else
         rocreadout = new NoFullReadReadout(this);    
+}
+
+int ReadoutCell::GetReadoutDelay()
+{
+    return readoutdelay;
+}
+
+void ReadoutCell::SetReadoutDelay(int delay)
+{
+    //if(delay <= 0)
+    //    readoutdelay = 0;
+    //else
+        readoutdelay = delay;
+
+}
+
+bool ReadoutCell::GetTriggered()
+{
+    return triggered;
+}
+
+void ReadoutCell::SetTriggered(bool triggered)
+{
+    this->triggered = triggered;
 }
 
 std::string ReadoutCell::GetAddressName()
@@ -118,13 +171,14 @@ void ReadoutCell::SetHitqueuelength(int hitqueuelength)
 bool ReadoutCell::AddHit(Hit hit, int timestamp)
 {
 	hit.AddReadoutTime(addressname, timestamp);
+    hit.SetAvailableTime(timestamp + readoutdelay);
 
     return buf->InsertHit(hit);
 }
 
-Hit ReadoutCell::GetHit()
+Hit ReadoutCell::GetHit(int timestamp, bool remove)
 {
-	return buf->GetHit();
+	return buf->GetHit(timestamp, remove);
 }
 
 int ReadoutCell::GetEnqueuedHits()
@@ -203,7 +257,7 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
-bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
+bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::fstream* fout)
 {
     if (rocvector.size() > 0)
     {
@@ -214,9 +268,9 @@ bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
             //std::cout << "roc addressname: " << addressname << std::endl;
             //std::cout << "hit address: " << address << std::endl;
             if (it.GetAddress() == address)
-                return it.PlaceHit(hit);
+                return it.PlaceHit(hit, timestamp, fout);
         }
-        return false;
+        //return false; //this way a readoutcell with ROCs and pixels is possible
     }
     else if (pixelvector.size() > 0)
     {
@@ -227,13 +281,20 @@ bool ReadoutCell::PlaceHit(Hit hit, std::fstream* fout)
             if (it.GetAddress() == address)
             {
                 bool result = it.CreateHit(hit);
-                if(fout != 0 && fout->is_open())
+                if(!result && fout != 0 && fout->is_open())
                 {
                     hit.AddReadoutTime("PixelFull", hit.GetTimeStamp() + 1);
                     *fout << hit.GenerateString() << std::endl;
                 }
                 return result;
             }
+        }
+
+        //if the hit was valid, the execution would not be reach this point, so the hit is invalid
+        if(fout != 0 && fout->is_open())
+        {
+            hit.AddReadoutTime("PixelNotFound", hit.GetTimeStamp() + 1);
+            *fout << hit.GenerateString() << std::endl;
         }
         return false;
     }
@@ -266,9 +327,9 @@ bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::fstream*
     return result;
 }
 
-Hit ReadoutCell::ReadCell()
+Hit ReadoutCell::ReadCell(int timestamp, bool remove)
 {
-    return buf->GetHit();
+    return buf->GetHit(timestamp, remove);
 }
 
 int ReadoutCell::HitsAvailable(std::string addressname)
@@ -278,8 +339,12 @@ int ReadoutCell::HitsAvailable(std::string addressname)
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
         result += it->HitsAvailable(addressname);
 
-    if(addressname.compare(this->addressname) == 0 || addressname.compare("") == 0)
+    if(addressname.compare(this->addressname) == 0)
         result += buf->GetNumHitsEnqueued();
+    //take into account that for e.g. OneByOneReadout hits can be counted 2 times:
+    else if(addressname.compare("") == 0 && !rocreadout->ClearChild())
+        result += buf->GetNumHitsEnqueued();
+    
 
     return result;
 }
@@ -324,4 +389,13 @@ void ReadoutCell::ShiftCell(TCoord<double> distance)
 
     for(auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
         it->SetPosition(it->GetPosition() + distance);
+}
+
+void ReadoutCell::NoTriggerRemoveHits(int timestamp, std::fstream* fbadout)
+{
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+        it->NoTriggerRemoveHits(timestamp, fbadout);
+
+    if(triggered)
+        buf->NoTriggerRemoveHits(timestamp, fbadout);
 }

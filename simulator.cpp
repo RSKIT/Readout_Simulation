@@ -1,4 +1,27 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "simulator.h"
+
 Simulator::Simulator() : events(0), starttime(0), stoptime(-1), stopdelay(0)
 {
 
@@ -72,16 +95,6 @@ void Simulator::LoadInputFile(std::string filename)
 		eventgenerator.AddDetector(*it);
 	}
 
-}
-
-std::string Simulator::GetSaveFileName()
-{
-	return outputfile;
-}
-
-void Simulator::SetLoadFileName(std::string filename)
-{
-	outputfile = filename;
 }
 
 int Simulator::GetNumEventsToGenerate()
@@ -205,7 +218,7 @@ bool Simulator::ClockUp(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		if(!(*it)->StateMachineCkUp(timestamp))
+		if(!(*it)->StateMachineCkUp(timestamp, eventgenerator.GetTriggerState(timestamp)))
 			return false;
 	}
 	return true;
@@ -215,7 +228,7 @@ bool Simulator::ClockDown(int timestamp)
 {
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		if(!(*it)->StateMachineCkDown(timestamp))
+		if(!(*it)->StateMachineCkDown(timestamp, eventgenerator.GetTriggerState(timestamp)))
 			return false;
 	}
 	return true;
@@ -223,6 +236,7 @@ bool Simulator::ClockDown(int timestamp)
 
 void Simulator::SimulateUntil(int stoptime, int delaystop)
 {
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	if(events > 0)
 	{
 		eventgenerator.GenerateEvents(starttime, events);
@@ -230,6 +244,10 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	}
 
 	eventgenerator.PrintQueue();
+
+	std::chrono::steady_clock::time_point endEventGen = std::chrono::steady_clock::now();
+
+	//eventgenerator.SortTimeStamps();	//sort the trigger turn on timestamps
 
 	int timestamp = 0;
 	double nextevent = eventgenerator.GetHit().GetTimeStamp();
@@ -250,7 +268,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			{
 				for(auto it = detectors.begin(); it != detectors.end(); ++it)
 				{
-					if((*it)->PlaceHit(hit))
+					if((*it)->PlaceHit(hit, timestamp))
 						break;
 				}
 
@@ -262,6 +280,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 		if(!ClockUp(timestamp))
 			break;
+
 		if(!ClockDown(timestamp))
 			break;
 
@@ -282,6 +301,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				  << stopdelay << std::endl;
 	}
 
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
@@ -290,6 +311,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
 			  << std::endl << "  read out signals: " << dethitcounter << std::endl
 			  << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+
+	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -333,7 +357,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	nam = parent->Attribute("losthitfile");
 	std::string badoutputfile = (nam != 0)?std::string(nam):"";
 
-	DetectorBase* det = new Detector(addressname, address);	//TODO: change for different detectors
+	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
 
@@ -370,7 +394,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 
 TCoord<double> Simulator::LoadTCoord(tinyxml2::XMLElement* coordinate)
 {
-	std::cout << "  LoadTCoord" << std::endl;	//TODO: remove this line
+	std::cout << "  LoadTCoord" << std::endl;
 
 	TCoord<double> coord;
 	tinyxml2::XMLError error;
@@ -412,8 +436,13 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("EventRate") == 0)
 		{
 			double rate;
-			eventgenerator.SetEventRate((element->QueryDoubleAttribute("f",&rate) 
-											== tinyxml2::XML_NO_ERROR)?rate:0);
+			if(element->QueryDoubleAttribute("f",&rate) != tinyxml2::XML_NO_ERROR)
+				rate = 0;
+			bool totalrate;
+			if(element->QueryBoolAttribute("absolute", &totalrate) != tinyxml2::XML_NO_ERROR)
+				totalrate = true;
+			eventgenerator.SetEventRate(rate, totalrate);
+
 		}
 		else if(name.compare("ClusterSize") == 0)
 		{
@@ -454,6 +483,30 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
 				starttime = 0;	
+		}
+		else if(name.compare("TriggerProbability") == 0)
+		{
+			double probability = 0;
+			if(element->QueryDoubleAttribute("p", &probability) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerProbability(0);
+			else
+				eventgenerator.SetTriggerProbability(probability);
+		}
+		else if(name.compare("TriggerDelay") == 0)
+		{
+			int delay = 0;
+			if(element->QueryIntAttribute("delay", &delay) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerDelay(0);
+			else
+				eventgenerator.SetTriggerDelay(delay);
+		}
+		else if(name.compare("TriggerLength") == 0)
+		{
+			int length = 0;
+			if(element->QueryIntAttribute("length", &length) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerLength(0);
+			else
+				eventgenerator.SetTriggerLength(length);
 		}
 
 
@@ -553,10 +606,25 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		configuration |= ReadoutCell::OVERWRITEONFULL;
 	else if(readouttype.compare("NoOverWrite") == 0)
 		configuration |= ReadoutCell::NOOVERWRITE;
+	else if(readouttype.compare("OneByOne") == 0)
+		configuration |= ReadoutCell::ONEBYONEREADOUT;
 	else //if(readouttype.compare("NoReadOnFull") == 0)
 		configuration |= ReadoutCell::NOREADONFULL;
 
+	//Readout Delay:
+	int readoutdelay = 0;
+	if(parent->QueryIntAttribute("ReadoutDelay", &readoutdelay) != tinyxml2::XML_NO_ERROR)
+		readoutdelay = 0;
+
+	//Triggered ROC:
+	bool triggeredroc = false;
+	if(parent->QueryBoolAttribute("Triggered", & triggeredroc) != tinyxml2::XML_NO_ERROR)
+		triggeredroc = false;
+
 	ReadoutCell roc(addressname, address, queuelength, configuration);
+
+	roc.SetReadoutDelay(readoutdelay);
+	roc.SetTriggered(triggeredroc);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -643,7 +711,7 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 }
 
 void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 
-							TCoord<double> pixelsize)
+							TCoord<double> pixelsize, TCoord<double> globalshift)
 {
 	std::cout << "    LoadNPixels" << std::endl;
 
@@ -662,7 +730,6 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 
 	Pixel pix;
 	ReadoutCell roc;
-	int pixelset = 0;	//to check whether a pixel was defined in this block
 	tinyxml2::XMLElement* elem = parentnode->FirstChildElement();
 	while(elem != 0)
 	{
@@ -670,12 +737,42 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		if(name.compare("Pixel") == 0)
 		{
 			pix = LoadPixel(elem, pixelsize);
-			pixelset = 1;
+
+			if(pix.GetAddress() < parentcell->GetNumPixels())
+				pix.SetAddress(parentcell->GetNumPixels());
+			if(globalshift != TCoord<double>::Null)
+				pix.SetPosition(pix.GetPosition() + globalshift);
+			for(int i = 0; i < numelements; ++i)
+			{
+				parentcell->AddPixel(pix);
+				pix.SetPosition(pix.GetPosition() + shift);
+				pix.SetAddress(pix.GetAddress() + 1);
+			}
 		}
 		else if(name.compare("ROC") == 0)
 		{
 			roc = LoadROC(elem, pixelsize, "c" + parentcell->GetAddressName());
-			pixelset = 2;
+
+			if(roc.GetAddress() < parentcell->GetNumROCs())
+				roc.SetAddress(parentcell->GetNumROCs());
+			if(globalshift != TCoord<double>::Null)
+				roc.ShiftCell(globalshift);
+			for(int i = 0; i< numelements; ++i)
+			{
+				parentcell->AddROC(roc);
+				roc.ShiftCell(shift);
+				roc.SetAddress(roc.GetAddress() + 1);
+			}
+		}
+		else if(name.compare("NTimes") == 0)
+		{
+			TCoord<double> thisshift = globalshift;
+
+			for(int i = 0; i < numelements; ++i)
+			{
+				LoadNPixels(parentcell, elem, pixelsize, thisshift);
+				thisshift += shift;
+			}
 		}
 
 		if(elem != parentnode->LastChildElement())
@@ -684,32 +781,13 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 			elem = 0;
 	}
 
-	if(pixelset == 1)
-	{
-		for(int i = 0; i < numelements; ++i)
-		{
-			parentcell->AddPixel(pix);
-			pix.SetPosition(pix.GetPosition() + shift);
-			pix.SetAddress(pix.GetAddress() + 1);
-		}
-	}
-	else if(pixelset == 2)
-	{
-		for(int i = 0; i< numelements; ++i)
-		{
-			parentcell->AddROC(roc);
-			roc.ShiftCell(shift);
-			roc.SetAddress(roc.GetAddress() + 1);
-		}
-	}
-
 	return;
 }
 
 XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector, 
 				tinyxml2::XMLElement* statemachine)
 {
-	std::cout << "    LoadStateMachine" << std::endl;
+	std::cout << "  LoadStateMachine" << std::endl;
 
 	if(detector == 0 || statemachine == 0)
 		return 0;
@@ -747,9 +825,7 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 			}
 		}
 		else if(value.compare("State") == 0)
-		{
-			det->AddState(LoadState(child));
-		}
+					det->AddState(LoadState(child));
 
 		if(child != statemachine->LastChildElement())
 			child = child->NextSiblingElement();
@@ -757,14 +833,18 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 			child = 0;
 	}
 
+	while(det->GetState(det->GetState())->GetStateName().compare("synchronisation") == 0 
+		&& det->GetState() < det->GetNumStates())
+		det->SetState(det->GetState()+1);
+
 	return det;
 }
 
-StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
+StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 {
-	std::cout << "    LoadState" << std::endl;
+	std::cout << "    LoadState: "; // << std::endl;
 
-	StateMachineState state;
+	StateMachineState* state = new StateMachineState();
 
 	if(stateelement == 0)
 		return state;
@@ -780,27 +860,33 @@ StateMachineState Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 		statename = s.str();
 	}
 
-	state.SetStateName(statename);
+	state->SetStateName(statename);
+
+	std::cout << statename << std::endl;
 
 	tinyxml2::XMLElement* child = stateelement->FirstChildElement();
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
 		if(value.compare("Action") == 0)
-			state.AddRegisterChange(LoadRegisterChange(child));
+			state->AddRegisterChange(LoadRegisterChange(child));
 		else if(value.compare("StateTransition") == 0)
-			state.AddStateTransition(LoadStateTransition(child));
+		{
+			state->AddStateTransition(LoadStateTransition(child));
+		}
 
 		if(child != stateelement->LastChildElement())
 			child = child->NextSiblingElement();
 		else
 			child = 0;
 	}
+
+	return state;
 }
 
 RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchange)
 {
-	std::cout << "    LoadRegisterChange" << std::endl;
+	std::cout << "      LoadRegisterChange: "; // << std::endl;
 
 	RegisterAccess regacc;
 
@@ -809,6 +895,8 @@ RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchang
 
 	const char* nam = registerchange->Attribute("what");
 	regacc.what = (nam != 0)?std::string(nam):"";
+
+	std::cout << regacc.what << std::endl;
 
 	nam = registerchange->Attribute("parameter");
 	regacc.parameter = (nam != 0)?std::string(nam):"";
@@ -820,34 +908,36 @@ RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchang
 	return regacc;
 }
 
-StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
+StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 {
-	std::cout << "    LoadStateTransition" << std::endl;
+	std::cout << "      LoadStateTransition to "; // << std::endl;
 
-	StateTransition trans;
+	StateTransition* trans = new StateTransition();
 
 	if(transition == 0)
 		return trans;
 
 	//name of the next state:
 	const char* nam = transition->Attribute("nextstate");
-	trans.SetNextState((nam != 0)?std::string(nam):"");
+	trans->SetNextState((nam != 0)?std::string(nam):"");
+
+	std::cout << trans->GetNextState() << std::endl;
 
 	//transition delay:
 	int delay;
 	tinyxml2::XMLError error = transition->QueryIntAttribute("delay", &delay);
 	if(error != tinyxml2::XML_NO_ERROR)
 		delay = 0;
-	trans.SetDelay(delay);
+	trans->SetDelay(delay);
 
 	tinyxml2::XMLElement* child = transition->FirstChildElement();
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
 		if(value.compare("Action") == 0)
-			trans.AddRegisterChange(LoadRegisterChange(child));
+			trans->AddRegisterChange(LoadRegisterChange(child));
 		else if(value.compare("Condition") == 0)
-			trans.SetComparison(LoadComparison(child));
+			trans->SetComparison(LoadComparison(child));
 
 		if(child != transition->LastChildElement())
 			child = child->NextSiblingElement();
@@ -858,38 +948,38 @@ StateTransition Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 	return trans;
 }
 
-Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
+Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 {
-	std::cout << "    LoadComparison" << std::endl;
+	std::cout << "      LoadComparison" << std::endl;
 
-	Comparison comp;
+	Comparison* comp = new Comparison();
 	if(comparison == 0)
 		return comp;
 
 	const char* nam = comparison->Attribute("relation");
 	std::string rel = (nam != 0)?std::string(nam):"";
 	if(rel.compare("Smaller") == 0)
-		comp.SetRelation(Comparison::Smaller);
+		comp->SetRelation(Comparison::Smaller);
 	else if(rel.compare("SmallerEqual") == 0)
-		comp.SetRelation(Comparison::SmallerEqual);
+		comp->SetRelation(Comparison::SmallerEqual);
 	else if(rel.compare("Larger") == 0)
-		comp.SetRelation(Comparison::Larger);
+		comp->SetRelation(Comparison::Larger);
 	else if(rel.compare("LargerEqual") == 0)
-		comp.SetRelation(Comparison::LargerEqual);
+		comp->SetRelation(Comparison::LargerEqual);
 	else if(rel.compare("Equal") == 0)
-		comp.SetRelation(Comparison::Equal);
+		comp->SetRelation(Comparison::Equal);
 	else if(rel.compare("NotEqual") == 0)
-		comp.SetRelation(Comparison::NotEqual);
+		comp->SetRelation(Comparison::NotEqual);
 	else if(rel.compare("Or") == 0)
-		comp.SetRelation(Comparison::Or);
+		comp->SetRelation(Comparison::Or);
 	else if(rel.compare("And") == 0)
-		comp.SetRelation(Comparison::And);
+		comp->SetRelation(Comparison::And);
 	else if(rel.compare("Xor") == 0)
-		comp.SetRelation(Comparison::Xor);
+		comp->SetRelation(Comparison::Xor);
 	else
 	{
 		std::cout << "Error: Missing relation" << std::endl;
-		comp.SetRelation(-1);
+		comp->SetRelation(-1);
 	}
 
 	tinyxml2::XMLElement* child = comparison->FirstChildElement();
@@ -900,7 +990,7 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		{
 			double lval;
 			if(child->QueryDoubleAttribute("value", &lval) == tinyxml2::XML_NO_ERROR)
-				comp.SetFirstValue(lval);
+				comp->SetFirstValue(lval);
 			else
 			{
 				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
@@ -908,9 +998,9 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 				{
 					std::string val = std::string(grandchild->Value());
 					if(val.compare("Action") == 0)
-						comp.SetFirstRegisterAccess(LoadRegisterChange(grandchild));
+						comp->SetFirstRegisterAccess(LoadRegisterChange(grandchild));
 					else if(val.compare("Condition") == 0)
-						comp.SetFirstComparison(LoadComparison(grandchild));
+						comp->SetFirstComparison(LoadComparison(grandchild));
 					else
 						std::cout << "Error: Missing LValue" << std::endl;
 				}
@@ -920,7 +1010,7 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		{
 			double rval;
 			if(child->QueryDoubleAttribute("value", &rval) == tinyxml2::XML_NO_ERROR)
-				comp.SetSecondValue(rval);
+				comp->SetSecondValue(rval);
 			else
 			{
 				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
@@ -928,9 +1018,9 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 				{
 					std::string val = std::string(grandchild->Value());
 					if(val.compare("Action") == 0)
-						comp.SetSecondRegisterAccess(LoadRegisterChange(grandchild));
+						comp->SetSecondRegisterAccess(LoadRegisterChange(grandchild));
 					else if(val.compare("Condition") == 0)
-						comp.SetSecondComparison(LoadComparison(grandchild));
+						comp->SetSecondComparison(LoadComparison(grandchild));
 					else
 						std::cout << "Error: Missing RValue" << std::endl;
 				}
@@ -944,7 +1034,61 @@ Comparison Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 			child = 0;
 	}
 
-	std::cout << "Create Relation: " << comp.GetRelation() << std::endl;
+	std::cout << "       Create Relation: " << comp->GetRelation() << std::endl;
+
+	std::cout << "comparisonLoader:" << std::endl << comp->PrintComparison(" ");
 
 	return comp;
+}
+
+std::string Simulator::TimesToInterval(TimePoint start, TimePoint end)
+{
+	long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+	std::stringstream timetext("");
+	bool started = false;
+
+	if(duration > 86400000)	//1 day
+	{
+		timetext << duration/86400000 << " days";
+		duration %= 86400000;
+		started = true;
+	}
+	if(duration > 3600000)	//1 hour
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/3600000 << " hours";
+		duration %= 3600000;
+	}
+	if(duration > 60000)	//1 minute
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/60000 << " minutes";
+		duration %= 60000;
+	}
+	if(duration > 1000)
+	{
+		if(started)
+			timetext << " ";
+		else
+			started = true;
+		timetext << duration/1000 << " seconds";
+		duration %= 1000;
+	}
+
+	if(started)
+		timetext << " ";
+	if(duration != 0)
+		timetext << duration << " milliseconds";
+
+	if(!started && duration == 0)
+		return "0 milliseconds";
+
+	return timetext.str();
 }

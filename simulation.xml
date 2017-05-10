@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Simulation>
 	<SimulationEnd t="-1" stopdelay="20"/>
-	<Standardpixel x="50" y="150" z ="30"/>
+	<Standardpixel x="80" y="81" z ="30"/>
 	<Detector addrname="Detector" outputfile="readhits.dat" losthitfile="losthits.dat">
-		<ROC queuelength ="1" addrname="CU">
-			<NTimes n="10" x="0" y="160" z="0"> <!-- not possible for PPtB ROCs -->
+		<ROC queuelength ="1" addrname="CU" ReadoutDelay="-1">
+			<NTimes n="128" x="80" y="0" z="0"> <!-- not possible for PPtB ROCs -->
 				<ROC queuelength="1" addrname="Column">
-					<NTimes n="20" x="55" y="0" z="0">
+					<NTimes n="200" x="0" y="81" z="0">
 						<ROC queuelength="1" addrname="Pixel">
 							<Pixel addrname="PixelDiode">
 								<!-- for a PPtB ROC, the addresses have to be provided -->
@@ -17,31 +17,19 @@
 						</ROC>
 					</NTimes>
 				</ROC>
-			</NTimes>			
+			</NTimes>
 		</ROC>
-		<StateMachine>
-			<State name="test">
-				<Action what="cout" parameter="Hello World" value="1"/>
-				<StateTransition nextstate="test" delay="2">
-					<Action what="cout" parameter="peep" value="1"/>
-					<Condition relation="Equal">
-						<Lvalue value="1"/>
-						<Rvalue value="1"/>
-					</Condition>
-				</StateTransition>
-			</State>
-		</StateMachine>
 	</Detector>
 	<EventGenerator>
 		<Seed x0="0"/>
 		<Output filename="eventgen.dat"/>
 		<EventRate f="0.01"/>
-		<ClusterSize sigma="20"/>
+		<ClusterSize sigma="20."/>
 		<CutOffFactor numsigmas="5"/>
 		<InclinationSigma sigma="0.15"/>
-		<ChargeScale scale="1"/>
+		<ChargeScale scale="1."/>
 		<MinSize diagonal="2."/>
-		<NumEvents n="1"/>
-		<EventStart t="0"/>
+		<NumEvents n="50"/>
+		<EventStart t="0."/>
 	</EventGenerator>
 </Simulation>

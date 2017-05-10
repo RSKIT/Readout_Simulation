@@ -1,15 +1,41 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "EventGenerator.h"
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
 		seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
-		detectors(std::vector<DetectorBase*>())
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerturnontimes(std::list<int>()), totalrate(true)
 {
 	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
 		clustersize(0), eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), 
-		numsigmas(3)
+		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
+		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
+		totalrate(true)
 {
 	detectors.push_back(detector);
 
@@ -18,7 +44,9 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
 		eventindex(0), chargescale(1), inclinationsigma(0.3), 
-		detectors(std::vector<DetectorBase*>())
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerturnontimes(std::list<int>()), totalrate(true)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -124,9 +152,15 @@ double EventGenerator::GetEventRate()
 	return eventrate;
 }
 
-void EventGenerator::SetEventRate(double rate)
+bool EventGenerator::GetEventRateGlobal()
+{
+	return totalrate;
+}
+
+void EventGenerator::SetEventRate(double rate, bool total)
 {
 	eventrate = rate;
+	totalrate = total;
 }
 
 double EventGenerator::GetChargeScaling()
@@ -167,6 +201,94 @@ void EventGenerator::SetCutOffFactor(int numsigmas)
 		this->numsigmas = numsigmas;
 }
 
+double EventGenerator::GetTriggerProbability()
+{
+	return triggerprobability;
+}
+
+void EventGenerator::SetTriggerProbability(double probability)
+{
+	triggerprobability = probability;
+}
+
+int EventGenerator::GetTriggerDelay()
+{
+	return triggerdelay;
+}
+
+void EventGenerator::SetTriggerDelay(int delay)
+{
+	if(delay <= 0)
+		triggerdelay = 0;
+	else
+		triggerdelay = delay;
+}
+
+int EventGenerator::GetTriggerLength()
+{
+	return triggerlength;
+}
+
+void EventGenerator::SetTriggerLength(int length)
+{
+	if(length <= 0)
+		triggerlength = 0;
+	else
+		triggerlength = length;
+}
+
+int EventGenerator::GetTriggerOffTime()
+{
+	return triggerturnofftime;
+}
+
+void EventGenerator::SetTriggerOffTime(int timestamp)
+{
+	triggerturnofftime = timestamp;
+}
+
+void EventGenerator::AddOnTimeStamp(int timestamp)
+{
+	triggerturnontimes.push_back(timestamp);
+	triggerstate = false;
+}
+
+int EventGenerator::GetNumOnTimeStamps()
+{
+	return triggerturnontimes.size();
+}
+
+void EventGenerator::SortOnTimeStamps()
+{
+	triggerturnontimes.sort();
+}
+
+void EventGenerator::ClearOnTimeStamps()
+{
+	triggerturnontimes.clear();
+}
+
+bool EventGenerator::GetTriggerState(int timestamp)
+{
+	if(triggerturnontimes.size() == 0)
+		return true;
+
+	if(timestamp == triggerturnontimes.front())
+	{
+		triggerstate = true;
+		triggerturnofftime = timestamp + triggerlength;
+		triggerturnontimes.pop_front();
+
+		std::cout << "Trigger on" << std::endl;
+	}
+	else if(timestamp == triggerturnofftime)
+	{
+		triggerstate = false;
+		std::cout << "Trigger off" << std::endl;
+	}
+
+	return triggerstate;
+}
 
 void EventGenerator::GenerateEvents(double firsttime, int numevents)
 {
@@ -193,6 +315,9 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 				detectorend[i] = it->GetPosition()[i] + it->GetSize()[i];
 		}
 	}
+
+	double detectorarea = (detectorend[0] - detectorstart[0]) 
+							* (detectorend[1] - detectorstart[1]);
 
 	std::fstream fout;
 	fout.open(filename.c_str(), std::ios::out | std::ios::app);
@@ -229,13 +354,27 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 							+ detectorstart[i];
 
 		//generate the next time stamp:
-		time += -log(generator()/double(RAND_MAX)) / eventrate;
+		if(totalrate)
+			time += -log(generator()/double(RAND_MAX)) / eventrate;
+		else
+			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
 
 		//save the parameters of the hit in the file for the events:
 		if(fout.is_open())
 			fout << "# Event " << eventindex << std::endl
 				 << "# Trajectory: g: x(t) = " << setpoint << " + t * " << direction << std::endl
 				 << "# Time: " << time << std::endl;
+
+		//generate the trigger for this event:
+		if(generator()/double(RAND_MAX) < triggerprobability)
+		{
+			//if the trigger arrives slightly after the clock transition it will be recognised
+			//  one timestamp later -> +0.9 timestamps
+			AddOnTimeStamp(int(time + triggerdelay + 0.9));
+			if(fout.is_open())
+				fout << "# Trigger: " << int(time + triggerdelay + 0.9) << " - " 
+					 << int(time + triggerdelay + 0.9 + triggerlength) << std::endl;
+		}
 
 		//generate the template hit object for this event:
 		Hit hittemplate;

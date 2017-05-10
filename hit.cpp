@@ -1,13 +1,35 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "hit.h"
 
-Hit::Hit() : eventindex(-1), timestamp(-1), charge(-1), deadtimeend(-1)
+Hit::Hit() : eventindex(-1), timestamp(-1), charge(-1), deadtimeend(-1), availablefrom(-1)
 {
 	address 			= std::map<std::string, int>();
 	readouttimestamps 	= std::map<std::string, int>();
 }
 
 Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex), 
-		deadtimeend(hit.deadtimeend), charge(hit.charge)
+		deadtimeend(hit.deadtimeend), charge(hit.charge), availablefrom(hit.availablefrom)
 {
 	std::map<std::string, int>::const_iterator it;
 	for(it = hit.address.begin(); it != hit.address.end(); ++it)
@@ -16,7 +38,8 @@ Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex),
 		readouttimestamps.insert(*it);
 }
 
-Hit::Hit(std::string hitdata) : timestamp(-1), eventindex(-1), deadtimeend(-1), charge(-1)
+Hit::Hit(std::string hitdata) : timestamp(-1), eventindex(-1), deadtimeend(-1), charge(-1),
+		availablefrom(-1)
 {
 	std::stringstream s("");
 	s << hitdata;
@@ -81,6 +104,15 @@ bool Hit::is_valid()
 	return (timestamp >= 0 && eventindex >= 0 && charge >= 0 && address.size() > 0);
 }
 
+bool Hit::is_available(int timestamp)
+{
+	if(timestamp > availablefrom)
+		return true;
+	else
+		return false;
+}
+
+
 double  Hit::GetTimeStamp()
 {
 	return timestamp;
@@ -126,6 +158,16 @@ void Hit::SetCharge(double charge)
 		this->charge = charge;
 	else
 		this->charge = -1;
+}
+
+int Hit::GetAvailableTime()
+{
+	return availablefrom;
+}
+
+void Hit::SetAvailableTime(int timestamp)
+{
+	availablefrom = timestamp;
 }
 
 

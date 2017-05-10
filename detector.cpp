@@ -1,3 +1,25 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "detector.h"
 
 Detector::Detector() : DetectorBase(), currentstate(PullDown), nextstate(PullDown), delay(0)
@@ -18,7 +40,7 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 }
 
-bool Detector::StateMachineCkUp(int timestamp)
+bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 {
     if(!fout.is_open() && outputfile != "")
     {
@@ -45,6 +67,7 @@ bool Detector::StateMachineCkUp(int timestamp)
     //to pause the state machine in any state:
     if(delay > 0)
     {
+        std::cout << "Delay: " << delay << std::endl;
         --delay;
         return true;
     }
@@ -88,15 +111,7 @@ bool Detector::StateMachineCkUp(int timestamp)
                 for (auto &it : rocvector)
                 {
                     hitsavailable += it.HitsAvailable("Column");
-                    if (it.LoadPixel(timestamp, &fbadout))
-                    {
-                        std::cout << it.GetAddressName() << " " << it.GetAddress() 
-                                  << ": Pixel flag loaded" << std::endl;
-                        result = true;
-                    }
-                    else
-                        std::cout << it.GetAddressName() << " " << it.GetAddress() 
-                                  << ": No pixel flag loaded" << std::endl;
+                    result |= it.LoadCell("Pixel", timestamp, &fbadout);
                 }
 
                 if(result)
@@ -143,11 +158,17 @@ bool Detector::StateMachineCkUp(int timestamp)
                     {
                         result = true;
 
-                        Hit hit = it.GetHit();  //equivalent to ReadCell()
-                        hit.AddReadoutTime(addressname, timestamp);
-                        SaveHit(hit, false);
+                        Hit hit = it.GetHit(timestamp);  //equivalent to ReadCell()
+                        if(hit.is_valid())
+                        {
+                            hit.AddReadoutTime(addressname, timestamp);
+                            SaveHit(hit, false);
+                        }
                     }
                 }
+
+                if(result)
+                    std::cout << "Hit(s) read out" << std::endl;
 
                 static int counter = 0;
 
@@ -157,7 +178,7 @@ bool Detector::StateMachineCkUp(int timestamp)
                     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
                         morehits += it->HitsAvailable("Column");
 
-                    if(morehits > 0 && counter >= 63)   //changable 6bit value
+                    if(morehits > 0 && counter <= 63)   //changable 6bit value
                     {
                         nextstate = RdCol;
                         ++counter;
@@ -183,8 +204,23 @@ bool Detector::StateMachineCkUp(int timestamp)
     return true;
 }
 
-bool Detector::StateMachineCkDown(int timestamp)
+bool Detector::StateMachineCkDown(int timestamp, bool trigger)
 {
+    //write out, where hits are in the detector:
+    //std::cout << "hits in the detector: " << HitsAvailable("") << std::endl
+    //          << "  Pixel:  " << HitsAvailable("Pixel") << std::endl
+    //          << "  Column: " << HitsAvailable("Column") << std::endl
+    //          << "  CU:     " << HitsAvailable("CU") << std::endl;
+
+    //Hit synchronisaation:
+    bool result = false;
+    for (auto &it : rocvector)
+        result |= it.LoadPixel(timestamp, &fbadout);
+
+    if(result)
+        std::cout << "Hit(s) loaded to Pixel" << std::endl;
+
+
     currentstate = nextstate;
     std::cout << "-- State Transition --" << std::endl;
     return true;
@@ -193,6 +229,12 @@ bool Detector::StateMachineCkDown(int timestamp)
 int Detector::GetState()
 {
     return currentstate;
+}
+
+void Detector::SetState(int index)
+{
+    if(index >= 0 && index < 4)
+        currentstate = index;
 }
 
 int Detector::GetNextState()

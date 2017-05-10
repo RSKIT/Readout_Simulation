@@ -1,39 +1,88 @@
+/*
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is part of the ROME simulation framework.
+*/
+
 #include "xmldetector.h"
 
-Comparison::Comparison(int relation) : firstchoice(Value), secondchoice(Value), firstval(0), 
-		secondval(0), firstreg(RegisterAccess()), secondreg(RegisterAccess()), firstcomp(0),
-		secondcomp(0), firstregset(false), secondregset(false), relation(0)
+Comparison::Comparison(int relation) : firstchoice(Value), secondchoice(Value), firstval(0),
+		secondval(0), firstreg(RegisterAccess()), secondreg(RegisterAccess()), firstcomp(NULL),
+		secondcomp(NULL), firstregset(false), secondregset(false), relation(0)
 {
 	this->relation = relation;
 }
 
 Comparison::Comparison(const Comparison& comp) : firstchoice(comp.firstchoice), 
 		secondchoice(comp.secondchoice), firstval(comp.firstval), secondval(comp.secondval),
-		firstreg(comp.firstreg), secondreg(comp.secondreg), firstregset(false), 
+		firstreg(comp.firstreg), secondreg(comp.secondreg),	firstregset(false), 
 		secondregset(false), relation(comp.relation)
 {
-	if(comp.firstcomp != 0)
-		firstcomp = new Comparison(*comp.firstcomp);
+	if(comp.firstcomp != NULL)
+		firstcomp = new Comparison(*(comp.firstcomp));
 	else
-		firstcomp = 0;
-	if(comp.secondcomp != 0)
-		secondcomp = new Comparison(*comp.secondcomp);
+		firstcomp = NULL;
+
+	if(comp.secondcomp != NULL)
+		secondcomp = new Comparison(*(comp.secondcomp));
 	else
-		secondcomp = 0;
+		secondcomp = NULL;
 }
 
 Comparison::~Comparison()
 {
 	if(firstcomp != 0)
 	{
-		firstcomp->~Comparison();
 		delete firstcomp;
+		firstcomp = NULL;
 	}
 	if(secondcomp != 0)
 	{
-		secondcomp->~Comparison();
 		delete secondcomp;
+		secondcomp = NULL;
 	}
+}
+
+Comparison& Comparison::operator=(const Comparison& comp)
+{
+	relation = comp.relation;
+
+	firstchoice = comp.firstchoice;
+	secondchoice = comp.secondchoice;
+
+	firstval = comp.firstval;
+	secondval = comp.secondval;
+
+	firstreg = comp.firstreg;
+	secondreg = comp.secondreg;
+
+	firstregset = false;
+	secondregset = false;
+
+	if(comp.firstcomp != NULL)
+		firstcomp = new Comparison(*comp.firstcomp);
+	else
+		firstcomp = NULL;
+	if(comp.secondcomp != NULL)
+		secondcomp = new Comparison(*comp.secondcomp);
+
+	return *this;
 }
 
 int  Comparison::GetRelation()
@@ -56,6 +105,7 @@ bool Comparison::SetFirstChoice(int choice)
 	if(choice >= 0 && choice < 4)
 	{
 		firstchoice = choice;
+		firstregset = false;
 		return true;
 	}
 	else
@@ -72,6 +122,7 @@ bool Comparison::SetSecondChoice(int choice)
 	if(choice >= 0 && choice < 4)
 	{
 		secondchoice = choice;
+		secondregset = false;
 		return true;
 	}
 	else
@@ -85,10 +136,23 @@ Comparison* Comparison::GetFirstComparison()
 
 void Comparison::SetFirstComparison(const Comparison& comp)
 {
-	if(firstcomp != 0)
+	if(firstcomp != NULL)
 		delete firstcomp;
 	firstcomp = new Comparison(comp);
 	firstchoice = Comp;
+	firstregset = false;
+}
+
+void Comparison::SetFirstComparison(Comparison* comp)
+{
+	//prevent eternal recursion until crash:
+	if(this == comp)
+		return;
+	if(firstcomp != NULL)
+		delete firstcomp;
+	firstcomp = comp;
+	firstchoice = Comp;
+	firstregset = false;
 }
 
 Comparison* Comparison::GetSecondComparison()
@@ -98,10 +162,23 @@ Comparison* Comparison::GetSecondComparison()
 
 void Comparison::SetSecondComparison(const Comparison& comp)
 {
-	if(secondcomp != 0)
+	//prevent eternal recursion until crash:
+	if(this == &comp)
+		return;
+	if(secondcomp != NULL)
 		delete secondcomp;
 	secondcomp = new Comparison(comp);
 	secondchoice = Comp;
+	secondregset = false;
+}
+
+void Comparison::SetSecondComparison(Comparison* comp)
+{
+	if(secondcomp != NULL)
+		delete secondcomp;
+	secondcomp = comp;
+	secondchoice = Comp;
+	secondregset = false;
 }
 
 double Comparison::GetFirstValue()
@@ -135,6 +212,7 @@ void   Comparison::SetFirstRegisterAccess(const RegisterAccess& regacc)
 {
 	firstreg = regacc;
 	firstchoice = Register;
+	firstregset = false;
 }
 
 RegisterAccess Comparison::GetSecondRegisterAccess()
@@ -146,18 +224,21 @@ void   Comparison::SetSecondRegisterAccess(const RegisterAccess& regacc)
 {
 	secondreg = regacc;
 	secondchoice = Register;
+	secondregset = false;
 }
 
 void Comparison::EvalFirstRegister(double value)
 {
 	firstregset = true;
-	firstval = value;
+	if(firstchoice != Value)
+		firstval = value;
 }
 
 void Comparison::EvalSecondRegister(double value)
 {
 	secondregset = true;
-	secondval = value;
+	if(secondchoice != Value)
+		secondval = value;
 }
 
 bool Comparison::ReadyForEvaluation()
@@ -165,7 +246,7 @@ bool Comparison::ReadyForEvaluation()
 	switch(firstchoice)
 	{
 		case(Comp):
-			if(firstcomp == 0)
+			if(firstcomp == NULL)
 				return false;
 			else if(!firstcomp->ReadyForEvaluation())
 				return false;
@@ -183,7 +264,7 @@ bool Comparison::ReadyForEvaluation()
 	switch(secondchoice)
 	{
 		case(Comp):
-			if(secondcomp == 0)
+			if(secondcomp == NULL)
 				return false;
 			else if(!secondcomp->ReadyForEvaluation())
 				return false;
@@ -206,14 +287,14 @@ bool Comparison::Evaluate()
 	if(!ReadyForEvaluation())
 		return false;
 
-	firstregset  = false;
-	secondregset = false;
-
 	if(firstchoice == Comp)
 		firstval = (firstcomp->Evaluate())?1:0;
 
 	if(secondchoice == Comp)
 		secondval = (secondcomp->Evaluate())?1:0;
+
+	firstregset  = false;
+	secondregset = false;
 
 	switch(relation)
 	{
@@ -240,14 +321,47 @@ bool Comparison::Evaluate()
 	}
 }
 
+std::string Comparison::PrintComparison(std::string spaces) const
+{
+	std::stringstream s("");
+
+	s << spaces << "Comparison: (relation: " << relation << "):\n"
+	  << spaces << " Lvalue: " << firstchoice << "\n" << spaces;
+
+	s << "  value:  " << firstval << std::endl;
+
+	s << spaces  << "  RegAcc: " << firstreg.what << std::endl;
+
+	if(firstcomp != NULL)
+		s << firstcomp->PrintComparison(spaces + "  ");
+
+	s << spaces << " Rvalue: " << secondchoice << "\n" << spaces;
+
+	s << "  value:  " << secondval << std::endl << spaces
+	  << "  RegAcc: " << secondreg.what << std::endl;
+	if(secondcomp != NULL)
+		s << secondcomp->PrintComparison(spaces + "  ");
+
+	return s.str();
+}
+
 /*****************************
  *  StateTransition Methods  *
  *****************************/
 
 StateTransition::StateTransition() : nextstate(""), delay(0), 
-		counterchanges(std::vector<RegisterAccess>()), condition(Comparison())
+		counterchanges(std::vector<RegisterAccess>()), condition(new Comparison())
 {
 
+}
+
+StateTransition::StateTransition(const StateTransition& trans) : nextstate(trans.nextstate),
+		delay(trans.delay)
+{
+	for(auto& it : trans.counterchanges)
+		counterchanges.push_back(it);
+
+	condition = new Comparison(*(trans.condition));
 }
 
 std::string StateTransition::GetNextState()
@@ -272,10 +386,15 @@ void StateTransition::SetDelay(int delay)
 
 Comparison* StateTransition::GetComparison()
 {
-	return &condition;
+	return condition;
 }
 
 void StateTransition::SetComparison(const Comparison& comp)
+{
+	condition = new Comparison(comp);
+}
+
+void StateTransition::SetComparison(Comparison* comp)
 {
 	condition = comp;
 }
@@ -307,7 +426,7 @@ int  StateTransition::GetNumRegisterChanges()
 
 bool StateTransition::Evaluate()
 {
-	return condition.Evaluate();
+	return condition->Evaluate();
 }
 
 
@@ -316,7 +435,7 @@ bool StateTransition::Evaluate()
  *******************************/
 
 StateMachineState::StateMachineState() : name(""), registerchanges(std::vector<RegisterAccess>()),
-		transitions(std::vector<StateTransition>())
+		transitions(std::vector<StateTransition*>())
 {
 
 }
@@ -363,6 +482,11 @@ void StateMachineState::ClearStateTransitions()
 
 void StateMachineState::AddStateTransition(StateTransition transition)
 {
+	transitions.push_back(new StateTransition(transition));
+}
+
+void StateMachineState::AddStateTransition(StateTransition* transition)
+{
 	transitions.push_back(transition);
 }
 
@@ -371,12 +495,12 @@ int  StateMachineState::GetNumStateTransitions()
 	return transitions.size();
 }
 
-/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsBegin()
+/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsBegin()
 {
 	return transitions.begin();
 }
 
-/*const*/ std::vector<StateTransition>::iterator StateMachineState::GetStateTransitionsEnd()
+/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsEnd()
 {
 	return transitions.end();
 }
@@ -387,25 +511,25 @@ int  StateMachineState::GetNumStateTransitions()
 
 XMLDetector::XMLDetector(std::string addressname, int address)
 		: DetectorBase(addressname, address), currentstate(0), nextstate(-1),
-		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
+		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
 }
 
 XMLDetector::XMLDetector() : DetectorBase(), currentstate(0), nextstate(-1),
-		states(std::vector<StateMachineState>()), counters(std::map<std::string, double>())
+		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
 	counters.insert(std::make_pair("delay", 0));
 }
 
 XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ), 
-		currentstate(templ.currentstate), nextstate(templ.nextstate), states(templ.states),
-		counters(templ.counters)
+		currentstate(templ.currentstate), nextstate(templ.nextstate), counters(templ.counters)
 {
-
+	for(auto& it : templ.states)
+		states.push_back(new StateMachineState(*it));
 }
 
-bool XMLDetector::StateMachineCkUp(int timestamp)
+bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 {
 	//check for valid state:
 	if(currentstate >= states.size() || currentstate < 0)
@@ -443,7 +567,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp)
     	return true;
     }
 
-	StateMachineState* state = &states[currentstate];
+	StateMachineState* state = states[currentstate];
 
 
 	std::cout << "State: " << state->GetStateName() << std::endl;
@@ -459,21 +583,21 @@ bool XMLDetector::StateMachineCkUp(int timestamp)
 	auto endtransitions = state->GetStateTransitionsEnd();
 	for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
 	{
-		FillComparison(it->GetComparison());
+		FillComparison((*it)->GetComparison());
 
-		if(it->Evaluate())
+		if((*it)->Evaluate())
 		{
-			SetCounter("delay", it->GetDelay());
+			SetCounter("delay", (*it)->GetDelay());
 
-			auto itend = it->GetRegisterChangesEnd();
-			for(auto regit = it->GetRegisterChangesBegin(); regit != itend; ++regit)
+			auto itend = (*it)->GetRegisterChangesEnd();
+			for(auto regit = (*it)->GetRegisterChangesBegin(); regit != itend; ++regit)
 				ExecuteRegisterChanges(*regit, timestamp);
 
 			//find the next state:
 			int index = 0;
 			for(auto stateit = states.begin(); stateit != states.end(); ++stateit)
 			{
-				if(stateit->GetStateName().compare(it->GetNextState()) == 0)
+				if((*stateit)->GetStateName().compare((*it)->GetNextState()) == 0)
 				{
 					nextstate = index;
 					break;
@@ -485,11 +609,41 @@ bool XMLDetector::StateMachineCkUp(int timestamp)
 		}
 	}
 
+	if(nextstate == -1)
+	{
+		std::cout << "Debug Output for all Transitions:" << std::endl;
+		for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
+		{
+			std::cout << "Transition to: " << (*it)->GetNextState() << std::endl;
+			std::cout << (*it)->GetComparison()->PrintComparison("  ");
+		}
+
+	}
+
 	return true;
 }
 
-bool XMLDetector::StateMachineCkDown(int timestamp)
+bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 {
+	if(!trigger)
+	{
+		//std::cout << "remove hits (missing trigger)" << std::endl;
+		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+			it->NoTriggerRemoveHits(timestamp, &fbadout);
+	}
+
+	//execute special actions for making signals synchronous if they are defined:
+	StateMachineState* state = GetState("synchronisation");
+	if(state != 0)
+	{
+		//change Registers, LoadPixels, LoadROCs,...:
+		auto itend = state->GetRegisterChangesEnd();
+		for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
+			ExecuteRegisterChanges(*it, timestamp);
+	}
+
+	//execute a state transition for the "normal" state machine part:
+	//do not execute a state change on a delay:
     if(GetCounter("delay") > 0)
     	return true;
 
@@ -505,6 +659,12 @@ int XMLDetector::GetState()
 	return currentstate;
 }
 
+void XMLDetector::SetState(int index)
+{
+	if(index >= 0 && index < states.size())
+		currentstate = index;
+}
+
 int XMLDetector::GetNextState()
 {
 	return nextstate;
@@ -515,7 +675,7 @@ std::string XMLDetector::GetCurrentStateName()
 	if(currentstate < 0 || currentstate >= states.size())
 		return "";
 	else
-		return states[currentstate].GetStateName();
+		return states[currentstate]->GetStateName();
 }
 
 DetectorBase* XMLDetector::Clone()
@@ -530,6 +690,11 @@ void XMLDetector::AddCounter(std::string name, double value)
 
 void XMLDetector::AddState(const StateMachineState& state)
 {
+	states.push_back(new StateMachineState(state));
+}
+
+void XMLDetector::AddState(StateMachineState* state)
+{
 	states.push_back(state);
 }
 
@@ -538,15 +703,15 @@ StateMachineState* XMLDetector::GetState(int index)
 	if(index < 0 || index >= states.size())
 		return 0;
 	else
-		return &states[index];
+		return states[index];
 }
 
 StateMachineState* XMLDetector::GetState(std::string statename)
 {
 	for(auto& it : states)
 	{
-		if(it.GetStateName().compare(statename) == 0)
-			return &it;
+		if(it->GetStateName().compare(statename) == 0)
+			return it;
 	}
 	return 0;
 }
@@ -649,8 +814,8 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
 	    bool result = false;
         for (auto &it: rocvector)
         {
-            Hit hit = it.GetHit();  //equivalent to ReadCell()
-            if(!hit.is_valid())
+            Hit hit = it.GetHit(timestamp);  //equivalent to ReadCell()
+            if(hit.is_valid())
             {
             	hit.AddReadoutTime(addressname, timestamp);
             	SaveHit(hit, false);
@@ -680,6 +845,7 @@ void XMLDetector::FillComparison(Comparison* comp)
 			comp->EvalFirstRegister(value);
 			break;
 		case(Comparison::Value):
+			comp->EvalFirstRegister(-1);
 			break;
 		default:
 			break;
@@ -695,10 +861,13 @@ void XMLDetector::FillComparison(Comparison* comp)
 			comp->EvalSecondRegister(value);
 			break;
 		case(Comparison::Value):
+			comp->EvalSecondRegister(-1);
 			break;
 		default:
 			break;
 	}
+
+
 
 	return;
 }
