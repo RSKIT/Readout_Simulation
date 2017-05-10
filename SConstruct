@@ -1,9 +1,9 @@
 #
 #   ROME (ReadOut Modelling Environment)
-#   Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
-#                     Felix Ehrler (felix.ehrler@kit.edu),
-#                     Karlsruhe Institute of Technology (KIT)
-#                               - ASIC and Detector Laboratory (ADL)
+#   Copyright (c) 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+#                       Felix Ehrler (felix.ehrler@kit.edu),
+#                       Karlsruhe Institute of Technology (KIT)
+#                                 - ASIC and Detector Laboratory (ADL)
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License version 3 as 
