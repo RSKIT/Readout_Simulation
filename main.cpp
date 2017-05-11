@@ -37,21 +37,38 @@ const int pixsizez = 30;
 
 int main(int argc, char** argv)
 {
-    if(argc == 2)
+    //Load Data from command line arguments:
+    if(argc > 1)
     {
-        std::cout << "Loading from file \"" << argv[1] << "\" ..." << std::endl;
-        Simulator sim(argv[1]);
-        sim.LoadInputFile();
+        for(int i = 1; i < argc; ++i)
+        {
+            std::cout << "Loading from file \"" << argv[i] << "\" ..." << std::endl;
+            Simulator sim(argv[i]);
+            sim.LoadInputFile();
 
-        //std::cout << "Detectors: " << sim.GetNumDetectors() << std::endl;
-        //std::cout << sim.PrintDetectors() << std::endl;
-
-        //sim.InitEventGenerator();
-
-        sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+            sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+        }
     }
     else
     {
-        std::cout << "Wrong number of Parameters!" << std::endl;
+        //try loading filenames from pipelined data:
+        std::string file = "";
+        std::vector<std::string> files;
+
+        while(std::cin >> file)
+            files.push_back(file);
+
+        for(auto& it : files)
+        {
+            std::cout << "Loading from file \"" << it << "\" ..." << std::endl;
+            Simulator sim(it);
+            sim.LoadInputFile();
+
+            sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+        }
+
+        //state that no file was provided - if this statement is true:
+        if(files.size() == 0)
+            std::cout << "No Parameters passed! Nothing to do here ..." << std::endl;
     }
 }

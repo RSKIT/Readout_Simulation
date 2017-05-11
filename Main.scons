@@ -22,7 +22,7 @@
 #   This file is part of the ROME simulation framework.
 #
 
-env = Environment(CCFLAGS=["-std=c++11", "-pthread") #, "-g"])
+env = Environment(CCFLAGS=["-std=c++11", "-pthread"]) #, "-g"])
 
 mainfile = 'main.cpp'
 
