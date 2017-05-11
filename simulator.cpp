@@ -508,6 +508,14 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			else
 				eventgenerator.SetTriggerLength(length);
 		}
+		else if(name.compare("Threads") == 0)
+		{
+			int maxthreads = 0;
+			if(element->QueryIntAttribute("n",&maxthreads) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetThreads(maxthreads);
+			else
+				eventgenerator.SetThreads(0);
+		}
 
 
 		if(element != eventgen->LastChildElement())

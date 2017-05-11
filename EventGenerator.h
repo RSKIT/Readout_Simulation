@@ -27,6 +27,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
@@ -34,6 +35,7 @@
 #include <math.h>
 #include <deque>
 #include <list>
+#include <thread>
 
 #include "TCoord.h"
 #include "hit.h"
@@ -42,10 +44,16 @@
 #include "detector.h"
 
 
-
 class EventGenerator
 {
 public:
+	class particletrack {public:
+						  int index;
+						  TCoord<double> setpoint;
+						  TCoord<double> direction;
+						  double time;
+						  bool trigger;};
+
 	EventGenerator();
 	EventGenerator(DetectorBase* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
@@ -121,6 +129,15 @@ public:
 	 *                            time
 	 */
 	void SetSeed(int seed = 0);
+
+	/**
+	 * @brief provides the number of threads to be used for the charge calculation inside the
+	 *             pixels during event generation
+	 * @details
+	 * @return               - the number of threads during event generation
+	 */
+	int    GetThreads();
+	void   SetThreads(unsigned int numthreads);
 
 	/**
 	 * @brief sigma for the Gaussian distribution of the inclination angle for the particle 
@@ -275,8 +292,9 @@ public:
 	 * 
 	 * @param firsttime      - earliest possible time for the first event
 	 * @param numevents      - the number of events to generate
+	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores
 	 */
-	void GenerateEvents(double firsttime = 0, int numevents = 1);
+	void GenerateEvents(double firsttime = 0, int numevents = 1, unsigned int threads = 0);
 	/**
 	 * @brief removes all hits from the event generator's storage
 	 * @details
@@ -374,6 +392,30 @@ private:
 	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
 										TCoord<double> setpoint, bool print = false);
 
+	/**
+	 * @brief method to be called by threads for the evaluation of particle tracks. It provides
+	 *             hit objects and logging output via parameters
+	 *             
+	 * @param itself         - to be filled with this. The EventGenerator object on which the
+	 *                            thread is to work
+	 * @param begin			 - iterator pointing to the first particletrack to evaluate
+	 * @param end			 - iterator pointing to the first particletrack not to evaluate anymore
+	 *                            (as the end() iterator)
+	 * @param pixelhits		 - reference to a vector in which the hit objects are stored. Use a
+	 *                            separate vector for each thread
+	 * @param output		 - reference to a stringstream in which the logging information is
+	 *                            collected to write it to a file at the end. Use a separate vector
+	 *                            for each thread
+	 * @param id			 - number for the identification of the thread. Only for printing to
+	 *                            std::cout
+	 */
+	static void GenerateHitsFromTracks(EventGenerator* itself, 
+										std::vector<particletrack>::iterator begin,
+										std::vector<particletrack>::iterator end,
+										std::vector<Hit>* pixelhits,
+										std::stringstream* output,
+										int id = -1);
+
 	std::vector<DetectorBase*> detectors;
 
 	int eventindex;				//index for the next event to generate
@@ -384,6 +426,10 @@ private:
 
 	std::default_random_engine generator;	//a uniform random generator
 	int seed;
+
+	int threads;				//the number of threads to use for the calculation of the event
+								// pixel charges (0 = use all available cores)
+
 	double inclinationsigma;	//sigma for the gaussian distribution of the theta angle 
 								// in radians
 

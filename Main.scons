@@ -22,7 +22,7 @@
 #   This file is part of the ROME simulation framework.
 #
 
-env = Environment(CCFLAGS="-std=c++11")  # -g")
+env = Environment(CCFLAGS=["-std=c++11", "-pthread") #, "-g"])
 
 mainfile = 'main.cpp'
 
@@ -38,7 +38,11 @@ sources = [ 'tinyxml2.cpp',
 			'simulator.cpp',
 			'EventGenerator.cpp'
 			]
+
+libraries = [ 'pthread'
+			]
+library_paths = ''
 			
 sources.append(mainfile)
 
-env.Program(target = 'a.out', source = sources)
+env.Program(target = 'a.out', source = sources, LIBS = libraries, LIBPATH = library_paths)

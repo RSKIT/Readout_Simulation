@@ -23,7 +23,7 @@
 #include "EventGenerator.h"
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
-		seed(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
+		seed(0), threads(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
 		triggerturnontimes(std::list<int>()), totalrate(true)
@@ -32,7 +32,7 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 }
 
 EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
-		clustersize(0), eventrate(0), seed(0), inclinationsigma(0.3), chargescale(1), 
+		clustersize(0), eventrate(0), seed(0), threads(0), inclinationsigma(0.3), chargescale(1), 
 		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
 		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
 		totalrate(true)
@@ -43,7 +43,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 }
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
-		eventindex(0), chargescale(1), inclinationsigma(0.3), 
+		eventindex(0), chargescale(1), threads(0), inclinationsigma(0.3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
 		triggerturnontimes(std::list<int>()), totalrate(true)
@@ -119,6 +119,20 @@ void EventGenerator::SetSeed(int seed)
 	else
 		generator.seed(seed);
 }
+
+int EventGenerator::GetThreads()
+{
+	return threads;
+}
+
+void EventGenerator::SetThreads(unsigned int numthreads)
+{
+	if(numthreads > std::thread::hardware_concurrency())
+		threads = 0;
+	else
+		threads = (int)numthreads;
+}
+
 
 double EventGenerator::GetInclinationSigma()
 {
@@ -290,7 +304,7 @@ bool EventGenerator::GetTriggerState(int timestamp)
 	return triggerstate;
 }
 
-void EventGenerator::GenerateEvents(double firsttime, int numevents)
+void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned int threads)
 {
 	if(!IsReady())
 		return;
@@ -331,27 +345,32 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 	//normal distribution for the generation of the theta angles (result in radians):
 	std::normal_distribution<double> distribution(0.0,inclinationsigma);
 
-	//generate the events:
+	//generate the particle tracks:
+	std::vector<particletrack> particles;
+	particles.resize(numevents);
+	if(threads == 0)
+		threads = std::thread::hardware_concurrency();
+	std::vector<std::vector<particletrack>::iterator> startpoints;
 	for (int i = 0; i < numevents; ++i)
 	{
-		std::cout << "   Generating Event " << i << " of " << numevents << " ..." << std::endl;
+		//std::cout << "   Generating Particle Track " << i << " of " << numevents 
+		//		  << " ..." << std::endl;
 		//get a new random particle track:
-		TCoord<double> direction;
+		particletrack track; // = particletrack();
+
+		track.index = i;
 
 		double theta = distribution(generator);
 		if(theta < 0)
 			theta = -theta;
-		double phi   = 2* 3.14159265 * (generator() / double(RAND_MAX));
-		direction[0] = cos(phi)*sin(theta);
-		direction[1] = sin(phi)*sin(theta);
-		direction[2] = cos(theta);
+		double phi = 2* 3.14159265 * (generator() / double(RAND_MAX));
+		track.direction[0] = cos(phi)*sin(theta);
+		track.direction[1] = sin(phi)*sin(theta);
+		track.direction[2] = cos(theta);
 
-		//for(int i = 0; i < 3; ++i)
-		//	direction[i] = generator() / double(RAND_MAX);
-		TCoord<double> setpoint;	//inside the detector volume
 		for(int i = 0; i < 3; ++i)
-			setpoint[i] = generator() / double(RAND_MAX) * (detectorend[i]-detectorstart[i]) 
-							+ detectorstart[i];
+			track.setpoint[i] = generator() / double(RAND_MAX) 
+									* (detectorend[i] - detectorstart[i]) + detectorstart[i];
 
 		//generate the next time stamp:
 		if(totalrate)
@@ -359,51 +378,72 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents)
 		else
 			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
 
-		//save the parameters of the hit in the file for the events:
-		if(fout.is_open())
-			fout << "# Event " << eventindex << std::endl
-				 << "# Trajectory: g: x(t) = " << setpoint << " + t * " << direction << std::endl
-				 << "# Time: " << time << std::endl;
+		track.time = time;
 
 		//generate the trigger for this event:
 		if(generator()/double(RAND_MAX) < triggerprobability)
 		{
+			track.trigger = true;
 			//if the trigger arrives slightly after the clock transition it will be recognised
 			//  one timestamp later -> +0.9 timestamps
 			AddOnTimeStamp(int(time + triggerdelay + 0.9));
-			if(fout.is_open())
-				fout << "# Trigger: " << int(time + triggerdelay + 0.9) << " - " 
-					 << int(time + triggerdelay + 0.9 + triggerlength) << std::endl;
 		}
+		else
+			track.trigger = false;
 
-		//generate the template hit object for this event:
-		Hit hittemplate;
-		hittemplate.SetTimeStamp(time);
-		hittemplate.SetEventIndex(eventindex);
-		++eventindex;
 
-		//get the hits from the readout cells:
-		std::vector<Hit> hits;
-		for(auto dit : detectors)
+		particles.push_back(track);
+
+		if((i % (numevents/threads+1)) == 0)
 		{
-			for(auto it = dit->GetROCVectorBegin(); it != dit->GetROCVectorEnd(); ++it)
-			{
-                hits = ScanReadoutCell(hittemplate, &(*it), direction, setpoint, false);
+			std::cout << "i = " << i << std::endl;
 
-				//copy the hits to the event queue:
-				for(auto it2 : hits)
-				{
-					clusterparts.push_back(it2);
+			auto partend = --(particles.end());
+			startpoints.push_back(partend);
+		}
+	}
+	startpoints.push_back(particles.end());
 
-					//also save the hit in the output file:
-					if(fout.is_open())
-						fout << "  " << it2.GenerateString() << std::endl;
-				}
-			}
+	std::cout << "Generating " << numevents << " particle tracks done." << std::endl;
+
+	std::cout << "Starting parallel evaluation of the tracks on " << threads 
+			  << " threads." << std::endl;
+
+	//variables for the worker threads:
+	std::vector<Hit> threadhits[threads];
+	std::stringstream outputs[threads];
+	std::thread* workers[threads];
+
+	//start the worker threads:
+	for(int i = 0; i < threads; ++i)
+	{
+		std::thread* worker = new std::thread(GenerateHitsFromTracks, this, startpoints[i], 
+												startpoints[i+1], &(threadhits[i]), &(outputs[i]),
+												i);
+
+		workers[i] = worker;
+	}
+
+	
+	//join the threads again and store the results:
+	for(int i = 0; i < threads; ++i)
+	{
+		if(workers[i]->joinable())
+		{
+			workers[i]->join();
+
+			std::cout << "Thread #" << i << " joined." << std::endl;
+
+			for(auto& it : threadhits[i])
+				clusterparts.push_back(it);
+
+			fout << outputs[i].str();
 		}
 	}
 
 	fout.close();
+
+	return;
 }
 
 void EventGenerator::ClearEventQueue()
@@ -617,4 +657,63 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 	}
 
 	return globalhits;
+}
+
+void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
+									std::vector<particletrack>::iterator begin, 
+									std::vector<particletrack>::iterator end,
+									std::vector<Hit>* pixelhits,
+									std::stringstream* output, int id)
+{
+	std::cout << "Started thread with id " << std::this_thread::get_id() << " ..." << std::endl;
+
+	//generate the template hit object for this event:
+	Hit hittemplate;
+	int counter = 0;
+
+	for(auto it = begin; it != end; ++it)
+	{
+        hittemplate.SetTimeStamp(it->time);
+        hittemplate.SetEventIndex(it->index);
+
+        //add the event to the output stream:
+		*output << "# Event " << it->index << std::endl
+			    << "# Trajectory: g: x(t) = " << it->setpoint << " + t * " 
+			    << it->direction << std::endl
+	 		    << "# Time: " << it->time << std::endl;
+	 	if(it->trigger)
+			*output << "# Trigger: " << int(it->time + itself->triggerdelay + 0.9) << " - " 
+		 		    << int(it->time + itself->triggerdelay + 0.9 + itself->triggerlength) 
+		 		    << std::endl;
+
+		//get the hits from the readout cells:
+		std::vector<Hit> hits;
+		for(auto& dit : itself->detectors)
+		{
+			for(auto rit = dit->GetROCVectorBegin(); rit != dit->GetROCVectorEnd(); ++rit)
+			{
+                hits = itself->ScanReadoutCell(hittemplate, &(*rit), it->direction, 
+                								it->setpoint, false);
+
+				//copy the hits to the event queue:
+				for(auto& it2 : hits)
+				{
+					pixelhits->push_back(it2);
+
+					//also save the hit in the output file:
+					*output << "  " << it2.GenerateString() << std::endl;
+				}
+			}
+		}
+
+		if((counter++ % 10) == 0)
+		{
+			if(id < 0)
+				std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
+						  << std::setw(4) << counter << " Events" << std::endl;
+			else
+				std::cout << "Process " << std::setw(3) << id << ": Generated " 
+						  << std::setw(4) << counter << " Events" << std::endl;
+		}
+	}
 }
