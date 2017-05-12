@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 
 #include "hit.h"
@@ -72,7 +73,7 @@ public:
 	 * 
 	 * @return               - true if a hit was removed, false if not
 	 */
-	virtual bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	virtual bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	/**
 	 * @brief checks whether all buffers are occupied
@@ -103,7 +104,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
@@ -125,7 +126,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();
@@ -154,7 +155,7 @@ public:
 	 *                            process
 	 * @return 				 - true if at least one hit was transferred, false if not
 	 */
-	virtual bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::stringstream* out = 0);
 	/**
 	 * @brief flag that indicates whether the hit exists as a copy in a different object and has to
 	 *             be deleted at several positions. This is necessary for the ROCBuffer classes
@@ -176,7 +177,7 @@ class NoFullReadReadout : public ROCReadout
 public:
 	NoFullReadReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -189,7 +190,7 @@ class NoOverWriteReadout : public ROCReadout
 public:
 	NoOverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -203,7 +204,7 @@ class OverWriteReadout : public ROCReadout
 public:
 	OverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -221,7 +222,7 @@ class OneByOneReadout : public ROCReadout
 public:
 	OneByOneReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -247,7 +248,7 @@ public:
 	 * 
 	 * @return               - true if a hit was loaded, false if not
 	 */
-	virtual bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::stringstream* out = 0);
 protected:
 	ReadoutCell* cell;
 };
@@ -261,7 +262,7 @@ class PPtBReadout : public PixelReadout
 public:
 	PPtBReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 };
 
 //---- End Pixel Readout Classes ----

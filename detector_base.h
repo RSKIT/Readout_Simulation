@@ -215,6 +215,18 @@ public:
 	 */
 	bool		SaveBadHit(Hit hit, bool compact = false);
 	/**
+	 * @brief writes the contents of the found hits data stream to the file
+	 * @details
+	 * @return               - true if the write was successful, false if not
+	 */
+	bool 		FlushOutput();
+	/**
+	 * @brief writes the contents of the lost hits data stream to the file
+	 * @details
+	 * @return               - true if the write was successful, false if not
+	 */
+	bool 		FlushBadOutput();
+	/**
 	 * @brief the number of hits available in this detecot in total
 	 * @details
 	 * @return               - the number of hits available in all buffers summed up
@@ -237,7 +249,19 @@ public:
 	 * @return               - the currently set filename
 	 */
 	std::string	GetOutputFile();
+	/**
+	 * @brief changes the output file for found hits. The previously opened file is closed.
+	 *             The contents of the data stream is written to the file beforehand.
+	 * @details
+	 * 
+	 * @param filename       - the file name of the new file to open
+	 */
 	void 		SetOutputFile(std::string filename);
+	/**
+	 * @brief the output file for the found hits is closed and the contents of the data stream
+	 *             is written to the file beforehand
+	 * @details
+	 */
 	void 		CloseOutputFile();
 
 	/**
@@ -246,7 +270,19 @@ public:
 	 * @return               - the currently set filename
 	 */
 	std::string	GetBadOutputFile();
+	/**
+	 * @brief changes the output file for lost hits. The previously opened file is closed.
+	 *             The contents of the data stream is written to the file beforehand.
+	 * @details
+	 * 
+	 * @param filename       - the file name of the new file to open
+	 */
 	void 		SetBadOutputFile(std::string filename);
+	/**
+	 * @brief the output file for the lost hits is closed and the contents of the data stream
+	 *             is written to the file beforehand
+	 * @details
+	 */
 	void 		CloseBadOutputFile();
 
 	/**
@@ -337,10 +373,12 @@ protected:
 
     int 						hitcounter;
     std::string 				outputfile;
+    std::stringstream			sout;			//stream to collect the data from the simulation
     std::fstream 				fout;
 
     int 						badhitcounter;
     std::string 				badoutputfile;
+    std::stringstream			sbadout;		//stream to collect the data from the simulation
     std::fstream 				fbadout;
 
 };

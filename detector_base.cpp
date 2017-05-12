@@ -24,14 +24,16 @@
 
 DetectorBase::DetectorBase() : 
         addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), outputfile(""),
-        fout(std::fstream()), badoutputfile(""), fbadout(std::fstream()), hitcounter(0), 
+        sout(std::stringstream("")),fout(std::fstream()), badoutputfile(""), 
+        sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null)
 {
 	
 }
 
-DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""), 
-        fout(std::fstream()), badoutputfile(""), fbadout(std::fstream()), hitcounter(0), 
+DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""),
+        sout(std::stringstream("")), fout(std::fstream()), badoutputfile(""), 
+        sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null)
 {
 	this->addressname = addressname;
@@ -42,7 +44,8 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
 
 DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addressname),
         address(templ.address), rocvector(templ.rocvector),
-        outputfile(templ.outputfile), fout(std::fstream()), badoutputfile(templ.badoutputfile), 
+        outputfile(templ.outputfile), fout(std::fstream()), sout(std::stringstream("")),
+        badoutputfile(templ.badoutputfile), sbadout(std::stringstream("")),
         fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size)
 {
 
@@ -264,7 +267,7 @@ bool DetectorBase::PlaceHit(Hit hit, int timestamp)
         //std::cout << "roc addressname: " << addressname << std::endl;
         //std::cout << "hit getaddress: " << address << std::endl;
         if (it.GetAddress() == address)
-            return it.PlaceHit(hit, timestamp, &fbadout);
+            return it.PlaceHit(hit, timestamp, &sbadout);
     }
 
     return false;
@@ -302,7 +305,7 @@ bool DetectorBase::SaveHit(Hit hit, bool compact)
         }
     }
 
-    fout << hit.GenerateString(compact) << std::endl;
+    sout << hit.GenerateString(compact) << std::endl;
 
     return true;
 }
@@ -324,10 +327,57 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
         }
     }
 
-    fbadout << hit.GenerateString(compact) << std::endl;
+    sbadout << hit.GenerateString(compact) << std::endl;
 
     return true;
 }
+
+bool DetectorBase::FlushOutput()
+{
+    if(fout.is_open())
+    {
+        fout << sout.str();
+        sout.str("");
+        return true;
+    }
+    else
+    {
+        if(sout.str().length() == 0)
+        {
+            sout.str("");
+            return true;
+        }
+        else
+        {
+            sout.str("");
+            return false;
+        }
+    }
+}
+
+bool DetectorBase::FlushBadOutput()
+{
+    if(fbadout.is_open())
+    {
+        fbadout << sbadout.str();
+        sbadout.str("");
+        return true;
+    }
+    else
+    {
+        if(sbadout.str().length() == 0)
+        {
+            sbadout.str("");
+            return true;
+        }
+        else
+        {
+            sbadout.str("");
+            return false;
+        }
+    }
+}
+
 
 int DetectorBase::HitsEnqueued()
 {
@@ -361,7 +411,10 @@ void DetectorBase::SetOutputFile(std::string filename)
 void DetectorBase::CloseOutputFile()
 {
     if(fout.is_open())
+    {
+        FlushOutput();
         fout.close();
+    }
 }
 
 std::string DetectorBase::GetBadOutputFile()
@@ -378,7 +431,10 @@ void DetectorBase::SetBadOutputFile(std::string filename)
 void DetectorBase::CloseBadOutputFile()
 {
     if(fbadout.is_open())
+    {
+        FlushBadOutput();
         fbadout.close();
+    }
 }
 
 int DetectorBase::GetHitCounter()

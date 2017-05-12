@@ -303,10 +303,15 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+	{
+		(*it)->FlushOutput();
+		(*it)->FlushBadOutput();
 		dethitcounter += (*it)->GetHitCounter();
+	}
 
 	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
 			  << std::endl << "  read out signals: " << dethitcounter << std::endl

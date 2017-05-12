@@ -85,7 +85,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 
                 bool result = false;
                 for (auto &it : rocvector)
-                    result |= it.LoadCell("Column", timestamp, &fbadout);
+                    result |= it.LoadCell("Column", timestamp, &sbadout);
 
                 if(result)
                     std::cout << "Hit(s) Loaded" << std::endl;
@@ -111,7 +111,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
                 for (auto &it : rocvector)
                 {
                     hitsavailable += it.HitsAvailable("Column");
-                    result |= it.LoadCell("Pixel", timestamp, &fbadout);
+                    result |= it.LoadCell("Pixel", timestamp, &sbadout);
                 }
 
                 if(result)
@@ -154,7 +154,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
                 bool result = false;
                 for (auto &it: rocvector)
                 {
-                    if(it.LoadCell("CU", timestamp, &fbadout))
+                    if(it.LoadCell("CU", timestamp, &sbadout))
                     {
                         result = true;
 
@@ -215,7 +215,7 @@ bool Detector::StateMachineCkDown(int timestamp, bool trigger)
     //Hit synchronisaation:
     bool result = false;
     for (auto &it : rocvector)
-        result |= it.LoadPixel(timestamp, &fbadout);
+        result |= it.LoadPixel(timestamp, &sbadout);
 
     if(result)
         std::cout << "Hit(s) loaded to Pixel" << std::endl;

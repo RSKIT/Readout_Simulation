@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "hit.h"
 #include "pixel.h"
@@ -268,10 +269,10 @@ public:
 	 * 
 	 * @param hit            - the hit to implant in the detector
 	 * @param timestamp      - current timestamp at which the hit is implanted
-	 * @param fout           - pointer to an fstream opened for writing for logging failed implants
+	 * @param out            - pointer to an stringstream for writing for logging failed implants
 	 * @return               - true on successful implantation, false on failure
 	 */
-    bool        PlaceHit(Hit hit, int timestamp, std::fstream* fout = 0);
+    bool        PlaceHit(Hit hit, int timestamp, std::stringstream* out = 0);
 
     /**
      * @brief initiates the transition of hits from pixels to their parent readoutcell. The call is
@@ -279,11 +280,11 @@ public:
      * @details
      * 
      * @param timestamp      - current timestamp at which this action occurs
-     * @param out            - output filestream opened for logging lost hits
+     * @param out            - output stringstream for logging lost hits
      * 
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadPixel(int timestamp, std::fstream* out = 0);
+    bool 		LoadPixel(int timestamp, std::stringstream* out = 0);
     /**
      * @brief initiates the transition of hits from one kind of readoutcells to their parent
      *             readoutcell given by the address name. The call is recursive and only changes a
@@ -293,13 +294,13 @@ public:
      * @param addressname    - address name of the readoutcell to transfer the hits to: The parent
      *                            ROC address name
      * @param timestamp      - current timestamp at which this action is to occur
-     * @param out            - output filestream opened for logging lost hits
+     * @param out            - output stringstream for logging lost hits
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
+    bool 		LoadCell(std::string addressname, int timestamp, std::stringstream* out = 0);
     /**
      * @brief reads one hit from the subordinate readoutcells and deletes this hit in them. The
-     * 		       same functionality as GitHit(...)
+     * 		       same functionality as GetHit(...)
      * @details
      * 
      * @param timestamp      - current timestamp at which the action is to occur
@@ -345,9 +346,9 @@ public:
      * @details
      * 
      * @param timestamp      - current time stamp when this action is to be executed
-     * @param fbadout        - output filestream opened to log the removed hits
+     * @param sbadout        - output stream to log the removed hits
      */
-    void 		NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+    void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 	
 private:
 	std::string 				addressname;

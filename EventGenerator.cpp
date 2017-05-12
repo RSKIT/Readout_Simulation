@@ -659,6 +659,21 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 	return globalhits;
 }
 
+int countDigits(int value)
+{
+	int digits = 0;
+	while(value > 0)
+	{
+		++digits;
+		value /= 10;
+	}
+
+	if(digits > 0)
+		return digits;
+	else
+		return 1;
+}
+
 void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 									std::vector<particletrack>::iterator begin, 
 									std::vector<particletrack>::iterator end,
@@ -712,8 +727,11 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 				std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
 						  << std::setw(4) << counter << " Events" << std::endl;
 			else
-				std::cout << "Process " << std::setw(3) << id << ": Generated " 
+			{
+				static int numthreads = countDigits(std::thread::hardware_concurrency());
+				std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
 						  << std::setw(4) << counter << " Events" << std::endl;
+			}
 		}
 	}
 }
