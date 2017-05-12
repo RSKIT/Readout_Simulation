@@ -396,8 +396,6 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 
 		if((i % (numevents/threads+1)) == 0)
 		{
-			std::cout << "i = " << i << std::endl;
-
 			auto partend = --(particles.end());
 			startpoints.push_back(partend);
 		}
