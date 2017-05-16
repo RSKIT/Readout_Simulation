@@ -6,3 +6,5 @@ build/
 *.autosave
 *.dat
 *.stackdump
+*.d
+*.so

@@ -339,7 +339,7 @@ private:
     int stoptime;
     int stopdelay;
 
-    std::string inputfile;	
+    std::string inputfile;
 };
 
 

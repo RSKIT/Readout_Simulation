@@ -22,6 +22,8 @@
 
 #include <iostream>
 #include <string>
+#include <map>
+#include <utility>
 
 #include "evaluation.cpp"
 
@@ -29,11 +31,47 @@ int test()
 {
     std::cout << "test" << std::endl;
     Evaluation asd = Evaluation();
-    std::string event_gen = "event_gen.dat";
-    std::string event_failed = "event_failed.dat";
-    std::string event_passed = "event_passed.dat";
-    asd.Evaluate(event_gen, event_failed, event_passed);
-    asd.GetEfficiency();
+    
+    std::map<int, int> encoding;
+
+    for(int i=0;i<12;++i)
+        encoding.insert(std::make_pair(i,1<<i));
+
+    for(int i = 20; i < 55; i += 5)
+    {
+        asd.ClearHits();
+        std::stringstream s("");
+        s << i << "_12_1_readhits.dat";
+        asd.LoadPassedOutputHits(s.str());
+        asd.SeparateHits(encoding);
+
+        TH1* hist = asd.GenerateDelayHistogram("timestamp","Detector", -100,15000,10);
+        TGraph* graph = asd.GenerateIntegrationCurve(hist);
+
+        TCanvas* c1 = asd.Plot(hist, "Readout Delay (in Timestamps)", "Counts", "");
+        TCanvas* c2 = asd.Plot(graph, "Readout Delay (in Timestamps)", 
+                                "Integrated Fraction of Hits", "AP*");
+
+        s.str("");
+        s << i << "_12_1_ReadoutDelay.svg";
+        c1->SaveAs(s.str().c_str());
+        s.str("");
+        s << i << "_12_1_IntegratedFraction.svg";
+        c2->SaveAs(s.str().c_str());
+    }
+
+    /*
+    asd.LoadInputHits("25_4_3_eventgen.dat");
+    asd.LoadPassedOutputHits("25_4_3_readhits.dat");
+    asd.LoadFailedOutputHits("25_4_3_losthits.dat");
+
+    TH1* hist = asd.GenerateDelayHistogram("timestamp", "Detector", 0, 10000, 10);
+    TGraph* graph = asd.GenerateIntegrationCurve(hist);
+
+    asd.Plot(hist, "Readout Delay (in Timestamps)", "Counts", "");
+    asd.Plot(graph, "Readout Delay (in Timestamps)", "Integrated Fraction of Hits", "AP*");
+    */
+
     std::cout << "test" << std::endl;
-    //return 0;
+    return 0;
 }

@@ -47,6 +47,15 @@ void Simulator::LoadInputFile(std::string filename)
 
 	std::cout << "Loading data from \"" << filename << "\" ..." << std::endl;
 
+	std::fstream logfile;
+	logfile.open("ROME.log", std::ios::out | std::ios::app);
+	if(logfile.is_open())
+	{
+		logfile << "Loading data from \"" << filename << "\" ..." << std::endl;
+		logfile.close();
+	}
+
+
 	detectors.clear();
 	eventgenerator.ClearEventQueue();
 
@@ -319,6 +328,23 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
 			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+	std::fstream logfile;
+	logfile.open("ROME.log", std::ios::out | std::ios::app);
+	if(logfile.is_open())
+	{
+		logfile << "Simulated " << timestamp << " timestamps" << std::endl;
+
+		logfile << "Simulation done." << std::endl 
+				<< "  injected signals: " << hitcounter << std::endl 
+				<< "  read out signals: " << dethitcounter << std::endl
+			    << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+
+		logfile << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+			  	<< "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+		logfile.close();
+	}
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -517,9 +543,21 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			int maxthreads = 0;
 			if(element->QueryIntAttribute("n",&maxthreads) != tinyxml2::XML_NO_ERROR)
-				eventgenerator.SetThreads(maxthreads);
-			else
 				eventgenerator.SetThreads(0);
+			else
+				eventgenerator.SetThreads(maxthreads);
+		}
+		else if(name.compare("InputFile") == 0)
+		{
+			bool sort = true;
+			if(element->QueryBoolAttribute("sort", &sort) != tinyxml2::XML_NO_ERROR)
+				sort = true;
+			double timeshift = 0.;
+			if(element->QueryDoubleAttribute("timeshift", &timeshift) != tinyxml2::XML_NO_ERROR)
+				timeshift = 0.;
+			const char* nam = element->Attribute("filename");
+			if(nam != 0)
+				eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
 		}
 
 

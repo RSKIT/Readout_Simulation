@@ -36,6 +36,7 @@
 #include <deque>
 #include <list>
 #include <thread>
+#include <algorithm>
 
 #include "TCoord.h"
 #include "hit.h"
@@ -294,7 +295,31 @@ public:
 	 * @param numevents      - the number of events to generate
 	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores
 	 */
-	void GenerateEvents(double firsttime = 0, int numevents = 1, unsigned int threads = 0);
+	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1);
+	/**
+	 * @brief loads pixel hits from a file
+	 * @details
+	 * 
+	 * @param filename       - filename to load the hits from
+	 * @param sort           - the contents of the hit queue will be sorted after the loading if
+	 *                            this parameter is set to true
+	 * @param timeshift		 - time to be added to the pixel hits
+	 * 
+	 * @return               - the number of pixel hits loaded
+	 */
+	int  LoadEventsFromFile(std::string filename, bool sort = true, double timeshift = 0.);
+	/**
+	 * @brief loads the pixel hits from the passed filestream
+	 * @details
+	 * 
+	 * @param file           - file stream to load the hits from
+	 * @param sort           - the contents of the hit queue will be sorted after the loading if
+	 *                            this parameter is set to true
+	 * @param timeshift      - time to be added to the pixel hits
+	 * 
+	 * @return               - the number of pixel hits loaded
+	 */
+	int  LoadEventsFromStream(std::fstream* file, bool sort = true, double timeshift = 0.);
 	/**
 	 * @brief removes all hits from the event generator's storage
 	 * @details

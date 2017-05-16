@@ -127,10 +127,11 @@ int EventGenerator::GetThreads()
 
 void EventGenerator::SetThreads(unsigned int numthreads)
 {
+	std::cout << "Set Threads to " << numthreads << " (was " << threads << ")" << std::endl;
 	if(numthreads > std::thread::hardware_concurrency())
 		threads = 0;
 	else
-		threads = (int)numthreads;
+		threads = numthreads;
 }
 
 
@@ -291,7 +292,9 @@ bool EventGenerator::GetTriggerState(int timestamp)
 	{
 		triggerstate = true;
 		triggerturnofftime = timestamp + triggerlength;
-		triggerturnontimes.pop_front();
+		//remove all timestamps at the front for this current timestamp:
+		while(triggerturnontimes.front() == timestamp)
+			triggerturnontimes.pop_front();
 
 		std::cout << "Trigger on" << std::endl;
 	}
@@ -304,7 +307,7 @@ bool EventGenerator::GetTriggerState(int timestamp)
 	return triggerstate;
 }
 
-void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned int threads)
+void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads)
 {
 	if(!IsReady())
 		return;
@@ -348,8 +351,11 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 	//generate the particle tracks:
 	std::vector<particletrack> particles;
 	particles.resize(numevents);
-	if(threads == 0)
-		threads = std::thread::hardware_concurrency();
+	std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
+	if(numthreads < 0)
+		numthreads = threads;
+	if(numthreads == 0)
+		numthreads = std::thread::hardware_concurrency();
 	std::vector<std::vector<particletrack>::iterator> startpoints;
 	for (int i = 0; i < numevents; ++i)
 	{
@@ -394,7 +400,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 
 		particles.push_back(track);
 
-		if((i % (numevents/threads+1)) == 0)
+		if((i % (numevents/numthreads+1)) == 0)
 		{
 			auto partend = --(particles.end());
 			startpoints.push_back(partend);
@@ -404,16 +410,16 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 
 	std::cout << "Generating " << numevents << " particle tracks done." << std::endl;
 
-	std::cout << "Starting parallel evaluation of the tracks on " << threads 
+	std::cout << "Starting parallel evaluation of the tracks on " << numthreads 
 			  << " threads." << std::endl;
 
 	//variables for the worker threads:
-	std::vector<Hit> threadhits[threads];
-	std::stringstream outputs[threads];
-	std::thread* workers[threads];
+	std::vector<Hit> threadhits[numthreads];
+	std::stringstream outputs[numthreads];
+	std::thread* workers[numthreads];
 
 	//start the worker threads:
-	for(int i = 0; i < threads; ++i)
+	for(int i = 0; i < numthreads; ++i)
 	{
 		std::thread* worker = new std::thread(GenerateHitsFromTracks, this, startpoints[i], 
 												startpoints[i+1], &(threadhits[i]), &(outputs[i]),
@@ -424,7 +430,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 
 	
 	//join the threads again and store the results:
-	for(int i = 0; i < threads; ++i)
+	for(int i = 0; i < numthreads; ++i)
 	{
 		if(workers[i]->joinable())
 		{
@@ -442,6 +448,73 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, unsigned in
 	fout.close();
 
 	return;
+}
+
+int EventGenerator::LoadEventsFromFile(std::string filename, bool sort, double timeshift)
+{
+	std::fstream f;
+	f.open(filename.c_str(), std::ios::in);
+	if(!f.is_open())
+	{
+		std::cout << "Could not open input file \"" << filename << "\"." << std::endl;
+		return 0;
+	}
+	else
+	{
+		int result = LoadEventsFromStream(&f, sort, timeshift);
+		f.close();
+		return result;
+	}
+
+}
+
+int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double timeshift)
+{
+	int pixelhitcount = 0;
+	int maxindex = 0;
+	char line[1000];
+
+	while(!file->eof())
+	{
+		file->getline(line, 1000,'\n');
+		if(line[0] != '#')
+		{
+			Hit h = Hit(std::string(line));
+			if(h.is_valid())
+			{
+				h.SetEventIndex(h.GetEventIndex() + eventindex);
+				h.SetTimeStamp(h.GetTimeStamp() + timeshift);
+				clusterparts.push_back(h);
+				++pixelhitcount;
+
+				if(h.GetEventIndex() > maxindex);
+					maxindex = h.GetEventIndex();
+			}
+		}
+		else
+		{
+			std::stringstream s("");
+			std::string text;
+			s << line;
+			s >> text >> text;
+			if(text.compare("Trigger:") == 0)
+			{
+				int start;
+				int ende;
+				s >> start >> text >> ende;
+				SetTriggerLength(ende-start);
+				AddOnTimeStamp(start);
+			}
+		}
+		
+	}
+
+	if(sort)
+		std::sort(clusterparts.begin(), clusterparts.end());
+
+	eventindex = maxindex + 1;
+
+	return pixelhitcount;
 }
 
 void EventGenerator::ClearEventQueue()
