@@ -22,13 +22,15 @@
 
 #include "simulator.h"
 
-Simulator::Simulator() : events(0), starttime(0), stoptime(-1), stopdelay(0)
+Simulator::Simulator() : detectors(std::vector<DetectorBase*>()), eventgenerator(EventGenerator()),
+		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile("")
 {
 
 }
 
-Simulator::Simulator(std::string filename) : inputfile(filename), events(0), starttime(0),
-		stoptime(-1), stopdelay(0)
+Simulator::Simulator(std::string filename) : detectors(std::vector<DetectorBase*>()), 
+		eventgenerator(EventGenerator()), events(0), starttime(0), stoptime(-1), stopdelay(0),
+		inputfile(filename), logfile("")
 {
 
 }
@@ -46,15 +48,6 @@ void Simulator::LoadInputFile(std::string filename)
 		inputfile = filename;
 
 	std::cout << "Loading data from \"" << filename << "\" ..." << std::endl;
-
-	std::fstream logfile;
-	logfile.open("ROME.log", std::ios::out | std::ios::app);
-	if(logfile.is_open())
-	{
-		logfile << "Loading data from \"" << filename << "\" ..." << std::endl;
-		logfile.close();
-	}
-
 
 	detectors.clear();
 	eventgenerator.ClearEventQueue();
@@ -91,6 +84,11 @@ void Simulator::LoadInputFile(std::string filename)
 			if(error != tinyxml2::XML_NO_ERROR)
 				stopdelay = 0;
 		}
+		else if(elementname.compare("Logging") == 0)
+		{
+			const char* nam = elem->Value();
+			logfile = (nam != 0)?std::string(nam):"";
+		}
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -104,7 +102,28 @@ void Simulator::LoadInputFile(std::string filename)
 		eventgenerator.AddDetector(*it);
 	}
 
+	if(logfile != "")
+	{
+		std::fstream logf;
+		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+		if(logf.is_open())
+		{
+			logf << "Loading data from \"" << filename << "\" ..." << std::endl;
+			logf.close();
+		}
+	}
 }
+
+std::string Simulator::GetLoggingFile()
+{
+	return logfile;
+}
+
+void Simulator::SetLoggingFile(std::string filename)
+{
+	logfile = filename;
+}
+
 
 int Simulator::GetNumEventsToGenerate()
 {
@@ -329,21 +348,24 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
 			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
-	std::fstream logfile;
-	logfile.open("ROME.log", std::ios::out | std::ios::app);
-	if(logfile.is_open())
+	if(logfile != "")
 	{
-		logfile << "Simulated " << timestamp << " timestamps" << std::endl;
+		std::fstream logf;
+		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+		if(logf.is_open())
+		{
+			logf << "Simulated " << timestamp << " timestamps" << std::endl;
 
-		logfile << "Simulation done." << std::endl 
-				<< "  injected signals: " << hitcounter << std::endl 
-				<< "  read out signals: " << dethitcounter << std::endl
-			    << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+			logf << "Simulation done." << std::endl 
+				 << "  injected signals: " << hitcounter << std::endl 
+				 << "  read out signals: " << dethitcounter << std::endl
+				 << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
 
-		logfile << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
-			  	<< "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+			logf << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+				 << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
-		logfile.close();
+			logf.close();
+		}
 	}
 }
 
@@ -559,12 +581,58 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			if(nam != 0)
 				eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
 		}
+		else if(name.compare("DeadTimeCurve") == 0 || name.compare("TimeWalkCurve") == 0)
+		{
+			LoadSpline(&eventgenerator, element);
+		}
 
 
 		if(element != eventgen->LastChildElement())
 			element = element->NextSiblingElement();
 		else
 			element = 0;
+	}
+}
+
+void Simulator::LoadSpline(EventGenerator* eventgen, tinyxml2::XMLElement* element)
+{
+	bool deadtime = (std::string(element->Value()).compare("DeadTimeCurve") == 0);
+	tinyxml2::XMLElement* child = element->FirstChildElement();
+
+	while(child != 0)
+	{
+		if(std::string(child->Value()).compare("Point") == 0)
+		{
+			double x, y;
+			if(child->QueryDoubleAttribute("charge", &x) == tinyxml2::XML_NO_ERROR
+				&& child->QueryDoubleAttribute("time", &y) == tinyxml2::XML_NO_ERROR)
+			{
+				if(deadtime)
+					eventgen->AddDeadTimePoint(x, y);
+				else
+					eventgen->AddTimeWalkPoint(x, y);
+			}
+		}
+
+		if(child != element->LastChildElement())
+			child = child->NextSiblingElement();
+		else
+			child = 0;
+	}
+
+	//save the shape of the spline to a log file if a filename is provided:
+	const char* nam = element->Attribute("filename");
+	std::string filename = (nam != 0)?std::string(nam):"";
+	double resolution = 0.1;
+	if(element->QueryDoubleAttribute("resolution", &resolution) != tinyxml2::XML_NO_ERROR)
+		resolution = 0.1;
+
+	if(filename != "")
+	{
+		if(deadtime)
+			eventgen->SaveDeadTimeSpline(filename, resolution);
+		else
+			eventgen->SaveTimeWalkSpline(filename, resolution);
 	}
 }
 

@@ -26,7 +26,10 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		seed(0), threads(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>()), totalrate(true)
+		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(0),
+		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
+		pointsintwspline(0)
 {
 	SetSeed(0);
 }
@@ -35,7 +38,9 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		clustersize(0), eventrate(0), seed(0), threads(0), inclinationsigma(0.3), chargescale(1), 
 		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
 		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
-		totalrate(true)
+		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
+		deadtimeY(std::vector<double>()), pointsindtspline(0), timewalk(tk::spline()), 
+		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(0)
 {
 	detectors.push_back(detector);
 
@@ -46,7 +51,10 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		eventindex(0), chargescale(1), threads(0), inclinationsigma(0.3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>()), totalrate(true)
+		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(0),
+		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
+		pointsintwspline(0)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -447,6 +455,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 
 	fout.close();
 
+	std::sort(clusterparts.begin(), clusterparts.end());
+
 	return;
 }
 
@@ -681,6 +691,176 @@ double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<dou
 	}
 }
 
+void EventGenerator::AddDeadTimePoint(double charge, double deadtime)
+{
+	deadtimeX.push_back(charge);
+	deadtimeY.push_back(deadtime);
+}
+
+void EventGenerator::ClearDeadTimePoints()
+{
+	deadtimeX.clear();
+	deadtimeY.clear();
+}
+
+double EventGenerator::GetDeadTime(double charge, bool forceupdate)
+{
+	if(pointsindtspline != deadtimeX.size() || forceupdate)
+	{
+		std::vector<double> xvals, yvals;
+		if(deadtimeX.size() < 3)
+		{
+			for(int i=0;i<3;++i)
+			{
+				xvals.push_back(i);
+				yvals.push_back(20);
+			}
+
+			pointsindtspline = 0;
+		}
+		else
+		{
+			auto ity = deadtimeY.begin();
+			for(auto& it : deadtimeX)
+			{
+				auto searchit = xvals.begin();
+				auto sortyit = yvals.begin();
+				while(searchit != xvals.end() && *searchit <= it)
+				{
+					++searchit;
+					++sortyit;
+				}
+				xvals.insert(searchit, it);
+				yvals.insert(sortyit, *ity);
+
+				++ity;
+			}
+
+			pointsindtspline = xvals.size();
+		}
+
+		deadtime.set_points(xvals, yvals);
+	}
+
+	return deadtime(charge);
+}
+
+bool EventGenerator::SaveDeadTimeSpline(std::string filename, double resolution)
+{
+	double min = 1e10;
+	double max = -1e10;
+
+	for(auto& it : deadtimeX)
+	{
+		if(it < min)
+			min = it;
+		if(it > max)
+			max = it;
+	}
+
+	double range = max - min;
+
+	min -= range / 5;
+	max += range / 5;
+
+	std::fstream f;
+	f.open(filename.c_str(), std::ios::out | std::ios::app);
+	if(!f.is_open())
+		return false;
+
+	for(double x = min; x < max; x += resolution)
+		f << x << " " << GetDeadTime(x) << std::endl;
+
+	f.close();
+
+	return true;
+}
+
+void EventGenerator::AddTimeWalkPoint(double charge, double timewalk)
+{
+	timewalkX.push_back(charge);
+	timewalkY.push_back(timewalk);
+}
+
+void EventGenerator::ClearTimeWalkPoints()
+{
+	timewalkX.clear();
+	timewalkY.clear();
+}
+
+double EventGenerator::GetTimeWalk(double charge, bool forceupdate)
+{
+	if(pointsintwspline != timewalkX.size() || forceupdate)
+	{
+		std::vector<double> xvals,yvals;
+
+		if(timewalkX.size() < 3)
+		{
+			for(int i = 0; i < 3; ++i)
+			{
+				xvals.push_back(i);
+				yvals.push_back(0);
+			}
+
+			pointsintwspline = 0;
+		}
+		else
+		{
+			auto ity = timewalkY.begin();
+			for(auto& it : timewalkX)
+			{
+				auto searchit = xvals.begin();
+				auto sortyit = yvals.begin();
+				while(searchit != xvals.end() && *searchit <= it)
+				{
+					++searchit;
+					++sortyit;
+				}
+				xvals.insert(searchit, it);
+				yvals.insert(sortyit, *ity);
+
+				++ity;
+			}
+
+			pointsintwspline = xvals.size();
+		}
+
+		timewalk.set_points(xvals, yvals);
+	}
+
+	return timewalk(charge);	
+}
+
+bool EventGenerator::SaveTimeWalkSpline(std::string filename, double resolution)
+{
+	double min = 1e10;
+	double max = -1e10;
+
+	for(auto& it : timewalkX)
+	{
+		if(it < min)
+			min = it;
+		if(it > max)
+			max = it;
+	}
+
+	double range = max - min;
+
+	min -= range / 5;
+	max += range / 5;
+
+	std::fstream f;
+	f.open(filename.c_str(), std::ios::out | std::ios::app);
+	if(!f.is_open())
+		return false;
+
+	for(double x = min; x < max; x += resolution)
+		f << x << " " << GetTimeWalk(x) << std::endl;
+
+	f.close();
+
+	return true;
+}
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
 									TCoord<double> direction, TCoord<double> setpoint, 
@@ -720,8 +900,14 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 				Hit phit = hit;
 				phit.AddAddress(it->GetAddressName(),it->GetAddress());
 				phit.SetCharge(charge);
-				phit.SetDeadTimeEnd(phit.GetTimeStamp() + 20);	
-								//TODO: change to an adequate function
+				phit.SetTimeStamp(phit.GetTimeStamp() + GetTimeWalk(charge));
+				if(phit.GetTimeStamp() == -1)
+					phit.SetTimeStamp(0);
+				phit.SetDeadTimeEnd(phit.GetTimeStamp() + GetDeadTime(charge));	
+
+				std::cout << "Changes: charge: " << charge << "; TW: " << GetTimeWalk(charge)
+						  << "; DT: " << GetDeadTime(charge) << std::endl;
+
 				globalhits.push_back(phit);
 			}
 		}
@@ -805,4 +991,6 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 			}
 		}
 	}
+
+	std::sort(pixelhits->begin(), pixelhits->end());
 }

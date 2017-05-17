@@ -8,3 +8,4 @@ build/
 *.stackdump
 *.d
 *.so
+*.log

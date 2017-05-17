@@ -38,6 +38,8 @@
 #include <thread>
 #include <algorithm>
 
+#include "spline.h"
+
 #include "TCoord.h"
 #include "hit.h"
 #include "pixel.h"
@@ -399,6 +401,63 @@ public:
 	double GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<double> position, 
 						TCoord<double> size, double minsize, double sigma, 
 						int setzero = 5, bool root = true);
+
+	// ===  Spline functions for deadtime and timewalk calculations ===
+
+	/**
+	 * @brief adds a point for the interpolation of the dead time. The points do not have to be
+	 *             ordered. They are sorted on first use of the spline function
+	 * @details
+	 * 
+	 * @param charge         - the x value of the data point
+	 * @param deadtime       - the y value of the data point
+	 */
+	void AddDeadTimePoint(double charge, double deadtime);
+	/**
+	 * @brief removes all data points from the spline
+	 * @details
+	 */
+	void ClearDeadTimePoints();
+	/**
+	 * @brief returns the value of the spline at the given position and recalculates the set points
+	 *             of the spline if necessary (number of set points changed) or it is triggered by
+	 *             the programmer/user
+	 * @details
+	 * 
+	 * @param charge         - the x value for the evaluation of the spline
+	 * @param forceupdate    - if true, the spline set points are regenerated
+	 * 
+	 * @return               - the value of the spline function at the given position
+	 */
+	double GetDeadTime(double charge, bool forceupdate = false);
+	bool SaveDeadTimeSpline(std::string filename, double resolution);
+
+	/**
+	 * @brief adds a point for the time walk characteristics for the sensor. The points added do
+	 *             not have to be sorted, as they will be sorted before first usage.
+	 * @details 
+	 * 
+	 * @param charge         - the x value of the point
+	 * @param timewalk       - the y value of the point
+	 */
+	void AddTimeWalkPoint(double charge, double timewalk);
+	/**
+	 * @brief removes all set points from the spline
+	 * @details
+	 */
+	void ClearTimeWalkPoints();
+	/**
+	 * @brief evaluated the spline function at the passed position and recalculates the spline
+	 *             function beforehand if necessary (changed number of set points)
+	 * @details
+	 * 
+	 * @param charge         - the x value to evaluate the spline at
+	 * @param forceupdate    - if true, the spline function is recalculated before the evaluation
+	 * 
+	 * @return               - the time walk for the given charge
+	 */
+	double GetTimeWalk(double charge, bool forceupdate = false);
+	bool SaveTimeWalkSpline(std::string filename, double resolution);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -477,6 +536,13 @@ private:
 
 	std::list<int> triggerturnontimes;
 	int triggerturnofftime;
+
+	tk::spline deadtime;
+	std::vector<double> deadtimeX, deadtimeY;
+	int pointsindtspline;
+	tk::spline timewalk;
+	std::vector<double> timewalkX, timewalkY;
+	int pointsintwspline;
 };
 
 

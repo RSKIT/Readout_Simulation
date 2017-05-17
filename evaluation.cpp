@@ -80,8 +80,7 @@ void Evaluation::ClearHits(int input)
     GetVectorPointer(input)->clear();
 }
 
-TGraph* Evaluation::GenerateScatterplot(bool xaddress, std::string xaxis, 
-                                            bool yaddress, std::string yaxis, int input)
+TGraph* Evaluation::GenerateScatterplot(std::string xaxis, std::string yaxis, int input)
 {
     std::vector<Hit>* vec = GetVectorPointer(input);
 
@@ -95,19 +94,8 @@ TGraph* Evaluation::GenerateScatterplot(bool xaddress, std::string xaxis,
 
     for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
     {
-        if(xaddress)
-            x = it->GetAddress(xaxis);
-        else if(xtimestamp)
-            x = it->GetTimeStamp();
-        else
-            x = it->GetReadoutTime(xaxis);
-
-        if(yaddress)
-            y = it->GetAddress(yaxis);
-        else if(ytimestamp)
-            y = it->GetTimeStamp();
-        else
-            y = it->GetReadoutTime(yaxis);
+        x = GetDoubleValue(*it, xaxis);
+        y = GetDoubleValue(*it, yaxis);
 
         graph->SetPoint(graph->GetN(), x, y);
     }
@@ -115,7 +103,7 @@ TGraph* Evaluation::GenerateScatterplot(bool xaddress, std::string xaxis,
     return graph;
 }
 
-TH1* Evaluation::GenerateHistogram(bool address, std::string value,  
+TH1* Evaluation::GenerateHistogram(std::string value,  
                                     double start, double end, double binwidth, int input)
 {
     std::vector<Hit>* vec = GetVectorPointer(input);
@@ -125,19 +113,8 @@ TH1* Evaluation::GenerateHistogram(bool address, std::string value,
     s << "Histogram_" << ++index;
     TH1* hist = new TH1I(s.str().c_str(), "Histogram", (end-start)/binwidth, start, end);
 
-    double x;
-    bool timestamp = (value.compare("timestamp") == 0);
     for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
-    {
-        if(address)
-            x = it->GetAddress(value);
-        else if(timestamp)
-            x = it->GetTimeStamp();
-        else
-            x = it->GetReadoutTime(value);
-
-        hist->Fill(x);
-    }
+        hist->Fill(GetDoubleValue(*it, value));
 
     return hist;
 }
@@ -154,18 +131,10 @@ TH1* Evaluation::GenerateDelayHistogram(std::string firsttime, std::string secon
 
     double t1;
     double t2;
-    bool firstts = (firsttime.compare("timestamp") == 0);
-    bool secondts = (secondtime.compare("timestamp") == 0);
     for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
     {
-        if(firstts)
-            t1 = it->GetTimeStamp();
-        else
-            t1 = it->GetReadoutTime(firsttime);
-        if(secondts)
-            t2 = it->GetTimeStamp();
-        else
-           t2 = it->GetReadoutTime(secondtime);
+        t1 = GetDoubleValue(*it, firsttime);
+        t2 = GetDoubleValue(*it, secondtime);
 
         hist->Fill(t2-t1);
     }
@@ -391,4 +360,45 @@ std::vector<Hit>* Evaluation::GetVectorPointer(int input)
         default:
             return 0;
     }
+}
+
+double Evaluation::GetDoubleValue(Hit& hit, std::string value)
+{
+    double x = -1;
+
+    if(value.compare("timestamp") == 0)
+        x = hit.GetTimeStamp();
+    else if(value.compare("deadtimeend") == 0)
+        x = hit.GetDeadTimeEnd();
+    else if(value.compare("deadtime") == 0)
+        x = hit.GetDeadTimeEnd() - hit.GetTimeStamp();
+    else if(value.compare("charge") == 0)
+        x = hit.GetCharge();
+    else if(value.substr(0,4).compare("addr") == 0)
+        x = hit.GetAddress(value.substr(4));
+    else if(value.substr(0,2).compare("TS") == 0)
+        x = hit.GetReadoutTime(value.substr(2));
+
+    return x;
+}
+
+int Evaluation::GetIntValue(Hit& hit, std::string value)
+{
+    int x = -1;
+
+    if(value.compare("timestamp") == 0)
+        x = hit.GetTimeStamp();
+    else if(value.compare("deadtimeend") == 0)
+        x = hit.GetDeadTimeEnd();
+    else if(value.compare("deadtime") == 0)
+        x = hit.GetDeadTimeEnd() - hit.GetTimeStamp();
+    else if(value.compare("charge") == 0)
+        x = hit.GetCharge();
+    else if(value.substr(0,4).compare("addr") == 0)
+        x = hit.GetAddress(value.substr(4));
+    else if(value.substr(0,2).compare("TS") == 0)
+        x = hit.GetReadoutTime(value.substr(2));
+
+    return x;
+
 }

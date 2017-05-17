@@ -59,10 +59,9 @@ public:
     int     InsertHits(std::vector<Hit>& hits, int input = Pass);
     void    ClearHits(int input = Pass);
 
-    TGraph* GenerateScatterplot(bool xaddress, std::string xaxis, 
-                                    bool yaddress, std::string yaxis, int input = Pass);
+    TGraph* GenerateScatterplot(std::string xaxis, std::string yaxis, int input = Pass);
 
-    TH1*    GenerateHistogram(bool address, std::string value,
+    TH1*    GenerateHistogram(std::string value,
                                     double start, double end, double binwidth, int input = Pass);
 
     TH1*    GenerateDelayHistogram(std::string firsttime, std::string secondtime,
@@ -84,6 +83,9 @@ public:
 private:
     int LoadHits(std::vector<Hit>* vec, std::string filename);
     std::vector<Hit>*   GetVectorPointer(int input);
+
+    double GetDoubleValue(Hit& hit, std::string value);
+    int    GetIntValue(Hit& hit, std::string value);
 
     std::vector<Hit>    input;
     std::vector<Hit>    outputpass;
