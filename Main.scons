@@ -46,4 +46,4 @@ library_paths = ''
 			
 sources.append(mainfile)
 
-env.Program(target = 'a.out', source = sources, LIBS = libraries, LIBPATH = library_paths)
+env.Program(target = 'rome', source = sources, LIBS = libraries, LIBPATH = library_paths)
