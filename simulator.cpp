@@ -427,11 +427,11 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else if(childname.compare("StateMachine") == 0)	
 		{
 			det = LoadStateMachine(det, child);
-			std::cout << "States included: " << det->GetNumStates() << std::endl;
+			//std::cout << "States included: " << det->GetNumStates() << std::endl;
 
-			std::cout << "State Transitions: " 
-						<< static_cast<XMLDetector*>(det)->GetState(0)->GetNumStateTransitions()
-						<< std::endl;
+			//std::cout << "State Transitions: " 
+			//			<< static_cast<XMLDetector*>(det)->GetState(0)->GetNumStateTransitions()
+			//			<< std::endl;
 		}
 
 		if(child != parent->LastChildElement())
@@ -755,6 +755,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 			roc.AddPixel(LoadPixel(child, pixelsize));
 		else if(childname.compare("NTimes") == 0)
 			LoadNPixels(&roc, child, pixelsize);
+		else if(childname.compare("PixelLogic") == 0)
+		{
+			PixelLogic* logic = LoadPixelLogic(child);
+			ComplexReadout* cro = new ComplexReadout(&roc);
+			cro->SetPixelLogic(logic);
+			roc.SetComplexPPtBReadout(cro);
+		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -827,6 +834,65 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	pix.SetDeadTimeScaling(deadtimescaling);
 
 	return pix;
+}
+
+PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
+{
+	if(parent == 0)
+		return 0;
+
+	PixelLogic* logic = new PixelLogic();
+
+	const char* nam = parent->Attribute("operator");
+	std::string operation = (nam != 0)?std::string(nam):"";
+
+	//load the relation between the pixels:
+	if(operation.compare("Or") == 0)
+		logic->SetRelation(PixelLogic::Or);
+	else if(operation.compare("Nor") == 0)
+		logic->SetRelation(PixelLogic::Nor);
+	else if(operation.compare("And") == 0)
+		logic->SetRelation(PixelLogic::And);
+	else if(operation.compare("Nand") == 0)
+		logic->SetRelation(PixelLogic::Nand);
+	else if(operation.compare("Xor") == 0)
+		logic->SetRelation(PixelLogic::Xor);
+	else if(operation.compare("Xnor") == 0)
+		logic->SetRelation(PixelLogic::Xnor);
+	else if(operation.compare("Not") == 0)
+		logic->SetRelation(PixelLogic::Not);
+	//else	//with this line a missing operation results in an error, without it an OR is assumed
+	//	return 0;
+
+	tinyxml2::XMLElement* child = parent->FirstChildElement();
+	while(child != 0)
+	{
+		std::string name = child->Value();
+
+		if(name.compare("Pixel") == 0)
+		{
+			int address;
+			if(child->QueryIntAttribute("addr", &address) != tinyxml2::XML_NO_ERROR)
+				address = -1;
+			bool ownaddress;
+			if(child->QueryBoolAttribute("own", &ownaddress) != tinyxml2::XML_NO_ERROR)
+				ownaddress = false;
+
+			logic->AddPixelAddress(address, ownaddress);
+		}
+		else if(name.compare("PixelLogic") == 0)
+			logic->AddPixelLogic(LoadPixelLogic(child));
+
+		if(child != parent->LastChildElement())
+			child = child->NextSiblingElement();
+		else
+			child = 0;
+	}
+
+	std::cout << "Logic Sizes: all " << logic->GetNumPixelAddresses() << "; own "
+				<< logic->GetNumOwnPixelAddresses() << std::endl;
+
+	return logic;
 }
 
 void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 

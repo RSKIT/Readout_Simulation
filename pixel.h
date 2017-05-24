@@ -126,7 +126,7 @@ public:
 	 */
 	bool 		HitIsValid();
 	/**
-	 * @brief reads the hit from the pixel and deletes it from the pixel it the dead time of the
+	 * @brief reads the hit from the pixel and deletes it from the pixel if the dead time of the
 	 *             hit is over
 	 * @details
 	 * 
@@ -145,8 +145,11 @@ public:
 	/**
 	 * @brief removes a hit from the pixel. The dead time is not removed!
 	 * @details
+	 * 
+	 * @param resetcharge    - also resets the charge of the hit if set to true. If false, the
+	 *                            charge is not reset to collect charge contributions for PPtB
 	 */
-	void		ClearHit();
+	void		ClearHit(bool resetcharge = true);
 	/**
 	 * @brief reads the hit from the pixel and deletes it in the pixel. The dead time is not 
 	 * 			   removed!
@@ -157,6 +160,16 @@ public:
 	 *                            object if it was empty
 	 */	
 	Hit 		LoadHit(int timestamp);
+
+	/**
+	 * @brief provides information about the dead time.
+	 * @details
+	 * 
+	 * @param timestamp      - current timestamp at which the status is queried
+	 * @return               - true if no hit is in the pixel and the dead time of the last hit
+	 *                            is over
+	 */
+	bool        IsEmpty(int timestamp);
 
 private:
 	double3d 	position;

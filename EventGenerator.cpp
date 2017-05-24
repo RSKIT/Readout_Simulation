@@ -27,9 +27,9 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(0),
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
 		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(0)
+		pointsintwspline(-1)
 {
 	SetSeed(0);
 }
@@ -39,8 +39,8 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
 		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
-		deadtimeY(std::vector<double>()), pointsindtspline(0), timewalk(tk::spline()), 
-		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(0)
+		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
+		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1)
 {
 	detectors.push_back(detector);
 
@@ -52,9 +52,9 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(0),
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
 		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(0)
+		pointsintwspline(-1)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -905,8 +905,10 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 					phit.SetTimeStamp(0);
 				phit.SetDeadTimeEnd(phit.GetTimeStamp() + GetDeadTime(charge));	
 
-				std::cout << "Changes: charge: " << charge << "; TW: " << GetTimeWalk(charge)
-						  << "; DT: " << GetDeadTime(charge) << std::endl;
+				if(print)
+					std::cout << "Times from Splines (charge: " << charge 
+							  << "): TW: " << GetTimeWalk(charge)
+							  << "; DT: " << GetDeadTime(charge) << std::endl;
 
 				globalhits.push_back(phit);
 			}

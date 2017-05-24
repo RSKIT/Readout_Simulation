@@ -455,6 +455,11 @@ bool PixelReadout::Read(int timestamp, std::stringstream* out)
 	return false;
 }
 
+bool PixelReadout::NeedsROCReset()
+{
+	return false;
+}
+
 
 PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
 {
@@ -467,9 +472,9 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
-		Hit ph = it->GetHit(timestamp);
+		Hit ph = it->LoadHit(timestamp);
 
-		if(ph.is_valid() && ph.is_available(timestamp))
+		if(ph.is_valid()) // && ph.is_available(timestamp))
 		{
 			ph.AddReadoutTime(cell->addressname, timestamp);
 			ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
@@ -480,6 +485,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 			{
 				h.SetAddress(it->GetAddressName(),
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());
+				h.SetCharge(h.GetCharge() + ph.GetCharge());
 			}
 
 			if(cell->GetNumPixels() > 1)
@@ -489,7 +495,22 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 					*out << ph.GenerateString() << std::endl;
 			}
 
-			it->ClearHit();
+			//it->ClearHit();
+		}
+		else if(!it->IsEmpty(timestamp) && h.is_valid())
+		{
+			if(out != NULL)
+			{
+				Hit sph = h;
+				sph.SetAddress(it->GetAddressName(), it->GetAddress());
+				sph.SetCharge(ph.GetCharge());
+				sph.AddReadoutTime("remerged", timestamp);
+				*out << sph.GenerateString() << std::endl;
+			}
+
+			h.SetAddress(it->GetAddressName(), 
+							h.GetAddress(it->GetAddressName()) | it->GetAddress());
+			h.SetCharge(h.GetCharge() + ph.GetCharge());
 		}
 	}
 
@@ -499,4 +520,283 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 	}
 	else
 		return false;
+}
+
+PixelLogic::PixelLogic(int relation)
+{
+	this->relation = relation;
+}
+
+PixelLogic::PixelLogic(PixelLogic* logic) : relation(logic->relation)
+{
+	for(auto& it : logic->pixels)
+		pixels.push_back(it);
+
+	for(auto& it : logic->ownpixels)
+		ownpixels.push_back(it);
+
+	for(auto& it : logic->sublogics)
+		sublogics.push_back(new PixelLogic(it));
+}
+
+PixelLogic::PixelLogic(const PixelLogic& logic) : relation(logic.relation)
+{
+	for(auto& it : logic.pixels)
+		pixels.push_back(it);
+
+	for(auto& it : logic.ownpixels)
+		ownpixels.push_back(it);
+
+	for(auto& it : logic.sublogics)
+		sublogics.push_back(new PixelLogic(it));
+}
+
+void PixelLogic::AddPixelAddress(int address, bool ownpixel)
+{
+	pixels.push_back(address);
+	if(ownpixel)
+		ownpixels.push_back(address);
+}
+
+void PixelLogic::ClearPixelAddresses()
+{
+	pixels.clear();
+}
+
+int  PixelLogic::GetNumPixelAddresses()
+{
+	return pixels.size();
+}
+
+int  PixelLogic::GetNumOwnPixelAddresses()
+{
+	return ownpixels.size();
+}
+
+void PixelLogic::AddPixelLogic(PixelLogic* sublogic)
+{
+	sublogics.push_back(sublogic);
+}
+
+void PixelLogic::AddPixelLogic(const PixelLogic& sublogic)
+{
+	sublogics.push_back(new PixelLogic(sublogic));
+}
+
+void PixelLogic::ClearPixelLogic()
+{
+	sublogics.clear();
+}
+
+int  PixelLogic::GetNumPixelSubLogics()
+{
+	return sublogics.size();
+}
+
+int  PixelLogic::GetRelation()
+{
+	return relation;
+}
+
+void PixelLogic::SetRelation(int relation)
+{
+	if(relation < 0 || relation > 6)
+		this->relation = -1;
+	else
+		this->relation = relation;
+}
+
+bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
+{
+	bool goodresult = true;
+	switch(relation)
+	{
+		case(Nor):
+			goodresult = false;
+		case(Or):
+			for(auto& it : pixels)
+				if(cell->GetPixelAddress(it)->HitIsValid())
+					return goodresult;
+			for(auto& it : sublogics)
+				if(it->Evaluate(cell, timestamp))
+					return goodresult;
+			return !goodresult;
+			break;
+		case(Nand):
+			goodresult = false;
+		case(And):
+			for(auto& it : pixels)
+				if(!cell->GetPixelAddress(it)->HitIsValid())
+					return !goodresult;
+			for(auto& it : sublogics)
+				if(!it->Evaluate(cell, timestamp))
+					return !goodresult;
+			return goodresult;
+			break;
+		case(Xor):
+		case(Xnor):
+		{
+			int resultcounter = 0;
+			for(auto& it : pixels)
+				if(cell->GetPixelAddress(it)->HitIsValid())
+					++resultcounter;
+			for(auto& it : sublogics)
+				if(it->Evaluate(cell, timestamp))
+					++resultcounter;
+			if(relation == Xor)
+				return (resultcounter == 1);
+			else
+				return (resultcounter != 1);
+			break;
+		}
+		case(Not):
+			for(auto& it : pixels)
+				return !cell->GetPixelAddress(it)->HitIsValid();
+			for(auto& it : sublogics)
+				return !it->Evaluate(cell, timestamp);
+			return true;	//complement of nothing (i.e. false in this case) is true
+			break;
+		default:
+			return false;
+	}
+}
+
+
+Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out)
+{
+	Hit h;
+	for(auto& it : ownpixels)
+	{
+		Pixel* pix = cell->GetPixelAddress(it);
+		if(!h.is_valid())
+		{
+			if(pix->HitIsValid())
+			{
+				h = pix->LoadHit(timestamp);
+
+				if(cell->GetNumPixels() > 1)
+				{
+					Hit ph = h;
+					ph.AddReadoutTime("merged", timestamp);
+					if(out != 0)
+						*out << ph.GenerateString() << std::endl;
+				}
+
+				h.AddReadoutTime(cell->GetAddressName(), timestamp);
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+
+			}
+		}
+		else if(!pix->IsEmpty(timestamp))
+		{
+			Hit ph = pix->LoadHit(timestamp);
+			if(out != 0)
+			{
+				Hit saving;
+				if(!ph.is_valid())
+				{
+					saving = h;
+					saving.SetAddress(pix->GetAddressName(), pix->GetAddress());
+					saving.SetCharge(ph.GetCharge());
+					saving.AddReadoutTime("remerged", timestamp);
+				}
+				else
+				{
+					saving = ph;
+					saving.AddReadoutTime("merged", timestamp);
+				}
+				*out << saving.GenerateString() << std::endl;
+			}
+
+			h.SetAddress(pix->GetAddressName(), 
+							h.GetAddress(pix->GetAddressName()) | pix->GetAddress());
+			h.SetCharge(h.GetCharge() + ph.GetCharge());
+		}
+		 
+	}
+
+	//remove new hits in "not own" pixels:
+	auto itown = ownpixels.begin();
+	for(auto& it : pixels)
+	{
+		if(itown != ownpixels.end() && it == *itown)
+		{
+			++itown;
+			continue;
+		}
+
+		Pixel* pix = cell->GetPixelAddress(it);
+
+		Hit ph = pix->LoadHit(timestamp);
+		if(ph.is_valid() && out != 0)
+		{
+			ph.AddReadoutTime("ReferencePixelHitDetected", timestamp);
+			*out << ph.GenerateString() << std::endl;
+		}
+	}
+
+	return h;
+}
+
+ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0)
+{
+
+}
+
+bool ComplexReadout::Read(int timestamp, std::stringstream* out)
+{
+	if(logic == NULL)
+	{
+		std::cout << "Error: The Readout Logic is not set up" << std::endl;
+		return false;
+	}
+	if(logic->Evaluate(cell, timestamp))
+	{
+		std::cout << "peep ";
+		//return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
+		if(cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out)))
+		{
+			std::cout << "true" << std::endl;
+			return true;
+		}
+		else
+		{
+			std::cout << "false" << std::endl;
+			return false;
+		}
+	}
+	else
+	{
+		if(!cell->GetZeroSuppression())
+			return cell->buf->InsertHit(Hit());
+		else
+			return false;
+	}
+}
+
+void ComplexReadout::SetPixelLogic(PixelLogic* logic)
+{
+	if(this->logic != NULL)
+		delete logic;
+	this->logic = logic;
+}
+
+void ComplexReadout::SetPixelLogic(const PixelLogic& logic)
+{
+	this->logic = new PixelLogic(logic);
+}
+
+PixelLogic* ComplexReadout::GetPixelLogic()
+{
+	return logic;
+}
+
+void ComplexReadout::SetReadoutCell(ReadoutCell* roc)
+{
+	cell = roc;
+}
+
+bool ComplexReadout::NeedsROCReset()
+{
+	return true;
 }

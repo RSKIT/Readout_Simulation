@@ -46,6 +46,7 @@ class ReadoutCell
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
+	friend class ComplexReadout;
 
 public:
 	enum config {PPTB 				=   1,
@@ -88,6 +89,14 @@ public:
 	 * @param newconfig      - the configuration flags for the readoutcell
 	 */
 	void 		SetConfiguration(int newconfig);
+	/**
+	 * @brief enables replacing simple PPtB readout with a complex logic behind the readout instead
+	 *             of a simple OR function
+	 * @details
+	 * 
+	 * @param pixelro        - pointer to the object to replace the pixel readout
+	 */
+	void        SetComplexPPtBReadout(PixelReadout* pixelro);
 
 	/**
 	 * @brief the delay after which a hit placed in the readoutcell can be read out. For delays
@@ -107,6 +116,13 @@ public:
 	 * @param delay          - minimum time between placement and successful readout in timestamps
 	 */
 	void 		SetReadoutDelay(int delay);
+
+	/**
+	 * @brief provides information whether the readout cell is zero suppressed or not
+	 * @details 
+	 * @return               - true for a zerosuppressed cell, false for a not suppressed cell
+	 */
+	bool        GetZeroSuppression();
 
 	/**
 	 * @brief flag to mark readoutcells in need of a trigger signal without which the hit saved in

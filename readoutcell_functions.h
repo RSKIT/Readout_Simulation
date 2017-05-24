@@ -249,6 +249,13 @@ public:
 	 * @return               - true if a hit was loaded, false if not
 	 */
 	virtual bool Read(int timestamp, std::stringstream* out = 0);
+	/**
+	 * @brief determines whether the function has to be set manually
+	 * @details
+	 * @return               - if this function returns true, the PPtB readout object has to be
+	 *                            copied separately
+	 */
+	virtual bool NeedsROCReset();
 protected:
 	ReadoutCell* cell;
 };
@@ -265,6 +272,61 @@ public:
 	bool Read(int timestamp, std::stringstream* out = 0);
 };
 
+
+class PixelLogic
+{
+public:
+	PixelLogic(int relation = 0);
+	PixelLogic(PixelLogic* logic);
+	PixelLogic(const PixelLogic& logic);
+
+	enum operators {Or   = 0,
+	                And  = 1,
+	            	Xor  = 2,
+	                Nor  = 3,
+	            	Nand = 4,
+	            	Xnor = 5,
+	            	Not  = 6
+	            };
+
+	void AddPixelAddress(int address, bool ownpixel = true);
+	void ClearPixelAddresses();
+	int  GetNumPixelAddresses();
+	int  GetNumOwnPixelAddresses();
+
+	void AddPixelLogic(PixelLogic* sublogic);
+	void AddPixelLogic(const PixelLogic& sublogic);
+	void ClearPixelLogic();
+	int  GetNumPixelSubLogics();
+
+	int  GetRelation();
+	void SetRelation(int relation);
+
+	bool Evaluate(ReadoutCell* cell, int timestamp);
+	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
+private:
+	std::vector<PixelLogic*> sublogics;
+	std::vector<int> pixels;
+	std::vector<int> ownpixels;
+	int relation;
+};
+
+class ComplexReadout : public PixelReadout
+{
+public:
+	ComplexReadout(ReadoutCell* roc);
+
+	bool Read(int timestamp, std::stringstream* out = 0);
+
+	void SetPixelLogic(PixelLogic* logic);
+	void SetPixelLogic(const PixelLogic& logic);
+	PixelLogic* GetPixelLogic();
+
+	void SetReadoutCell(ReadoutCell* roc);
+	bool NeedsROCReset();
+private:
+	PixelLogic* logic;
+};
 //---- End Pixel Readout Classes ----
 
 #endif //_ROCFUNCTIONS

@@ -264,6 +264,14 @@ private:
 	 */
 	Pixel 			LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsize);
 	/**
+	 * @brief loads the configuration of the combinatory PPtB readoutcell
+	 * @details
+	 * 
+	 * @param parent         - root node of the XML tree representing the combinatory logic
+	 * @return               - a pointer to the logic description object
+	 */
+	PixelLogic*     LoadPixelLogic(tinyxml2::XMLElement* parent);
+	/**
 	 * @brief loads a structure of pixels and readoutcells and copies it shifting the copies by
 	 *             a specified vector
 	 * @details

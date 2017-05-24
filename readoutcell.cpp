@@ -55,6 +55,14 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         triggered(roc.triggered)
 {
     SetConfiguration(roc.configuration);
+
+    if(roc.pixelreadout->NeedsROCReset())
+    {
+        ComplexReadout* ro = new ComplexReadout(this);
+        ro->SetPixelLogic(new PixelLogic(static_cast<ComplexReadout*>(roc.pixelreadout)
+                                                                            ->GetPixelLogic()));
+        pixelreadout = ro;
+    }
 }
 
 /*ReadoutCell::~ReadoutCell()
@@ -114,6 +122,13 @@ void ReadoutCell::SetConfiguration(int newconfig)
         rocreadout = new NoFullReadReadout(this);    
 }
 
+void ReadoutCell::SetComplexPPtBReadout(PixelReadout* pixelro)
+{
+    if(pixelro != 0)
+        pixelreadout = pixelro;
+}
+
+
 int ReadoutCell::GetReadoutDelay()
 {
     return readoutdelay;
@@ -126,6 +141,11 @@ void ReadoutCell::SetReadoutDelay(int delay)
     //else
         readoutdelay = delay;
 
+}
+
+bool ReadoutCell::GetZeroSuppression()
+{
+    return zerosuppression;
 }
 
 bool ReadoutCell::GetTriggered()
@@ -369,7 +389,7 @@ std::string ReadoutCell::PrintROC(std::string space)
 {
 	std::stringstream s("");
 
-	s << space << "ROC " << address << " contents:\n";
+	s << space << "ROC (" << addressname << "): " << address << " contents:\n";
 
 	for(auto it : rocvector)
 		s << it.PrintROC(space + " ");
