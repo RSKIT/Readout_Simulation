@@ -1,6 +1,6 @@
 # ROME (ReadOut Modelling Environment)
 
-![ROME Logo](httos://github.com/RSKIT/Readout_Simulation/blob/master/Logo_6.svg)
+![ROME Logo](httos://github.com/RSKIT/Readout_Simulation/blob/master/Logo_6.png)
 
 This is a simulation tool for different readout architectures of synchronous Particle Detectors developed at Karlsruhe Insitute of Technology (KIT) by Rudolf Schimassek and Felix Ehrler in the ASIC and Detector Laboratory (ADL).
 The structure of the program is outlined in Auslese-Simulation_170405.mm (A Freeplane mind map)
