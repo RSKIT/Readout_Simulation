@@ -27,6 +27,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "hit.h"
 
@@ -302,12 +303,14 @@ public:
 	int  GetRelation();
 	void SetRelation(int relation);
 
+    void FindNewPixels(std::vector<int>* masterown, std::vector<int>* masternotown);
 	bool Evaluate(ReadoutCell* cell, int timestamp);
 	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
 private:
 	std::vector<PixelLogic*> sublogics;
 	std::vector<int> pixels;
 	std::vector<int> ownpixels;
+	std::vector<int> notownpixels;
 	int relation;
 };
 

@@ -535,6 +535,9 @@ PixelLogic::PixelLogic(PixelLogic* logic) : relation(logic->relation)
 	for(auto& it : logic->ownpixels)
 		ownpixels.push_back(it);
 
+	for(auto& it : logic->notownpixels)
+		notownpixels.push_back(it);
+
 	for(auto& it : logic->sublogics)
 		sublogics.push_back(new PixelLogic(it));
 }
@@ -547,6 +550,9 @@ PixelLogic::PixelLogic(const PixelLogic& logic) : relation(logic.relation)
 	for(auto& it : logic.ownpixels)
 		ownpixels.push_back(it);
 
+	for(auto& it : logic.notownpixels)
+		notownpixels.push_back(it);
+
 	for(auto& it : logic.sublogics)
 		sublogics.push_back(new PixelLogic(it));
 }
@@ -556,6 +562,8 @@ void PixelLogic::AddPixelAddress(int address, bool ownpixel)
 	pixels.push_back(address);
 	if(ownpixel)
 		ownpixels.push_back(address);
+	else
+		notownpixels.push_back(address);
 }
 
 void PixelLogic::ClearPixelAddresses()
@@ -576,11 +584,13 @@ int  PixelLogic::GetNumOwnPixelAddresses()
 void PixelLogic::AddPixelLogic(PixelLogic* sublogic)
 {
 	sublogics.push_back(sublogic);
+	FindNewPixels(&ownpixels, &notownpixels);
 }
 
 void PixelLogic::AddPixelLogic(const PixelLogic& sublogic)
 {
 	sublogics.push_back(new PixelLogic(sublogic));
+	FindNewPixels(&ownpixels, &notownpixels);
 }
 
 void PixelLogic::ClearPixelLogic()
@@ -604,6 +614,31 @@ void PixelLogic::SetRelation(int relation)
 		this->relation = -1;
 	else
 		this->relation = relation;
+}
+
+void PixelLogic::FindNewPixels(std::vector<int>* masterown, std::vector<int>* masternotown)
+{
+	for(auto& it : sublogics)
+		it->FindNewPixels(masterown, masternotown);
+
+	for(auto& it : ownpixels)
+	{
+		auto finder = find(masterown->begin(), masterown->end(), it);
+		if(finder == masterown->end())
+			masterown->push_back(it);
+	}
+
+	for(auto& it : notownpixels)
+	{
+		auto finder = find(masternotown->begin(), masternotown->end(), it);
+		if(finder == masternotown->end())
+			masternotown->push_back(it);
+	}
+
+	if(masterown == &ownpixels)
+		std::sort(masterown->begin(), masterown->end());
+	if(masternotown == &notownpixels)
+		std::sort(masternotown->begin(), masternotown->end());
 }
 
 bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
@@ -717,7 +752,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 
 	//remove new hits in "not own" pixels:
 	auto itown = ownpixels.begin();
-	for(auto& it : pixels)
+	for(auto& it : notownpixels)
 	{
 		if(itown != ownpixels.end() && it == *itown)
 		{
@@ -752,7 +787,6 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 	}
 	if(logic->Evaluate(cell, timestamp))
 	{
-		std::cout << "peep ";
 		//return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
 		if(cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out)))
 		{
