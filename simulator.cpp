@@ -86,8 +86,12 @@ void Simulator::LoadInputFile(std::string filename)
 		}
 		else if(elementname.compare("Logging") == 0)
 		{
-			const char* nam = elem->Value();
+			const char* nam = elem->Attribute("filename");
 			logfile = (nam != 0)?std::string(nam):"";
+			printdetector = false;
+			if(elem->QueryBoolAttribute("printdetectors", &printdetector) != tinyxml2::XML_NO_ERROR)
+				printdetector = false;
+
 		}
 
 		if(elem != simulation->LastChildElement())
@@ -124,6 +128,15 @@ void Simulator::SetLoggingFile(std::string filename)
 	logfile = filename;
 }
 
+bool Simulator::GetDetectorLogging()
+{
+	return printdetector;
+}
+
+void Simulator::SetDetectorLogging(bool printdetector)
+{
+	this->printdetector = printdetector;
+}
 
 int Simulator::GetNumEventsToGenerate()
 {
@@ -354,6 +367,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
 		if(logf.is_open())
 		{
+			if(printdetector)
+				logf << PrintDetectors() << std::endl;
 			logf << "Simulated " << timestamp << " timestamps" << std::endl;
 
 			logf << "Simulation done." << std::endl 

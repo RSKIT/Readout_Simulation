@@ -74,6 +74,14 @@ public:
 	void SetLoggingFile(std::string filename);
 
 	/**
+	 * @brief flag whether the detector structure is written to the log file or not
+	 * @details
+	 * @return               - writes the detector structure to the log file if true
+	 */
+	bool GetDetectorLogging();
+	void SetDetectorLogging(bool printdetector);
+
+	/**
 	 * @brief provides the number of events to generate using the event generator
 	 * @details
 	 * @return               - the number of events (not pixel hits)
@@ -366,6 +374,7 @@ private:
     std::string inputfile;
 
     std::string logfile;	//name of the file to write logging texts to
+    bool printdetector;
 };
 
 
