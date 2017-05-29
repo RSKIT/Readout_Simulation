@@ -66,6 +66,14 @@ public:
 	void LoadInputFile(std::string filename = "");
 
 	/**
+	 * @brief provides the name of the file to write logging data to
+	 * @details
+	 * @return               - the filename of the logging file
+	 */
+	std::string GetLoggingFile();
+	void SetLoggingFile(std::string filename);
+
+	/**
 	 * @brief provides the number of events to generate using the event generator
 	 * @details
 	 * @return               - the number of events (not pixel hits)
@@ -221,6 +229,14 @@ private:
 	 */
 	void 			LoadEventGenerator(tinyxml2::XMLElement* eventgen);
 	/**
+	 * @brief Loads a spline function from the XML tree
+	 * @details
+	 * 
+	 * @param eventgen       - the event generator to load the spline to
+	 * @param element        - parent element of the spline function
+	 */
+	void 			LoadSpline(EventGenerator* eventgen, tinyxml2::XMLElement* element);
+	/**
 	 * @brief converts the XML tree structure into a ReadoutCell. This is a recursive function
 	 *             calling the respective others for child objects by itself.
 	 * @details
@@ -247,6 +263,14 @@ private:
 	 * @return               - the pixel to include in a readoutcell
 	 */
 	Pixel 			LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsize);
+	/**
+	 * @brief loads the configuration of the combinatory PPtB readoutcell
+	 * @details
+	 * 
+	 * @param parent         - root node of the XML tree representing the combinatory logic
+	 * @return               - a pointer to the logic description object
+	 */
+	PixelLogic*     LoadPixelLogic(tinyxml2::XMLElement* parent);
 	/**
 	 * @brief loads a structure of pixels and readoutcells and copies it shifting the copies by
 	 *             a specified vector
@@ -339,7 +363,9 @@ private:
     int stoptime;
     int stopdelay;
 
-    std::string inputfile;	
+    std::string inputfile;
+
+    std::string logfile;	//name of the file to write logging texts to
 };
 
 

@@ -22,13 +22,15 @@
 
 #include "simulator.h"
 
-Simulator::Simulator() : events(0), starttime(0), stoptime(-1), stopdelay(0)
+Simulator::Simulator() : detectors(std::vector<DetectorBase*>()), eventgenerator(EventGenerator()),
+		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile("")
 {
 
 }
 
-Simulator::Simulator(std::string filename) : inputfile(filename), events(0), starttime(0),
-		stoptime(-1), stopdelay(0)
+Simulator::Simulator(std::string filename) : detectors(std::vector<DetectorBase*>()), 
+		eventgenerator(EventGenerator()), events(0), starttime(0), stoptime(-1), stopdelay(0),
+		inputfile(filename), logfile("")
 {
 
 }
@@ -82,6 +84,11 @@ void Simulator::LoadInputFile(std::string filename)
 			if(error != tinyxml2::XML_NO_ERROR)
 				stopdelay = 0;
 		}
+		else if(elementname.compare("Logging") == 0)
+		{
+			const char* nam = elem->Value();
+			logfile = (nam != 0)?std::string(nam):"";
+		}
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -95,7 +102,28 @@ void Simulator::LoadInputFile(std::string filename)
 		eventgenerator.AddDetector(*it);
 	}
 
+	if(logfile != "")
+	{
+		std::fstream logf;
+		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+		if(logf.is_open())
+		{
+			logf << "Loading data from \"" << filename << "\" ..." << std::endl;
+			logf.close();
+		}
+	}
 }
+
+std::string Simulator::GetLoggingFile()
+{
+	return logfile;
+}
+
+void Simulator::SetLoggingFile(std::string filename)
+{
+	logfile = filename;
+}
+
 
 int Simulator::GetNumEventsToGenerate()
 {
@@ -303,10 +331,15 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
+	{
+		(*it)->FlushOutput();
+		(*it)->FlushBadOutput();
 		dethitcounter += (*it)->GetHitCounter();
+	}
 
 	std::cout << "Simulation done." << std::endl << "  injected signals: " << hitcounter
 			  << std::endl << "  read out signals: " << dethitcounter << std::endl
@@ -314,6 +347,26 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
 			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+	if(logfile != "")
+	{
+		std::fstream logf;
+		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+		if(logf.is_open())
+		{
+			logf << "Simulated " << timestamp << " timestamps" << std::endl;
+
+			logf << "Simulation done." << std::endl 
+				 << "  injected signals: " << hitcounter << std::endl 
+				 << "  read out signals: " << dethitcounter << std::endl
+				 << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+
+			logf << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+				 << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+			logf.close();
+		}
+	}
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)
@@ -374,11 +427,11 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else if(childname.compare("StateMachine") == 0)	
 		{
 			det = LoadStateMachine(det, child);
-			std::cout << "States included: " << det->GetNumStates() << std::endl;
+			//std::cout << "States included: " << det->GetNumStates() << std::endl;
 
-			std::cout << "State Transitions: " 
-						<< static_cast<XMLDetector*>(det)->GetState(0)->GetNumStateTransitions()
-						<< std::endl;
+			//std::cout << "State Transitions: " 
+			//			<< static_cast<XMLDetector*>(det)->GetState(0)->GetNumStateTransitions()
+			//			<< std::endl;
 		}
 
 		if(child != parent->LastChildElement())
@@ -508,12 +561,78 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			else
 				eventgenerator.SetTriggerLength(length);
 		}
+		else if(name.compare("Threads") == 0)
+		{
+			int maxthreads = 0;
+			if(element->QueryIntAttribute("n",&maxthreads) != tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetThreads(0);
+			else
+				eventgenerator.SetThreads(maxthreads);
+		}
+		else if(name.compare("InputFile") == 0)
+		{
+			bool sort = true;
+			if(element->QueryBoolAttribute("sort", &sort) != tinyxml2::XML_NO_ERROR)
+				sort = true;
+			double timeshift = 0.;
+			if(element->QueryDoubleAttribute("timeshift", &timeshift) != tinyxml2::XML_NO_ERROR)
+				timeshift = 0.;
+			const char* nam = element->Attribute("filename");
+			if(nam != 0)
+				eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
+		}
+		else if(name.compare("DeadTimeCurve") == 0 || name.compare("TimeWalkCurve") == 0)
+		{
+			LoadSpline(&eventgenerator, element);
+		}
 
 
 		if(element != eventgen->LastChildElement())
 			element = element->NextSiblingElement();
 		else
 			element = 0;
+	}
+}
+
+void Simulator::LoadSpline(EventGenerator* eventgen, tinyxml2::XMLElement* element)
+{
+	bool deadtime = (std::string(element->Value()).compare("DeadTimeCurve") == 0);
+	tinyxml2::XMLElement* child = element->FirstChildElement();
+
+	while(child != 0)
+	{
+		if(std::string(child->Value()).compare("Point") == 0)
+		{
+			double x, y;
+			if(child->QueryDoubleAttribute("charge", &x) == tinyxml2::XML_NO_ERROR
+				&& child->QueryDoubleAttribute("time", &y) == tinyxml2::XML_NO_ERROR)
+			{
+				if(deadtime)
+					eventgen->AddDeadTimePoint(x, y);
+				else
+					eventgen->AddTimeWalkPoint(x, y);
+			}
+		}
+
+		if(child != element->LastChildElement())
+			child = child->NextSiblingElement();
+		else
+			child = 0;
+	}
+
+	//save the shape of the spline to a log file if a filename is provided:
+	const char* nam = element->Attribute("filename");
+	std::string filename = (nam != 0)?std::string(nam):"";
+	double resolution = 0.1;
+	if(element->QueryDoubleAttribute("resolution", &resolution) != tinyxml2::XML_NO_ERROR)
+		resolution = 0.1;
+
+	if(filename != "")
+	{
+		if(deadtime)
+			eventgen->SaveDeadTimeSpline(filename, resolution);
+		else
+			eventgen->SaveTimeWalkSpline(filename, resolution);
 	}
 }
 
@@ -636,6 +755,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 			roc.AddPixel(LoadPixel(child, pixelsize));
 		else if(childname.compare("NTimes") == 0)
 			LoadNPixels(&roc, child, pixelsize);
+		else if(childname.compare("PixelLogic") == 0)
+		{
+			PixelLogic* logic = LoadPixelLogic(child);
+			ComplexReadout* cro = new ComplexReadout(&roc);
+			cro->SetPixelLogic(logic);
+			roc.SetComplexPPtBReadout(cro);
+		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -708,6 +834,65 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	pix.SetDeadTimeScaling(deadtimescaling);
 
 	return pix;
+}
+
+PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
+{
+	if(parent == 0)
+		return 0;
+
+	PixelLogic* logic = new PixelLogic();
+
+	const char* nam = parent->Attribute("operator");
+	std::string operation = (nam != 0)?std::string(nam):"";
+
+	//load the relation between the pixels:
+	if(operation.compare("Or") == 0)
+		logic->SetRelation(PixelLogic::Or);
+	else if(operation.compare("Nor") == 0)
+		logic->SetRelation(PixelLogic::Nor);
+	else if(operation.compare("And") == 0)
+		logic->SetRelation(PixelLogic::And);
+	else if(operation.compare("Nand") == 0)
+		logic->SetRelation(PixelLogic::Nand);
+	else if(operation.compare("Xor") == 0)
+		logic->SetRelation(PixelLogic::Xor);
+	else if(operation.compare("Xnor") == 0)
+		logic->SetRelation(PixelLogic::Xnor);
+	else if(operation.compare("Not") == 0)
+		logic->SetRelation(PixelLogic::Not);
+	//else	//with this line a missing operation results in an error, without it an OR is assumed
+	//	return 0;
+
+	tinyxml2::XMLElement* child = parent->FirstChildElement();
+	while(child != 0)
+	{
+		std::string name = child->Value();
+
+		if(name.compare("Pixel") == 0)
+		{
+			int address;
+			if(child->QueryIntAttribute("addr", &address) != tinyxml2::XML_NO_ERROR)
+				address = -1;
+			bool ownaddress;
+			if(child->QueryBoolAttribute("own", &ownaddress) != tinyxml2::XML_NO_ERROR)
+				ownaddress = false;
+
+			logic->AddPixelAddress(address, ownaddress);
+		}
+		else if(name.compare("PixelLogic") == 0)
+			logic->AddPixelLogic(LoadPixelLogic(child));
+
+		if(child != parent->LastChildElement())
+			child = child->NextSiblingElement();
+		else
+			child = 0;
+	}
+
+	std::cout << "Logic Sizes: all " << logic->GetNumPixelAddresses() << "; own "
+				<< logic->GetNumOwnPixelAddresses() << std::endl;
+
+	return logic;
 }
 
 void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* parentnode, 

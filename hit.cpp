@@ -178,7 +178,7 @@ void Hit::AddAddress(std::string name, int addr)
 
 int Hit::GetAddress(std::string name)
 {
-	auto it = address.find(name);
+	std::map<std::string, int>::iterator it = address.find(name);
 	if(it != address.end())
 		return it->second;
 	else
@@ -283,4 +283,9 @@ std::string Hit::GenerateString(bool compact)
 	}
 
 	return s.str();
+}
+
+bool Hit::operator<(const Hit& second)
+{
+	return timestamp < second.timestamp;
 }

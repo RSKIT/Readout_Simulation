@@ -164,7 +164,7 @@ bool Pixel::CreateHit(Hit hit)
 			deadtimeend = hit.GetDeadTimeEnd();
 		return false;
 	}
-	else if(!HitIsValid())
+	else if(!HitIsValid() || this->hit.GetDeadTimeEnd() < hit.GetTimeStamp())
 	{
 		deadtimeend = hit.GetDeadTimeEnd();
 		this->hit = hit;
@@ -174,12 +174,13 @@ bool Pixel::CreateHit(Hit hit)
 		return false;
 }
 
-void Pixel::ClearHit()
+void Pixel::ClearHit(bool resetcharge)
 {
 	hit.SetTimeStamp(-1);
 	hit.SetEventIndex(-1);
 	hit.SetDeadTimeEnd(-1);
-	hit.SetCharge(-1);
+	if(resetcharge)
+		hit.SetCharge(-1);
 	hit.ClearAddress();
 	hit.ClearReadoutTimes();
 }
@@ -187,6 +188,12 @@ void Pixel::ClearHit()
 Hit Pixel::LoadHit(int timestamp)
 {
 	Hit h = GetHit(timestamp);
-	ClearHit();
+	ClearHit(false);
 	return h;
+}
+
+bool Pixel::IsEmpty(int timestamp)
+{
+	return (timestamp >= hit.GetDeadTimeEnd());
+
 }

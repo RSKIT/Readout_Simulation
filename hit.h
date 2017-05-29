@@ -182,6 +182,16 @@ public:
 	 * @return     - a string containing the hit information
 	 */
 	std::string GenerateString(bool compact = false);
+
+	/**
+	 * @brief operator for sorting hits chronologically
+	 * @details
+	 * 
+	 * @param second         - the hit object to compare this one to
+	 * @return               - true if this hit object has a smaller timestamp than the one passed
+	 *                            as a parameter, false if not
+	 */
+	bool operator<(const Hit& second);
 private:
 	int 	eventindex;
 	double 	timestamp;

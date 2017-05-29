@@ -629,7 +629,7 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 	{
 		//std::cout << "remove hits (missing trigger)" << std::endl;
 		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
-			it->NoTriggerRemoveHits(timestamp, &fbadout);
+			it->NoTriggerRemoveHits(timestamp, &sbadout);
 	}
 
 	//execute special actions for making signals synchronous if they are defined:
@@ -797,7 +797,7 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
 	{
 		bool result = false;
 		for(auto& it : rocvector)
-			result |= it.LoadPixel(timestamp, &fbadout);
+			result |= it.LoadPixel(timestamp, &sbadout);
 
 		SetCounter("loadpixel", (result)?1:0);
 	}
@@ -805,7 +805,7 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
 	{
 		bool result = false;
 		for(auto& it : rocvector)
-			result |= it.LoadCell(regacc.parameter, timestamp, &fbadout);
+			result |= it.LoadCell(regacc.parameter, timestamp, &sbadout);
 
 		SetCounter("loadcell_" + regacc.parameter, (result)?1:0);
 	}

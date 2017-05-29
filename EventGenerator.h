@@ -27,6 +27,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <stdlib.h>
 #include <cstdlib>
 #include <time.h>
@@ -34,6 +35,10 @@
 #include <math.h>
 #include <deque>
 #include <list>
+#include <thread>
+#include <algorithm>
+
+#include "spline.h"
 
 #include "TCoord.h"
 #include "hit.h"
@@ -42,10 +47,16 @@
 #include "detector.h"
 
 
-
 class EventGenerator
 {
 public:
+	class particletrack {public:
+						  int index;
+						  TCoord<double> setpoint;
+						  TCoord<double> direction;
+						  double time;
+						  bool trigger;};
+
 	EventGenerator();
 	EventGenerator(DetectorBase* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
@@ -121,6 +132,15 @@ public:
 	 *                            time
 	 */
 	void SetSeed(int seed = 0);
+
+	/**
+	 * @brief provides the number of threads to be used for the charge calculation inside the
+	 *             pixels during event generation
+	 * @details
+	 * @return               - the number of threads during event generation
+	 */
+	int    GetThreads();
+	void   SetThreads(unsigned int numthreads);
 
 	/**
 	 * @brief sigma for the Gaussian distribution of the inclination angle for the particle 
@@ -275,8 +295,33 @@ public:
 	 * 
 	 * @param firsttime      - earliest possible time for the first event
 	 * @param numevents      - the number of events to generate
+	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores
 	 */
-	void GenerateEvents(double firsttime = 0, int numevents = 1);
+	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1);
+	/**
+	 * @brief loads pixel hits from a file
+	 * @details
+	 * 
+	 * @param filename       - filename to load the hits from
+	 * @param sort           - the contents of the hit queue will be sorted after the loading if
+	 *                            this parameter is set to true
+	 * @param timeshift		 - time to be added to the pixel hits
+	 * 
+	 * @return               - the number of pixel hits loaded
+	 */
+	int  LoadEventsFromFile(std::string filename, bool sort = true, double timeshift = 0.);
+	/**
+	 * @brief loads the pixel hits from the passed filestream
+	 * @details
+	 * 
+	 * @param file           - file stream to load the hits from
+	 * @param sort           - the contents of the hit queue will be sorted after the loading if
+	 *                            this parameter is set to true
+	 * @param timeshift      - time to be added to the pixel hits
+	 * 
+	 * @return               - the number of pixel hits loaded
+	 */
+	int  LoadEventsFromStream(std::fstream* file, bool sort = true, double timeshift = 0.);
 	/**
 	 * @brief removes all hits from the event generator's storage
 	 * @details
@@ -356,6 +401,63 @@ public:
 	double GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<double> position, 
 						TCoord<double> size, double minsize, double sigma, 
 						int setzero = 5, bool root = true);
+
+	// ===  Spline functions for deadtime and timewalk calculations ===
+
+	/**
+	 * @brief adds a point for the interpolation of the dead time. The points do not have to be
+	 *             ordered. They are sorted on first use of the spline function
+	 * @details
+	 * 
+	 * @param charge         - the x value of the data point
+	 * @param deadtime       - the y value of the data point
+	 */
+	void AddDeadTimePoint(double charge, double deadtime);
+	/**
+	 * @brief removes all data points from the spline
+	 * @details
+	 */
+	void ClearDeadTimePoints();
+	/**
+	 * @brief returns the value of the spline at the given position and recalculates the set points
+	 *             of the spline if necessary (number of set points changed) or it is triggered by
+	 *             the programmer/user
+	 * @details
+	 * 
+	 * @param charge         - the x value for the evaluation of the spline
+	 * @param forceupdate    - if true, the spline set points are regenerated
+	 * 
+	 * @return               - the value of the spline function at the given position
+	 */
+	double GetDeadTime(double charge, bool forceupdate = false);
+	bool SaveDeadTimeSpline(std::string filename, double resolution);
+
+	/**
+	 * @brief adds a point for the time walk characteristics for the sensor. The points added do
+	 *             not have to be sorted, as they will be sorted before first usage.
+	 * @details 
+	 * 
+	 * @param charge         - the x value of the point
+	 * @param timewalk       - the y value of the point
+	 */
+	void AddTimeWalkPoint(double charge, double timewalk);
+	/**
+	 * @brief removes all set points from the spline
+	 * @details
+	 */
+	void ClearTimeWalkPoints();
+	/**
+	 * @brief evaluated the spline function at the passed position and recalculates the spline
+	 *             function beforehand if necessary (changed number of set points)
+	 * @details
+	 * 
+	 * @param charge         - the x value to evaluate the spline at
+	 * @param forceupdate    - if true, the spline function is recalculated before the evaluation
+	 * 
+	 * @return               - the time walk for the given charge
+	 */
+	double GetTimeWalk(double charge, bool forceupdate = false);
+	bool SaveTimeWalkSpline(std::string filename, double resolution);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -374,6 +476,30 @@ private:
 	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
 										TCoord<double> setpoint, bool print = false);
 
+	/**
+	 * @brief method to be called by threads for the evaluation of particle tracks. It provides
+	 *             hit objects and logging output via parameters
+	 *             
+	 * @param itself         - to be filled with this. The EventGenerator object on which the
+	 *                            thread is to work
+	 * @param begin			 - iterator pointing to the first particletrack to evaluate
+	 * @param end			 - iterator pointing to the first particletrack not to evaluate anymore
+	 *                            (as the end() iterator)
+	 * @param pixelhits		 - reference to a vector in which the hit objects are stored. Use a
+	 *                            separate vector for each thread
+	 * @param output		 - reference to a stringstream in which the logging information is
+	 *                            collected to write it to a file at the end. Use a separate vector
+	 *                            for each thread
+	 * @param id			 - number for the identification of the thread. Only for printing to
+	 *                            std::cout
+	 */
+	static void GenerateHitsFromTracks(EventGenerator* itself, 
+										std::vector<particletrack>::iterator begin,
+										std::vector<particletrack>::iterator end,
+										std::vector<Hit>* pixelhits,
+										std::stringstream* output,
+										int id = -1);
+
 	std::vector<DetectorBase*> detectors;
 
 	int eventindex;				//index for the next event to generate
@@ -384,6 +510,10 @@ private:
 
 	std::default_random_engine generator;	//a uniform random generator
 	int seed;
+
+	int threads;				//the number of threads to use for the calculation of the event
+								// pixel charges (0 = use all available cores)
+
 	double inclinationsigma;	//sigma for the gaussian distribution of the theta angle 
 								// in radians
 
@@ -406,6 +536,13 @@ private:
 
 	std::list<int> triggerturnontimes;
 	int triggerturnofftime;
+
+	tk::spline deadtime;
+	std::vector<double> deadtimeX, deadtimeY;
+	int pointsindtspline;
+	tk::spline timewalk;
+	std::vector<double> timewalkX, timewalkY;
+	int pointsintwspline;
 };
 
 

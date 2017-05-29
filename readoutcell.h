@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "hit.h"
 #include "pixel.h"
@@ -45,6 +46,7 @@ class ReadoutCell
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
+	friend class ComplexReadout;
 
 public:
 	enum config {PPTB 				=   1,
@@ -87,6 +89,14 @@ public:
 	 * @param newconfig      - the configuration flags for the readoutcell
 	 */
 	void 		SetConfiguration(int newconfig);
+	/**
+	 * @brief enables replacing simple PPtB readout with a complex logic behind the readout instead
+	 *             of a simple OR function
+	 * @details
+	 * 
+	 * @param pixelro        - pointer to the object to replace the pixel readout
+	 */
+	void        SetComplexPPtBReadout(PixelReadout* pixelro);
 
 	/**
 	 * @brief the delay after which a hit placed in the readoutcell can be read out. For delays
@@ -106,6 +116,13 @@ public:
 	 * @param delay          - minimum time between placement and successful readout in timestamps
 	 */
 	void 		SetReadoutDelay(int delay);
+
+	/**
+	 * @brief provides information whether the readout cell is zero suppressed or not
+	 * @details 
+	 * @return               - true for a zerosuppressed cell, false for a not suppressed cell
+	 */
+	bool        GetZeroSuppression();
 
 	/**
 	 * @brief flag to mark readoutcells in need of a trigger signal without which the hit saved in
@@ -268,10 +285,10 @@ public:
 	 * 
 	 * @param hit            - the hit to implant in the detector
 	 * @param timestamp      - current timestamp at which the hit is implanted
-	 * @param fout           - pointer to an fstream opened for writing for logging failed implants
+	 * @param out            - pointer to an stringstream for writing for logging failed implants
 	 * @return               - true on successful implantation, false on failure
 	 */
-    bool        PlaceHit(Hit hit, int timestamp, std::fstream* fout = 0);
+    bool        PlaceHit(Hit hit, int timestamp, std::stringstream* out = 0);
 
     /**
      * @brief initiates the transition of hits from pixels to their parent readoutcell. The call is
@@ -279,11 +296,11 @@ public:
      * @details
      * 
      * @param timestamp      - current timestamp at which this action occurs
-     * @param out            - output filestream opened for logging lost hits
+     * @param out            - output stringstream for logging lost hits
      * 
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadPixel(int timestamp, std::fstream* out = 0);
+    bool 		LoadPixel(int timestamp, std::stringstream* out = 0);
     /**
      * @brief initiates the transition of hits from one kind of readoutcells to their parent
      *             readoutcell given by the address name. The call is recursive and only changes a
@@ -293,13 +310,13 @@ public:
      * @param addressname    - address name of the readoutcell to transfer the hits to: The parent
      *                            ROC address name
      * @param timestamp      - current timestamp at which this action is to occur
-     * @param out            - output filestream opened for logging lost hits
+     * @param out            - output stringstream for logging lost hits
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadCell(std::string addressname, int timestamp, std::fstream* out = 0);
+    bool 		LoadCell(std::string addressname, int timestamp, std::stringstream* out = 0);
     /**
      * @brief reads one hit from the subordinate readoutcells and deletes this hit in them. The
-     * 		       same functionality as GitHit(...)
+     * 		       same functionality as GetHit(...)
      * @details
      * 
      * @param timestamp      - current timestamp at which the action is to occur
@@ -345,9 +362,9 @@ public:
      * @details
      * 
      * @param timestamp      - current time stamp when this action is to be executed
-     * @param fbadout        - output filestream opened to log the removed hits
+     * @param sbadout        - output stream to log the removed hits
      */
-    void 		NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+    void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 	
 private:
 	std::string 				addressname;

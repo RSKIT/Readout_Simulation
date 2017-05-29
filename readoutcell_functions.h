@@ -25,7 +25,9 @@
 
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "hit.h"
 
@@ -72,7 +74,7 @@ public:
 	 * 
 	 * @return               - true if a hit was removed, false if not
 	 */
-	virtual bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	virtual bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	/**
 	 * @brief checks whether all buffers are occupied
@@ -103,7 +105,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
@@ -125,7 +127,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::fstream* fbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();
@@ -154,7 +156,7 @@ public:
 	 *                            process
 	 * @return 				 - true if at least one hit was transferred, false if not
 	 */
-	virtual bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::stringstream* out = 0);
 	/**
 	 * @brief flag that indicates whether the hit exists as a copy in a different object and has to
 	 *             be deleted at several positions. This is necessary for the ROCBuffer classes
@@ -176,7 +178,7 @@ class NoFullReadReadout : public ROCReadout
 public:
 	NoFullReadReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -189,7 +191,7 @@ class NoOverWriteReadout : public ROCReadout
 public:
 	NoOverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -203,7 +205,7 @@ class OverWriteReadout : public ROCReadout
 public:
 	OverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -221,7 +223,7 @@ class OneByOneReadout : public ROCReadout
 public:
 	OneByOneReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 	bool ClearChild();
 };
 
@@ -247,7 +249,14 @@ public:
 	 * 
 	 * @return               - true if a hit was loaded, false if not
 	 */
-	virtual bool Read(int timestamp, std::fstream* out = 0);
+	virtual bool Read(int timestamp, std::stringstream* out = 0);
+	/**
+	 * @brief determines whether the function has to be set manually
+	 * @details
+	 * @return               - if this function returns true, the PPtB readout object has to be
+	 *                            copied separately
+	 */
+	virtual bool NeedsROCReset();
 protected:
 	ReadoutCell* cell;
 };
@@ -261,9 +270,66 @@ class PPtBReadout : public PixelReadout
 public:
 	PPtBReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::fstream* out = 0);
+	bool Read(int timestamp, std::stringstream* out = 0);
 };
 
+
+class PixelLogic
+{
+public:
+	PixelLogic(int relation = 0);
+	PixelLogic(PixelLogic* logic);
+	PixelLogic(const PixelLogic& logic);
+
+	enum operators {Or   = 0,
+	                And  = 1,
+	            	Xor  = 2,
+	                Nor  = 3,
+	            	Nand = 4,
+	            	Xnor = 5,
+	            	Not  = 6
+	            };
+
+	void AddPixelAddress(int address, bool ownpixel = true);
+	void ClearPixelAddresses();
+	int  GetNumPixelAddresses();
+	int  GetNumOwnPixelAddresses();
+
+	void AddPixelLogic(PixelLogic* sublogic);
+	void AddPixelLogic(const PixelLogic& sublogic);
+	void ClearPixelLogic();
+	int  GetNumPixelSubLogics();
+
+	int  GetRelation();
+	void SetRelation(int relation);
+
+    void FindNewPixels(std::vector<int>* masterown, std::vector<int>* masternotown);
+	bool Evaluate(ReadoutCell* cell, int timestamp);
+	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
+private:
+	std::vector<PixelLogic*> sublogics;
+	std::vector<int> pixels;
+	std::vector<int> ownpixels;
+	std::vector<int> notownpixels;
+	int relation;
+};
+
+class ComplexReadout : public PixelReadout
+{
+public:
+	ComplexReadout(ReadoutCell* roc);
+
+	bool Read(int timestamp, std::stringstream* out = 0);
+
+	void SetPixelLogic(PixelLogic* logic);
+	void SetPixelLogic(const PixelLogic& logic);
+	PixelLogic* GetPixelLogic();
+
+	void SetReadoutCell(ReadoutCell* roc);
+	bool NeedsROCReset();
+private:
+	PixelLogic* logic;
+};
 //---- End Pixel Readout Classes ----
 
 #endif //_ROCFUNCTIONS
