@@ -786,19 +786,7 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 		return false;
 	}
 	if(logic->Evaluate(cell, timestamp))
-	{
-		//return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
-		if(cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out)))
-		{
-			std::cout << "true" << std::endl;
-			return true;
-		}
-		else
-		{
-			std::cout << "false" << std::endl;
-			return false;
-		}
-	}
+		return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
 	else
 	{
 		if(!cell->GetZeroSuppression())
