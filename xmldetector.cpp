@@ -538,27 +538,6 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 		return false;
 	}
 
-	//make sure that the output files are opened:
-    if(!fout.is_open() && outputfile != "")
-    {
-        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fout.is_open())
-        {
-            std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
-            return false;
-        }
-    }
-    if(!fbadout.is_open() && badoutputfile != "")
-    {
-        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fbadout.is_open())
-        {
-            std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
-                      << std::endl;
-            return false;
-        }
-    }
-
     //do not execute anything when a delay is active:
     if(GetCounter("delay") > 0)
     {

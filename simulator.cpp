@@ -23,14 +23,17 @@
 #include "simulator.h"
 
 Simulator::Simulator() : detectors(std::vector<DetectorBase*>()), eventgenerator(EventGenerator()),
-		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile("")
+		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile(""),
+		logcontent(std::stringstream("")), archivename(""), archiveonly(false), 
+		inputfilecontent(std::stringstream(""))
 {
 
 }
 
 Simulator::Simulator(std::string filename) : detectors(std::vector<DetectorBase*>()), 
 		eventgenerator(EventGenerator()), events(0), starttime(0), stoptime(-1), stopdelay(0),
-		inputfile(filename), logfile("")
+		inputfile(filename), logfile(""), logcontent(std::stringstream("")), archivename(""), 
+		archiveonly(false), inputfilecontent(std::stringstream(""))
 {
 
 }
@@ -91,7 +94,14 @@ void Simulator::LoadInputFile(std::string filename)
 			printdetector = false;
 			if(elem->QueryBoolAttribute("printdetectors", &printdetector) != tinyxml2::XML_NO_ERROR)
 				printdetector = false;
-
+		}
+		else if(elementname.compare("Archive") == 0)
+		{
+			const char* nam = elem->Attribute("filename");
+			archivename = (nam != 0)?std::string(nam):"";
+			if(elem->QueryBoolAttribute("archiveonly", &archiveonly) != tinyxml2::XML_NO_ERROR
+				|| archivename == "")
+				archiveonly = false;
 		}
 
 		if(elem != simulation->LastChildElement())
@@ -108,13 +118,23 @@ void Simulator::LoadInputFile(std::string filename)
 
 	if(logfile != "")
 	{
-		std::fstream logf;
-		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
-		if(logf.is_open())
-		{
-			logf << "Loading data from \"" << filename << "\" ..." << std::endl;
-			logf.close();
-		}
+		logcontent << "Loading data from \"" << filename << "\" ..." << std::endl;
+
+		//std::fstream logf;
+		//logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+		//if(logf.is_open())
+		//{
+		//	logf << "Loading data from \"" << filename << "\" ..." << std::endl;
+		//	logf.close();
+		//}
+	}
+
+	if(archivename != "")
+	{
+		tinyxml2::XMLPrinter printer;
+    	doc.Print( &printer );
+		inputfilecontent.str("");
+		inputfilecontent << printer.CStr();
 	}
 }
 
@@ -136,6 +156,26 @@ bool Simulator::GetDetectorLogging()
 void Simulator::SetDetectorLogging(bool printdetector)
 {
 	this->printdetector = printdetector;
+}
+
+std::string Simulator::GetArchiveName()
+{
+	return archivename;
+}
+
+void Simulator::SetArchiveName(std::string archivename)
+{
+	this->archivename = archivename;
+}
+
+bool Simulator::GetArchiveOnly()
+{
+	return archiveonly;
+}
+
+void Simulator::SetArchiveOnly(bool archiveonly)
+{
+	this->archiveonly = archiveonly;
 }
 
 int Simulator::GetNumEventsToGenerate()
@@ -250,9 +290,9 @@ void Simulator::InitEventGenerator()
 void Simulator::GenerateEvents(int events, double starttime)
 {
 	if(starttime < 0)
-		eventgenerator.GenerateEvents(events,this->starttime);
+		eventgenerator.GenerateEvents(events,this->starttime, -1, !archiveonly);
 	else
-		eventgenerator.GenerateEvents(events, starttime);
+		eventgenerator.GenerateEvents(events, starttime, -1, !archiveonly);
 }
 
 bool Simulator::ClockUp(int timestamp)
@@ -280,7 +320,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	if(events > 0)
 	{
-		eventgenerator.GenerateEvents(starttime, events);
+		eventgenerator.GenerateEvents(starttime, events, -1, !archiveonly);
 		events = 0;
 	}
 
@@ -344,13 +384,30 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+	//Write out end output:
+	zip_file archive;	//zip archive to write compressed data to
+
+	//save event generator output to the archive (writing out to file was already done 
+	//  if was requested)
+	if(archivename != "")
+		archive.writestr(eventgenerator.GetOutputFileName().c_str(),
+							eventgenerator.GenerateLog().c_str());
 
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
 	{
-		(*it)->FlushOutput();
-		(*it)->FlushBadOutput();
+		if(archivename != "")
+		{
+			archive.writestr((*it)->GetOutputFile().c_str(), (*it)->GenerateOutput().c_str());
+			archive.writestr((*it)->GetBadOutputFile().c_str(), 
+									(*it)->GenerateBadOutput().c_str());
+		}
+		if(!archiveonly)
+		{
+			(*it)->FlushOutput();
+			(*it)->FlushBadOutput();
+		}
 		dethitcounter += (*it)->GetHitCounter();
 	}
 
@@ -363,24 +420,40 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	if(logfile != "")
 	{
-		std::fstream logf;
-		logf.open(logfile.c_str(), std::ios::out | std::ios::app);
-		if(logf.is_open())
+		if(printdetector)
+			logcontent << PrintDetectors() << std::endl;
+		logcontent << "Simulated " << timestamp << " timestamps" << std::endl;
+
+		logcontent << "Simulation done." << std::endl 
+			 	   << "  injected signals: " << hitcounter << std::endl 
+				   << "  read out signals: " << dethitcounter << std::endl
+				   << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+
+		logcontent << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+				   << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+		if(archivename != "")
+			archive.writestr(logfile.c_str(), logcontent.str().c_str());
+
+		if(!archiveonly)
 		{
-			if(printdetector)
-				logf << PrintDetectors() << std::endl;
-			logf << "Simulated " << timestamp << " timestamps" << std::endl;
-
-			logf << "Simulation done." << std::endl 
-				 << "  injected signals: " << hitcounter << std::endl 
-				 << "  read out signals: " << dethitcounter << std::endl
-				 << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
-
-			logf << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
-				 << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
-
-			logf.close();
+			std::fstream logf;
+			logf.open(logfile.c_str(), std::ios::out | std::ios::app);
+			if(logf.is_open())
+			{
+				logf << logcontent.str();
+				logf.close();
+			}			
 		}
+	}
+
+	if(archivename != "")
+	{
+		//write the input XML file into the archive:
+		archive.writestr("simulation.xml", inputfilecontent.str().c_str());
+
+		//save the archive:
+		archive.save(archivename);
 	}
 }
 

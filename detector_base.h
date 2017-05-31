@@ -227,6 +227,20 @@ public:
 	 */
 	bool 		FlushBadOutput();
 	/**
+	 * @brief provides all the good output as a string
+	 * @details
+	 * @return               - a string containing all the good output of the detector
+	 */
+	std::string GenerateOutput();
+	void ClearOutput();
+	/**
+	 * @brief provides all the bad output as a string
+	 * @details
+	 * @return               - a string containing all the lost hits of the detector
+	 */
+	std::string GenerateBadOutput();
+	void ClearBadOutput();
+	/**
 	 * @brief the number of hits available in this detecot in total
 	 * @details
 	 * @return               - the number of hits available in all buffers summed up

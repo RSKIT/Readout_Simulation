@@ -248,6 +248,7 @@ bool DetectorBase::PlaceHit(Hit hit, int timestamp)
     if (rocvector.size() < 1)
         return false;
 
+/*
     //open output file for "lost" hits:
     if(!fbadout.is_open() && badoutputfile != "")
     {
@@ -259,6 +260,7 @@ bool DetectorBase::PlaceHit(Hit hit, int timestamp)
             return false;
         }
     }
+*/
 
     std::string addressname = rocvector.front().GetAddressName();
     for (auto &it : rocvector)
@@ -293,6 +295,7 @@ bool DetectorBase::SaveHit(Hit hit, bool compact)
 {
     ++hitcounter;
 
+/*
     if(!fout.is_open())
     {
         if(outputfile == "")
@@ -304,7 +307,7 @@ bool DetectorBase::SaveHit(Hit hit, bool compact)
             return false;
         }
     }
-
+*/
     sout << hit.GenerateString(compact) << std::endl;
 
     return true;
@@ -314,6 +317,7 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
 {
     ++badhitcounter;
 
+/*
     if(!fbadout.is_open())
     {
         if(badoutputfile == "")
@@ -326,7 +330,7 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
             return false;
         }
     }
-
+*/
     sbadout << hit.GenerateString(compact) << std::endl;
 
     return true;
@@ -334,6 +338,18 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
 
 bool DetectorBase::FlushOutput()
 {
+    //make sure that the output file is opened:
+    if(sout.str().length() > 0 && !fout.is_open() && outputfile != "")
+    {
+        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
+        if(!fout.is_open())
+        {
+            std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
+            return false;
+        }
+    }
+
+
     if(fout.is_open())
     {
         fout << sout.str();
@@ -357,6 +373,18 @@ bool DetectorBase::FlushOutput()
 
 bool DetectorBase::FlushBadOutput()
 {
+    //make sure that the output file is opened:    
+    if(sbadout.str().length() > 0 && !fbadout.is_open() && badoutputfile != "")
+    {
+        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
+        if(!fbadout.is_open())
+        {
+            std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
+                      << std::endl;
+            return false;
+        }
+    }
+
     if(fbadout.is_open())
     {
         fbadout << sbadout.str();
@@ -378,6 +406,25 @@ bool DetectorBase::FlushBadOutput()
     }
 }
 
+std::string DetectorBase::GenerateOutput()
+{
+    return sout.str();
+}
+
+void DetectorBase::ClearOutput()
+{
+    sout.str("");
+}
+
+std::string DetectorBase::GenerateBadOutput()
+{
+    return sbadout.str();
+}
+
+void DetectorBase::ClearBadOutput()
+{
+    sbadout.str("");
+}
 
 int DetectorBase::HitsEnqueued()
 {

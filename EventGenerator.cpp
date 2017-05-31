@@ -29,7 +29,7 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
 		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(-1)
+		pointsintwspline(-1), genoutput(std::stringstream(""))
 {
 	SetSeed(0);
 }
@@ -40,7 +40,8 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
 		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
-		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1)
+		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1),
+		genoutput(std::stringstream(""))
 {
 	detectors.push_back(detector);
 
@@ -54,7 +55,7 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
 		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(-1)
+		pointsintwspline(-1), genoutput(std::stringstream(""))
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -315,7 +316,7 @@ bool EventGenerator::GetTriggerState(int timestamp)
 	return triggerstate;
 }
 
-void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads)
+void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads, bool writeout)
 {
 	if(!IsReady())
 		return;
@@ -343,13 +344,6 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 
 	double detectorarea = (detectorend[0] - detectorstart[0]) 
 							* (detectorend[1] - detectorstart[1]);
-
-	std::fstream fout;
-	fout.open(filename.c_str(), std::ios::out | std::ios::app);
-
-	if(!fout.is_open())
-		std::cout << "Could not open output file \"" << filename 
-				  << "\" to write the generated events." << std::endl;
 
 	double time = firsttime;
 
@@ -437,6 +431,16 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	}
 
 	
+	std::fstream fout;
+	if(writeout)
+	{
+		fout.open(filename.c_str(), std::ios::out | std::ios::app);
+
+		if(!fout.is_open())
+			std::cout << "Could not open output file \"" << filename 
+					  << "\" to write the generated events." << std::endl;
+	}
+
 	//join the threads again and store the results:
 	for(int i = 0; i < numthreads; ++i)
 	{
@@ -449,7 +453,9 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 			for(auto& it : threadhits[i])
 				clusterparts.push_back(it);
 
-			fout << outputs[i].str();
+			if(writeout)
+				fout << outputs[i].str();
+			genoutput << outputs[i].str();
 		}
 	}
 
@@ -860,6 +866,16 @@ bool EventGenerator::SaveTimeWalkSpline(std::string filename, double resolution)
 	f.close();
 
 	return true;
+}
+
+std::string EventGenerator::GenerateLog()
+{
+	return genoutput.str();
+}
+
+void EventGenerator::ClearLog()
+{
+	genoutput.str("");
 }
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 

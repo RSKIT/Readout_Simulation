@@ -32,6 +32,7 @@
 #include "tinyxml2.h"
 #include "tinyxml2_addon.h"
 #include "TCoord.h"
+#include "zip_file.h"
 
 class Simulator
 {
@@ -80,6 +81,22 @@ public:
 	 */
 	bool GetDetectorLogging();
 	void SetDetectorLogging(bool printdetector);
+
+	/**
+	 * @brief provides the name of the archive to save the data to
+	 * @details
+	 * @return               - the file name of the archive
+	 */
+	std::string GetArchiveName();
+	void SetArchiveName(std::string archivename);
+	/**
+	 * @brief provides the information whether the data is saved only in the archive or in normal
+	 *             files (additionally to the archive if an archive filename is provided)
+	 * @details
+	 * @return               - true if only the archive is to be used, false for normal files
+	 */
+	bool GetArchiveOnly();
+	void SetArchiveOnly(bool archiveonly);
 
 	/**
 	 * @brief provides the number of events to generate using the event generator
@@ -374,7 +391,13 @@ private:
     std::string inputfile;
 
     std::string logfile;	//name of the file to write logging texts to
+    std::stringstream logcontent;
     bool printdetector;
+
+    std::string archivename;	//filename for the archive to save the data to
+    bool archiveonly;			//determines whether the data is also saved using normal files or not
+
+    std::stringstream inputfilecontent;
 };
 
 

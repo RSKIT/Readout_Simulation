@@ -296,8 +296,10 @@ public:
 	 * @param firsttime      - earliest possible time for the first event
 	 * @param numevents      - the number of events to generate
 	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores
+	 * @param writeout       - determines whether the data is written directly to a file or not
 	 */
-	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1);
+	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1, 
+							bool writeout = true);
 	/**
 	 * @brief loads pixel hits from a file
 	 * @details
@@ -458,6 +460,14 @@ public:
 	 */
 	double GetTimeWalk(double charge, bool forceupdate = false);
 	bool SaveTimeWalkSpline(std::string filename, double resolution);
+
+	/**
+	 * @brief generates the log file contents as a string for writing it to an archive
+	 * @details
+	 * @return               - the content string of the event generation file
+	 */
+	std::string GenerateLog();
+	void ClearLog();
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -524,6 +534,8 @@ private:
 	int numsigmas;				//number of sigmas before the gaussian is cut off
 
 	std::string filename;		//filename for the output file
+	std::stringstream genoutput;//storage for the data of the eventgen output file when writing to
+	                            // an archive
 
 
 	std::deque<Hit> clusterparts;	//the event queue containing the pixel hits

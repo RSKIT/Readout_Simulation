@@ -29,6 +29,8 @@ mainfile = 'main.cpp'
 sources = [ 'tinyxml2.cpp',
 			'tinyxml2_addon.cpp',
 			'spline.cpp',
+			'miniz.c',
+			'zip_file.cpp',
 			'hit.cpp',
 			'pixel.cpp',
 			'readoutcell_functions.cpp',
