@@ -248,20 +248,6 @@ bool DetectorBase::PlaceHit(Hit hit, int timestamp)
     if (rocvector.size() < 1)
         return false;
 
-/*
-    //open output file for "lost" hits:
-    if(!fbadout.is_open() && badoutputfile != "")
-    {
-        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fbadout.is_open())
-        {
-            std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
-                      << std::endl;
-            return false;
-        }
-    }
-*/
-
     std::string addressname = rocvector.front().GetAddressName();
     for (auto &it : rocvector)
     {
@@ -295,19 +281,6 @@ bool DetectorBase::SaveHit(Hit hit, bool compact)
 {
     ++hitcounter;
 
-/*
-    if(!fout.is_open())
-    {
-        if(outputfile == "")
-            return false;
-        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fout.is_open())
-        {
-            std::cout << "Could not open output file \"" << outputfile << "\"." << std::endl;
-            return false;
-        }
-    }
-*/
     sout << hit.GenerateString(compact) << std::endl;
 
     return true;
@@ -317,20 +290,6 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
 {
     ++badhitcounter;
 
-/*
-    if(!fbadout.is_open())
-    {
-        if(badoutputfile == "")
-            return false;
-        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fbadout.is_open())
-        {
-            std::cout << "Could not open output file \"" << outputfile << "\" for bad hits." 
-                      << std::endl;
-            return false;
-        }
-    }
-*/
     sbadout << hit.GenerateString(compact) << std::endl;
 
     return true;

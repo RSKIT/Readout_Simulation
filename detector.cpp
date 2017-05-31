@@ -42,26 +42,6 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 {
-    if(!fout.is_open() && outputfile != "")
-    {
-        fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fout.is_open())
-        {
-            std::cout << "Could not open outputfile \"" << outputfile << "\"." << std::endl;
-            return false;
-        }
-    }
-    if(!fbadout.is_open() && badoutputfile != "")
-    {
-        fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
-        if(!fbadout.is_open())
-        {
-            std::cout << "Could not open outputfile \"" << badoutputfile << "\" for lost hits."
-                      << std::endl;
-            return false;
-        }
-    }
-
     std::cout << "State: " << GetCurrentStateName() << std::endl;
 
     //to pause the state machine in any state:
