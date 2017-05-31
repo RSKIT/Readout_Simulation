@@ -465,14 +465,15 @@ TCoord<double> Simulator::LoadTCoord(tinyxml2::XMLElement* coordinate)
 	std::cout << "  LoadTCoord" << std::endl;
 
 	TCoord<double> coord;
-	tinyxml2::XMLError error;
 	const char* axis[] = {"x","y","z"};
 
 	for(int i = 0; i < 3; ++i)
 	{
-		error = coordinate->QueryDoubleAttribute(axis[i], &coord[i]);
-		if(error != tinyxml2::XML_NO_ERROR)
-			std::cout << "Error reading " << axis[i] << " axis" << std::endl;
+		if(coordinate->QueryDoubleAttribute(axis[i], &coord[i]) != tinyxml2::XML_NO_ERROR)
+		{
+			//std::cout << "Error reading " << axis[i] << " axis" << std::endl;
+			coord[i] = 0;
+		}
 	}
 
 	return coord;
