@@ -386,12 +386,37 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	//Write out end output:
 	zip_file archive;	//zip archive to write compressed data to
+	zip_file oldarchive;
+
+	//try to load an existing archive to add the data to:
+	if(archivename != "")
+	{
+		std::fstream f;
+		f.open(archivename.c_str(), std::ios::in | std::ios::binary);
+		if(f.is_open())
+		{
+			f.close();
+			oldarchive.load(archivename);
+		}
+	}
 
 	//save event generator output to the archive (writing out to file was already done 
 	//  if was requested)
 	if(archivename != "")
-		archive.writestr(eventgenerator.GetOutputFileName().c_str(),
-							eventgenerator.GenerateLog().c_str());
+	{
+		std::string filename = eventgenerator.GetOutputFileName();
+		//check whether the 
+		if(oldarchive.has_file(filename.c_str()))
+		{
+			std::stringstream s("");
+			s << oldarchive.read(filename.c_str()) << std::endl
+			  << eventgenerator.GenerateLog();
+
+			archive.writestr(filename, s.str());
+		}
+		else
+			archive.writestr(eventgenerator.GetOutputFileName(), eventgenerator.GenerateLog());
+	}
 
 	//count the signals read out from the detectors:
 	int dethitcounter = 0;
@@ -399,9 +424,24 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	{
 		if(archivename != "")
 		{
-			archive.writestr((*it)->GetOutputFile().c_str(), (*it)->GenerateOutput().c_str());
-			archive.writestr((*it)->GetBadOutputFile().c_str(), 
-									(*it)->GenerateBadOutput().c_str());
+			if(oldarchive.has_file((*it)->GetOutputFile()))
+			{
+				std::stringstream s("");
+				s << oldarchive.read((*it)->GetOutputFile()) << std::endl
+				  << (*it)->GenerateOutput();
+				archive.writestr((*it)->GetOutputFile(), s.str());
+			}
+			else
+				archive.writestr((*it)->GetOutputFile(), (*it)->GenerateOutput());
+			if(oldarchive.has_file((*it)->GetBadOutputFile()))
+			{
+				std::stringstream s("");
+				s << oldarchive.read((*it)->GetBadOutputFile()) << std::endl
+				  << (*it)->GenerateBadOutput();
+				archive.writestr((*it)->GetBadOutputFile(), s.str());
+			}
+			else
+				archive.writestr((*it)->GetBadOutputFile(), (*it)->GenerateBadOutput());
 		}
 		if(!archiveonly)
 		{
@@ -433,7 +473,16 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				   << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
 		if(archivename != "")
-			archive.writestr(logfile.c_str(), logcontent.str().c_str());
+		{
+			if(oldarchive.has_file(logfile.c_str()))
+			{
+				std::stringstream s("");
+				s << oldarchive.read(logfile) << std::endl << logcontent.str();
+				archive.writestr(logfile, s.str());
+			}
+			else
+				archive.writestr(logfile, logcontent.str());
+		}
 
 		if(!archiveonly)
 		{
@@ -450,7 +499,37 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	if(archivename != "")
 	{
 		//write the input XML file into the archive:
-		archive.writestr("simulation.xml", inputfilecontent.str().c_str());
+		if(oldarchive.has_file(inputfile))
+		{
+			std::stringstream s("");
+			s << inputfile; // the initial filename
+			int counter = 0;
+
+			//extract filename and ending from the initial filename:
+			int pointposition = inputfile.find(".");
+			std::string filenamestart = inputfile.substr(0,pointposition);
+			std::string filenameend = inputfile.substr(pointposition, std::string::npos);
+
+			//copy all existing files from the old archive to the new one:
+			do{
+				archive.writestr(s.str(), oldarchive.read(s.str()));
+				s.str("");
+				s << filenamestart << "_" << ++counter << filenameend;
+			}while(oldarchive.has_file(s.str()));
+
+			//write the new configuration into the new archive:
+			archive.writestr(s.str(), inputfilecontent.str());
+		}
+		else
+			archive.writestr(inputfile, inputfilecontent.str());
+
+		//copy the other files from the old archive:
+		std::vector<std::string> oldfiles = oldarchive.namelist();
+		for(auto& it : oldfiles)
+		{
+			if(!archive.has_file(it))
+				archive.writestr(it, oldarchive.read(it));
+		}
 
 		//save the archive:
 		archive.save(archivename);
