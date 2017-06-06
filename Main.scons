@@ -22,7 +22,17 @@
 #   This file is part of the ROME simulation framework.
 #
 
-env = Environment(CCFLAGS=["-std=c++11", "-pthread"]) #, "-g"])
+import subprocess
+
+# Compiler flags:
+flags = ["-std=c++11", "-pthread"] #, "-g"]
+
+# Get and add the compiler flags for ROOT integration:
+rootflags = subprocess.check_output("root-config --cflags", shell=True)
+[flags.append(i) for i in rootflags[:-1].split()]
+
+
+env = Environment(CCFLAGS=flags)
 
 mainfile = 'main.cpp'
 
@@ -44,8 +54,16 @@ sources = [ 'tinyxml2.cpp',
 
 libraries = [ 'pthread'
 			]
-library_paths = ''
+library_paths = []
 			
+# Get and add the ROOT libraries:
+rootlibs = subprocess.check_output("root-config --glibs", shell=True)
+[libraries.append(i) for i in filter(lambda x: x[:2]=="-l", rootlibs[:-1].split())]
+
+# Get and add the ROOT library paths:
+rootpath = subprocess.check_output("root-config --libdir", shell=True)
+[library_paths.append(i) for i in rootpath[:-1].split()]
+
 sources.append(mainfile)
 
 env.Program(target = 'rome', source = sources, LIBS = libraries, LIBPATH = library_paths)

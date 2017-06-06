@@ -46,16 +46,28 @@
 #include "readoutcell.h"
 #include "detector.h"
 
+#include <TTree.h>
+#include <TFile.h>
+
 
 class EventGenerator
 {
 public:
+	//data structure to pass events for generic 3D line generator to threads:
 	class particletrack {public:
 						  int index;
 						  TCoord<double> setpoint;
 						  TCoord<double> direction;
 						  double time;
 						  bool trigger;};
+
+	//data structre to store single bin charges for ITk events:
+  	struct ChargeDistr {
+		unsigned char etamodule;
+		unsigned short etaindex;
+		unsigned short phiindex;
+		float charge;
+	};
 
 	EventGenerator();
 	EventGenerator(DetectorBase* detector);
@@ -295,7 +307,8 @@ public:
 	 * 
 	 * @param firsttime      - earliest possible time for the first event
 	 * @param numevents      - the number of events to generate
-	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores
+	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores,
+	 *                            -1 indicates the use of the internally saved setting
 	 * @param writeout       - determines whether the data is written directly to a file or not
 	 */
 	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1, 
@@ -404,6 +417,9 @@ public:
 						TCoord<double> size, double minsize, double sigma, 
 						int setzero = 5, bool root = true);
 
+	double GetCharge(std::vector<ChargeDistr>& charge, TCoord<double> position, 
+						TCoord<double> size, TCoord<double> granularity, bool print = false);
+
 	// ===  Spline functions for deadtime and timewalk calculations ===
 
 	/**
@@ -468,6 +484,30 @@ public:
 	 */
 	std::string GenerateLog();
 	void ClearLog();
+
+	/**
+	 *  @brief loads hit events from a ROOT file and generates Hit objects out of the data
+	 *  @details
+	 *  
+	 *  @param filename      - file name of the ROOT file
+	 *  @param firstline     - the first entry to consider when loading the ROOT file
+	 *  @param numlines      - the number of entries to read from the ROOT file. To read all data
+	 *                            this parameter is set to "-1"
+	 *  @param firsttime     - earliest time possible for the first event
+	 *  @param eta           - the eta index of the modules to use, 1 - 13 for one "ring", 0 for
+	 *                            all modules
+	 *  @param granularity   - the lengths of the voxels in the data (active volume)
+	 *  @param numthreads    - the number of threads to use for the computation, use 0 to use 
+	 *                            all cores
+	 *  @param writeout      - if true, the log of the generated events is written to a file,
+	 *                            or not if false
+	 *  
+	 *  @return              - the number of events loaded from the ROOT file
+	 */
+	int LoadITkEvents(std::string filename, int firstline = 0, int numlines = -1, 
+						double firsttime = 0, int eta = 0, 
+						TCoord<double> granularity = TCoord<double>::Null,
+						int numthreads = -1, bool writeout = true);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -485,6 +525,9 @@ private:
 	 */
 	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, TCoord<double> direction, 
 										TCoord<double> setpoint, bool print = false);
+
+	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, std::vector<ChargeDistr>& charge,
+		                                TCoord<double> granularity, bool print = false);
 
 	/**
 	 * @brief method to be called by threads for the evaluation of particle tracks. It provides
@@ -509,6 +552,16 @@ private:
 										std::vector<Hit>* pixelhits,
 										std::stringstream* output,
 										int id = -1);
+
+	static void GenerateHitsFromChargeDistributions(EventGenerator* itself,
+								std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+								std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+								std::map<unsigned int, double>* times,
+								std::map<unsigned int, bool>* triginfos,
+								TCoord<double> granularity,
+								std::vector<Hit>* pixelhits,
+								std::stringstream* output,
+								int firsteventid, int id = -1);
 
 	std::vector<DetectorBase*> detectors;
 

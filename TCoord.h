@@ -97,6 +97,13 @@ class TCoord
 
         /* Nullvektor */
         static const TCoord<S> Null;
+        
+        /* Prüfung ob ein Punkt in einem Volumen liegt */
+        template <typename T, typename U>
+        bool inside(TCoord<T> const &start, TCoord<U> const &end);
+
+        /* berechnet das Volumen eines Quaders mit diesem Vektor als Raumdiagonale */
+        S volume();
 };
 
 /* Multiplikation (Skalar * Vektor) für eine Gleitkommazahl) */
@@ -111,6 +118,9 @@ TCoord<T> operator*(int a, TCoord<T> const &b);
 template <typename T>
 std::ostream& operator<<(std::ostream &out, TCoord<T> const &b);
 
+template <typename S, typename T, typename U, typename V>
+TCoord<commaType> OverlapVolume(TCoord<S> startone, TCoord<T> endone, 
+                                TCoord<U> starttwo, TCoord<V> endtwo);
 
 #include "TCoord.cpp"
 #endif // TCOORD_H

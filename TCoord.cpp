@@ -195,6 +195,26 @@ bool TCoord<S>::operator>(TCoord<T> const &b) const
     return ((m_x[0] > b[0]) && (m_x[1] > b[1]) && (m_x[2] > b[2]));
 }
 
+template <typename S>
+template <typename T, typename U>
+bool TCoord<S>::inside(TCoord<T> const &start, TCoord<U> const &end)
+{
+    for(int i = 0; i < 3; ++i)
+    {
+        if(m_x[i] < start[i] || m_x[i] > end[i])
+            return false;
+    }
+
+    return true;
+}
+
+/* berechnet das Volumen eines Quaders mit diesem Vektor als Raumdiagonale */
+template <typename S>
+S TCoord<S>::volume()
+{
+    return m_x[0] * m_x[1] * m_x[2];
+}
+
 /* Nullvektor */
 template <typename S>
 const TCoord<S> TCoord<S>::Null = TCoord<S>{0, 0, 0};
@@ -224,4 +244,24 @@ std::ostream& operator<<(std::ostream &out, TCoord<T> const &b)
 {
     out << "{" << b[0] << ", " << b[1] << ", " << b[2] << "}";
     return out;
+}
+
+/* Berechnung des Schnittvolumens zweier Quader */
+template <typename S, typename T, typename U, typename V>
+TCoord<double> OverlapVolume(TCoord<S> startone, TCoord<T> endone, 
+                             TCoord<U> starttwo, TCoord<V> endtwo)
+{
+    TCoord<double> size;
+
+    for(int i = 0; i < 3; ++i)
+    {
+        size[i] = ((startone[i] < starttwo[i])?starttwo[i]:startone[i]);
+
+        size[i] = ((endone[i] < endtwo[i])?endone[i]:endtwo[i]) - size[i];
+
+        if(size[i] < 0)
+            size[i] = 0;
+    }
+
+    return size;
 }

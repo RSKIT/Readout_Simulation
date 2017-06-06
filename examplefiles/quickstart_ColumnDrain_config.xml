@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Simulation>
+	<SimulationEnd t="-1" stopdelay="20"/>
+	<Standardpixel x="120" y="40" z="50"/>
+	<Detector addrname="Detector" outputfile="readouthits.dat" losthitfile="losthits.dat">
+		<ROC queuelength= "1" addrname="ControlUnit" ReadoutDelay="-1">
+			<NTimes n="18" x="125" >
+				<ROC addrname="Column">
+					<NTimes n="50" y="42" >
+						<ROC addrname="Pixel">
+							<Pixel>
+								<Position />
+								<Threshold thr="1"/>
+							</Pixel>
+						</ROC>	
+					</NTimes>
+				</ROC>
+			</NTimes>
+		</ROC>
+		<StateMachine>
+			<State name="PullDown">
+				<StateTransition nextstate="LoadColumn" delay="1">
+					<Condition relation="Equal">
+						<Lvalue value="1"/>
+						<Rvalue value="1"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="LoadColumn">
+				<Action what="loadcell" parameter="Column"/>
+				<StateTransition nextstate="LoadColumn" delay="0">
+					<Condition relation="Smaller">
+						<Lvalue>
+							<Action what="getcountervalue" parameter="LdColrounds"/>
+						</Lvalue>
+						<Rvalue value="4"/>
+					</Condition>
+					<Action what="incrementcounter" parameter="LdColrounds" value="1"/>
+				</StateTransition>
+				<StateTransition nextstate="LoadPixel" delay="1">
+					<Action what="setcounter" parameter="LdColrounds" value="0"/>
+					<Condition relation="LargerEqual">
+						<Lvalue>
+							<Action what="getcountervalue" parameter="LdColrounds"/>
+						</Lvalue>
+						<Rvalue value="4"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="LoadPixel">
+				<Action what ="loadpixel"/>
+				<StateTransition nextstate="LoadPixel" delay="0">
+					<Action what="incrementcounter" parameter="LdPixrounds" value="1"/>
+					<Condition relation="And">
+						<Lvalue>
+							<Condition relation="Smaller">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="LdPixrounds"/>
+								</Lvalue>
+								<Rvalue value="2"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="Equal">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="Column"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+				</StateTransition>
+				<StateTransition nextstate="PullDown" delay="1">
+					<Action what="setcounter" parameter="LdPixrounds" value="0"/>
+					<Condition relation="Equal">
+						<Lvalue>
+							<Action what="hitsavailable" parameter="Column"/>
+						</Lvalue>
+						<Rvalue value="0"/>
+					</Condition>
+				</StateTransition>
+				<StateTransition nextstate="ReadColumn" delay="1">
+					<Action what="setcounter" parameter="LdPixrounds" value="0"/>
+					<Condition relation="Larger">
+						<Lvalue>
+							<Action what="hitsavailable" parameter="Column"/>
+						</Lvalue>
+						<Rvalue value="0"/>
+					</Condition>
+				</StateTransition>
+			</State>
+			<State name="ReadColumn">
+				<Action what="loadcell" parameter="ControlUnit"/>
+				<Action what="readcell"/>
+				<StateTransition nextstate="ReadColumn" delay="1">
+					<Condition relation="And">
+						<Lvalue>
+							<Condition relation="Larger">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="Column"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="Smaller">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="RdColrounds"/>
+								</Lvalue>
+								<Rvalue value="18"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+					<Action what="incrementcounter" parameter="RdColrounds" value="1"/>
+				</StateTransition>
+				<StateTransition nextstate="PullDown" delay="1">
+					<Condition relation="Or">
+						<Lvalue>
+							<Condition relation="Equal">
+								<Lvalue>
+									<Action what="hitsavailable" parameter="Column"/>
+								</Lvalue>
+								<Rvalue value="0"/>
+							</Condition>
+						</Lvalue>
+						<Rvalue>
+							<Condition relation="LargerEqual">
+								<Lvalue>
+									<Action what="getcountervalue" parameter="RdColrounds"/>
+								</Lvalue>
+								<Rvalue value="18"/>
+							</Condition>
+						</Rvalue>
+					</Condition>
+					<Action what="setcounter" parameter="RdColrounds" value="0"/>
+				</StateTransition>
+			</State>
+		</StateMachine>
+	</Detector>
+	<EventGenerator>
+		<Seed x0="0"/>
+		<Output filename ="generatedevents.txt"/>
+		<EventRate f="3e-9" absolute="0"/>
+		<ClusterSize sigma ="20."/>
+		<CutOffFactor numsigmas ="5"/>
+		<InclinationSigma sigma="0.15"/>
+		<ChargeScale scale="2"/>
+		<MinSize diagonal="2."/>
+		<NumEvents n="50"/>
+		<EventStart t="0"/>
+		<Threads n="0"/>
+		<DeadTimeCurve filename="DeadTimeCurve.log" resolution="0.1">
+			<Point charge="0" time="0"/>
+			<Point charge="5" time="0"/>
+			<Point charge="13" time="0"/>
+			<Point charge="17.82" time="8"/>
+			<Point charge="20" time="16"/>
+			<Point charge="40" time="54"/>
+			<Point charge="60" time="80"/>
+			<Point charge="80" time="101"/>
+			<Point charge="100" time="121"/>
+			<Point charge="120" time="136"/>
+			<Point charge="140" time="152"/>
+		</DeadTimeCurve>
+	</EventGenerator>
+</Simulation>

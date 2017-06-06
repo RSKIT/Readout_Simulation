@@ -212,10 +212,58 @@ public:
     int              SeparateHits(std::map<int, int>& encoding, std::string addrname = "PixelDiode",
                                     int input = Pass);
 private:
+    /**
+     * @brief opens the input file and loads the Hit objects contained into the passed vector
+     * @details
+     * 
+     * @param vec            - the vector to write the loaded hits to
+     * @param filename       - filename to load the data from
+     * 
+     * @return               - the number of Hit objects loaded
+     */
     int LoadHits(std::vector<Hit>* vec, std::string filename);
+    /**
+     * @brief provides the vector corresponding to the category of data
+     * @details
+     * 
+     * @param input          - the category of data (Pass, Fail, Input)
+     * @return               - the vector containing the hit objects of the chosen category
+     */
     std::vector<Hit>*   GetVectorPointer(int input);
 
+    /**
+     * @brief returns the value of a field of the Hit object as a double value
+     * @details
+     * 
+     * @param hit            - the Hit object to extract the data from
+     * @param value          - description of the field to return. Options are:
+     *                            * eventid     - the ID the hit belongs to
+     *                            * charge      - the charge deposited in the pixel
+     *                            * deadtime    - the deadtime of the pixel induced by this hit
+     *                            * timestamp   - the starting time of the hit
+     *                            * deadtimeend - absolute end time of the dead time
+     *                            * addr...     - with this prefix to any address name it can be
+     *                                               obtained
+     *                            * TS...       - with this prefix to any address name the
+     *                                               corresponding readout time stamp can be 
+     *                                               obtained
+     *                         between "addr" or "TS" and the address name is no additional
+     *                              character - for example the pixel's address can be accesses
+     *                              with "addrpixel" (assuming the pixel's address name is "pixel")
+     * 
+     * @return               - the value of the field chosen with `value` or "-1" in case of a
+     *                            non-existing field
+     */
     double GetDoubleValue(Hit& hit, std::string value);
+    /**
+     * @brief returns the value of a field of the Hit object as an integer value
+     * @details
+     * 
+     * @param hit            - the Hit object to extract the data from
+     * @param value          - field name (see GetDoubleValue())
+     * 
+     * @return               - the value of the field or "-1" on a non-existing field name
+     */
     int    GetIntValue(Hit& hit, std::string value);
 
     std::vector<Hit>    input;

@@ -318,7 +318,7 @@ bool EventGenerator::GetTriggerState(int timestamp)
 
 void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads, bool writeout)
 {
-	if(!IsReady())
+	if(!IsReady() || numevents == 0)
 		return;
 
 	//calculate the total extent of the detector arrangement:
@@ -697,6 +697,32 @@ double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<dou
 	}
 }
 
+double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double> position, 
+						TCoord<double> size, TCoord<double> granularity, bool print)
+{
+	TCoord<double> start = position;
+	TCoord<double> end   = position + size;
+
+	double pixelcharge = 0;
+
+	for(auto& it : charge)
+	{
+		TCoord<double> cstart = {granularity[0]*it.etaindex,
+								 granularity[1]*it.phiindex,
+								 0};
+		TCoord<double> cend   = cstart + granularity;
+
+		pixelcharge += it.charge * chargescale * 
+						(OverlapVolume(start, end, cstart, cend).volume() / granularity.volume());
+	}
+
+    if(print)
+    	std::cout << "Charge: " << pixelcharge << std::endl;
+
+	return pixelcharge;
+}
+
+
 void EventGenerator::AddDeadTimePoint(double charge, double deadtime)
 {
 	deadtimeX.push_back(charge);
@@ -884,11 +910,12 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 {
 	std::vector<Hit> globalhits;
 
-	hit.AddAddress(cell->GetAddressName(), cell->GetAddress());
 	if(cell == 0)
 		return globalhits;
 	else
 	{
+		hit.AddAddress(cell->GetAddressName(), cell->GetAddress());
+
 		//scan Sub-Cells:
 		for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); ++it)
 		{
@@ -993,6 +1020,343 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 					//also save the hit in the output file:
 					*output << "  " << it2.GenerateString() << std::endl;
 				}
+			}
+		}
+
+		if((counter++ % 10) == 0)
+		{
+			if(id < 0)
+				std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
+						  << std::setw(4) << counter << " Events" << std::endl;
+			else
+			{
+				static int numthreads = countDigits(std::thread::hardware_concurrency());
+				std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
+						  << std::setw(4) << counter << " Events" << std::endl;
+			}
+		}
+	}
+
+	std::sort(pixelhits->begin(), pixelhits->end());
+}
+
+int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numlines, 
+									double firsttime, int eta,
+									TCoord<double> granularity, int numthreads,	bool writeout)
+{
+	//data structure for the clustered hit information:
+	std::map<unsigned int, std::vector<ChargeDistr> > clusters;	//eventID and Charge Distribution
+		//each event has its own ID (unsigned int) and a vector containing the data on the 
+
+	//Load the ROOT file:
+	TFile* f = new TFile(filename.c_str());
+
+	//extract the TTree object containing the data:
+	TTree* hits = 0;
+	f->GetObject("hitstree", hits);
+
+	//abort if it is not found
+	if(hits == 0)
+	{
+		delete f;
+		return 0;
+	}
+
+	//TODO: add loading of the granularity from the root file (to be implemented by Ettore first)
+	if(granularity.isZero())
+		granularity = TCoord<double>{5.,5.,50.};
+
+	//=== clustering of the charge distribution information ===
+	unsigned int eventid;
+	unsigned char etamodule;
+	unsigned short etaindex;
+	unsigned short phiindex;
+	float charge;
+
+	hits->SetBranchAddress("charge", &charge);
+	hits->SetBranchAddress("eventId", &eventid);
+	hits->SetBranchAddress("eta_module", &etamodule);
+	hits->SetBranchAddress("phi_index", &phiindex);
+	hits->SetBranchAddress("eta_index", &etaindex);
+
+	if(numlines == -1)
+		numlines = hits->GetEntries();
+	else
+		numlines += firstline;
+
+	for(int i = firstline; i < numlines; ++i)
+	{
+		hits->GetEntry(i);
+
+		if(eta != 0 && etamodule != eta)
+			continue;
+
+		ChargeDistr singlecluster;
+		singlecluster.charge = charge;
+		singlecluster.etamodule = etamodule;
+		singlecluster.etaindex = etaindex;
+		singlecluster.phiindex = phiindex;
+
+		auto it = clusters.find(eventid);
+		if(it != clusters.end())
+			it->second.push_back(singlecluster);
+		else
+		{
+			std::vector<ChargeDistr> tempvec;
+			tempvec.push_back(singlecluster);
+			clusters.insert(std::make_pair(eventid, tempvec));
+		}
+	}
+	delete f;
+	//=== end clustering ===
+
+	//calculate the total extent of the detector arrangement:
+	TCoord<double> detectorstart = detectors.front()->GetPosition();
+	TCoord<double> detectorend   = detectorstart;
+	for(auto& it : detectors)
+	{
+		for(int i=0;i<3;++i)
+		{
+			//one coordinate smaller than the start:
+			if(it->GetPosition()[i] < detectorstart[i])
+				detectorstart[i] = it->GetPosition()[i];
+			if(it->GetPosition()[i] + it->GetSize()[i] < detectorstart[i])
+				detectorstart[i] = it->GetPosition()[i] + it->GetSize()[i];
+
+			//one coordinate larger than the end:
+			if(it->GetPosition()[i] > detectorend[i])
+				detectorend[i] = it->GetPosition()[i];
+			if(it->GetPosition()[i] + it->GetSize()[i] > detectorend[i])
+				detectorend[i] = it->GetPosition()[i] + it->GetSize()[i];
+		}
+	}
+
+	double detectorarea = (detectorend[0] - detectorstart[0]) 
+							* (detectorend[1] - detectorstart[1]);
+
+	std::map<unsigned int, double> clustertimes;	//start times for the events
+	std::map<unsigned int, bool> triggeredevents;	//connects the eventIDs with trigger information
+
+	double time = firsttime;
+	for(auto it : clusters)
+	{
+		//generate the next time stamp:
+		if(totalrate)
+			time += -log(generator()/double(RAND_MAX)) / eventrate;
+		else
+			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
+
+		clustertimes.insert(std::make_pair(it.first, time));
+
+		if(generator()/double(RAND_MAX) < triggerprobability)
+		{
+			//if the trigger arrives slightly after the clock transition it will be recognised
+			//  one timestamp later -> +0.9 timestamps
+			AddOnTimeStamp(int(time + triggerdelay + 0.9));
+			triggeredevents.insert(std::make_pair(it.first, true));
+		}
+		else
+			triggeredevents.insert(std::make_pair(it.first, false));
+	}
+
+	//=== start parallel evaluation of the clusters ===
+	//find the number of threads to use:
+	std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
+	if(numthreads < 0)
+		numthreads = threads;
+	if(numthreads == 0)
+		numthreads = std::thread::hardware_concurrency();
+	std::vector<std::map<unsigned int, std::vector<ChargeDistr> >::iterator> startpoints;
+
+	//prepare the distribution of the data over the threads:
+	auto it     = clusters.begin();
+	int numevents = clusters.size();
+	for(int i = 0; i < numevents; ++i)
+	{
+		if((i % (numevents / numthreads + 1)) == 0)
+			startpoints.push_back(it);
+
+		++it;
+	}
+	startpoints.push_back(clusters.end());
+
+
+	//Test output of the read charge distributions:
+	for(auto& it : clusters)
+	{
+		std::cout << "Event: " << it.first << std::endl;
+		for(auto& it2 : it.second)
+		{
+			std::cout << "  " << it2.etaindex << " ; " << it2.phiindex << " : " << it2.charge
+					<< std::endl;
+		}
+	}
+
+	//variables for the worker threads:
+	std::vector<Hit> threadhits[numthreads];
+	std::stringstream outputs[numthreads];
+	std::thread* workers[numthreads];
+
+	//start the worker threads:
+	for(int i = 0; i < numthreads; ++i)
+	{
+		std::thread* worker = new std::thread(GenerateHitsFromChargeDistributions, this, 
+												startpoints[i], startpoints[i+1], 
+												&clustertimes, &triggeredevents,
+												granularity,
+												&(threadhits[i]), &(outputs[i]),
+												eventindex + (numevents/numthreads+1)*i ,i);
+
+		workers[i] = worker;
+	}
+
+	eventindex += numevents;
+
+	std::fstream fout;
+	if(writeout)
+	{
+		fout.open(this->filename.c_str(), std::ios::out | std::ios::app);
+
+		if(!fout.is_open())
+			std::cout << "Could not open output file \"" << filename 
+					  << "\" to write the generated events." << std::endl;
+	}
+
+	//join the threads again and store the results:
+	for(int i = 0; i < numthreads; ++i)
+	{
+		if(workers[i]->joinable())
+		{
+			workers[i]->join();
+
+			std::cout << "Thread #" << i << " joined." << std::endl;
+
+			
+			clusterparts.insert(clusterparts.end(), threadhits[i].begin(), threadhits[i].end());
+
+			if(fout.is_open())
+			{
+				fout << (outputs[i]).str();
+				fout.flush();
+			}
+			genoutput << outputs[i].str();
+			genoutput.flush();
+		}
+	}
+
+	fout.close();
+
+	std::sort(clusterparts.begin(), clusterparts.end());
+
+
+	return numevents;
+}
+
+std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
+													std::vector<ChargeDistr>& charge,
+													TCoord<double> granularity, bool print)
+{
+	std::vector<Hit> globalhits;
+
+	if(cell == 0)
+		return globalhits;
+	else
+	{
+		hit.AddAddress(cell->GetAddressName(), cell->GetAddress());
+
+		//scan sub-cells:
+		for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); ++it)
+		{
+			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, granularity);
+
+			globalhits.insert(globalhits.end(), localhits.begin(), localhits.end());
+		}
+
+		//scan pixels:
+		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
+		{
+			double pixelcharge = GetCharge(charge, it->GetPosition(), it->GetSize(), granularity,
+											print);
+
+			if(pixelcharge > it->GetThreshold() && 
+				(it->GetEfficiency() == 1 || generator()/double(RAND_MAX) <= it->GetEfficiency()))
+			{
+				if(print)
+					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 
+							  << pixelcharge << std::endl;
+
+				//prepare the hit object:
+				Hit phit = hit;
+				phit.AddAddress(it->GetAddressName(),it->GetAddress());
+				phit.SetCharge(pixelcharge);
+				//set TimeStamp according to characteristics:
+				phit.SetTimeStamp(phit.GetTimeStamp() + GetTimeWalk(pixelcharge));
+				if(phit.GetTimeStamp() == -1)	//for negative times, the timestamp is set invalid
+					phit.SetTimeStamp(0);
+				phit.SetDeadTimeEnd(phit.GetTimeStamp() + GetDeadTime(pixelcharge));	
+
+				if(print)
+					std::cout << "Times from Splines (charge: " << pixelcharge 
+							  << "): TW: " << GetTimeWalk(pixelcharge)
+							  << "; DT: " << GetDeadTime(pixelcharge) << std::endl;
+
+				globalhits.push_back(phit);
+			}
+		}
+	}
+}
+
+void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
+							std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+							std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+							std::map<unsigned int, double>* times,
+							std::map<unsigned int, bool>* triginfos,
+							TCoord<double> granularity,
+							std::vector<Hit>* pixelhits,
+							std::stringstream* output, int firsteventid, int id)
+{
+	std::cout << "Started thread with id " << std::this_thread::get_id() << " ..." << std::endl;
+
+	if(output == 0)
+		return;
+
+	//generate the template hit object for this event:
+	Hit hittemplate;
+	int counter = 0;	//for writing current status to the command line
+	int eventid = firsteventid;
+
+	for(auto it = begin; it != end; ++it)
+	{
+		hittemplate.SetTimeStamp((*times)[it->first]);
+		hittemplate.SetEventIndex(eventid);
+		++eventid;
+
+		//log the event header:
+		*output << "# Event " << it->first << std::endl
+		        << "# Time " << (*times)[it->first] << std::endl;
+		if((*triginfos)[it->first])
+		{
+			int triggerstart = int((*times)[it->first] + itself->triggerdelay + 0.9);
+			*output << "# Trigger " << triggerstart << " - " 
+		 		    << int(triggerstart + itself->triggerlength) << std::endl;
+		}
+
+		std::vector<Hit> localhits;
+		//loop all detectors
+		for(auto& dit : itself->detectors)
+		{
+			//loop the ROCs in the current detector:
+			for(auto rit = dit->GetROCVectorBegin(); rit != dit->GetROCVectorEnd(); ++rit)
+			{
+				localhits = itself->ScanReadoutCell(hittemplate, &(*rit), it->second, 
+													granularity, false);
+
+				//copy the pixel hits to the output vector:
+				pixelhits->insert(pixelhits->end(), localhits.begin(), localhits.end());
+
+				//save the hits in the output file:
+				for(auto& pit : localhits)
+					*output << "  " << pit.GenerateString() << std::endl;
 			}
 		}
 

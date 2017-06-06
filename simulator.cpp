@@ -198,6 +198,25 @@ void Simulator::SetStartTime(int starttime)
 	this->starttime = starttime;
 }
 
+Simulator::eventdata* Simulator::GetEventOrder(int index)
+{
+	if(index < 0 || index > eventstoload.size())
+		return 0;
+	else
+		return &eventstoload[index];
+}
+
+void Simulator::AddEventOrder(eventdata order)
+{
+	eventstoload.push_back(order);
+}
+
+void Simulator::RemoveEventOrders()
+{
+	eventstoload.clear();
+}
+
+
 int Simulator::GetStopTime()
 {
 	return stoptime;
@@ -289,10 +308,36 @@ void Simulator::InitEventGenerator()
 
 void Simulator::GenerateEvents(int events, double starttime)
 {
-	if(starttime < 0)
-		eventgenerator.GenerateEvents(events,this->starttime, -1, !archiveonly);
-	else
-		eventgenerator.GenerateEvents(events, starttime, -1, !archiveonly);
+	if(events > 0)
+	{
+		eventdata newevents;
+		newevents.datatype = Simulator::GenerateNewEvents;
+		newevents.numevents = events;
+		newevents.starttime = starttime;
+
+		eventstoload.push_back(newevents);
+	}
+
+	for(auto& it : eventstoload)
+	{
+		switch(it.datatype)
+		{
+			case(GenerateNewEvents):
+			    eventgenerator.GenerateEvents(it.numevents, it.starttime, -1, !archiveonly);
+			    break;
+			case(PixelHitFile):
+			    eventgenerator.LoadEventsFromFile(it.source, true, it.starttime);
+			    break;
+			case(ITkFile):
+			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
+			    								it.eta, TCoord<double>::Null, -1, !archiveonly);
+			    break;
+			default:
+				std::cout << "Unknown Data Type for source \"" << it.source << "\"" << std::endl;
+				break;
+		}
+	}
+	eventstoload.clear();
 }
 
 bool Simulator::ClockUp(int timestamp)
@@ -318,11 +363,13 @@ bool Simulator::ClockDown(int timestamp)
 void Simulator::SimulateUntil(int stoptime, int delaystop)
 {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	if(events > 0)
-	{
-		eventgenerator.GenerateEvents(starttime, events, -1, !archiveonly);
-		events = 0;
-	}
+	//if(events > 0)
+	//{
+	//	eventgenerator.GenerateEvents(starttime, events, -1, !archiveonly);
+	//	events = 0;
+	//}
+	if(eventstoload.size() > 0)
+		GenerateEvents();
 
 	eventgenerator.PrintQueue();
 
@@ -697,14 +744,63 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		}
 		else if(name.compare("NumEvents") == 0)
 		{
-			if(element->QueryIntAttribute("n", &events) != tinyxml2::XML_NO_ERROR)
-				events = 0;
+			eventdata newevents;
+			newevents.datatype = Simulator::GenerateNewEvents;
+
+			if(element->QueryIntAttribute("n", &newevents.numevents) != tinyxml2::XML_NO_ERROR)
+				newevents.numevents = 0;
+			if(element->QueryDoubleAttribute("start", &newevents.starttime) 
+					!= tinyxml2::XML_NO_ERROR)
+				newevents.starttime = 0;
+
+			eventstoload.push_back(newevents);
 		}
-		else if(name.compare("EventStart") == 0)
+		else if(name.compare("InputFile") == 0)
 		{
-			if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
-				starttime = 0;	
+			eventdata newevents;
+			newevents.datatype = Simulator::PixelHitFile;
+
+			if(element->QueryBoolAttribute("sort", &newevents.sort) != tinyxml2::XML_NO_ERROR)
+				newevents.sort = true;
+			if(element->QueryDoubleAttribute("timeshift", &newevents.starttime) 
+					!= tinyxml2::XML_NO_ERROR)
+				newevents.starttime = 0.;
+			const char* nam = element->Attribute("filename");
+			if(nam != 0)
+				newevents.source = std::string(nam);
+				//eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
+
+			eventstoload.push_back(newevents);
 		}
+		else if(name.compare("ITkEvents") == 0)
+		{
+			eventdata neweventgroup;
+			neweventgroup.datatype = datatypes::ITkFile;
+
+			const char* nam = element->Attribute("filename");
+			if(nam != 0)
+				neweventgroup.source = std::string(nam);
+			if(element->QueryIntAttribute("firstelement", &neweventgroup.firstevent) 
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.firstevent = 0;
+			if(element->QueryIntAttribute("numelements", &neweventgroup.numevents)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.numevents = -1;
+			if(element->QueryIntAttribute("eta", &neweventgroup.eta) != tinyxml2::XML_NO_ERROR)
+				neweventgroup.eta = 0;
+			if(element->QueryDoubleAttribute("starttime", &neweventgroup.starttime)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.starttime = 0;
+			if(element->QueryBoolAttribute("sort", &neweventgroup.sort) != tinyxml2::XML_NO_ERROR)
+				neweventgroup.sort = false;
+
+			eventstoload.push_back(neweventgroup);
+		}
+		//else if(name.compare("EventStart") == 0)
+		//{
+		//	if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
+		//		starttime = 0;	
+		//}
 		else if(name.compare("TriggerProbability") == 0)
 		{
 			double probability = 0;
@@ -736,18 +832,6 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 				eventgenerator.SetThreads(0);
 			else
 				eventgenerator.SetThreads(maxthreads);
-		}
-		else if(name.compare("InputFile") == 0)
-		{
-			bool sort = true;
-			if(element->QueryBoolAttribute("sort", &sort) != tinyxml2::XML_NO_ERROR)
-				sort = true;
-			double timeshift = 0.;
-			if(element->QueryDoubleAttribute("timeshift", &timeshift) != tinyxml2::XML_NO_ERROR)
-				timeshift = 0.;
-			const char* nam = element->Attribute("filename");
-			if(nam != 0)
-				eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
 		}
 		else if(name.compare("DeadTimeCurve") == 0 || name.compare("TimeWalkCurve") == 0)
 		{

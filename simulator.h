@@ -39,6 +39,19 @@ class Simulator
 public:
 	typedef std::chrono::steady_clock::time_point TimePoint;
 
+	enum datatypes {GenerateNewEvents=0, PixelHitFile=1, ITkFile=2};
+	struct eventdata{
+		eventdata() : datatype(-1), source(""), starttime(0.), numevents(0), firstevent(0), 
+				eta(0), sort(false) {}
+		int datatype;
+		std::string source;
+		double starttime;
+		int numevents;
+		int firstevent;
+		int eta;
+		bool sort;
+	};
+
 	Simulator();
 	/**
 	 * @brief constructor setting the filename for the input file: This is an XML file containing
@@ -114,6 +127,10 @@ public:
 	int GetStartTime();
 	void SetStartTime(int starttime);
 
+	eventdata* GetEventOrder(int index = 0);
+	void       AddEventOrder(eventdata order);
+	void       RemoveEventOrders();
+
 	/**
 	 * @brief provides the stop time of the simulation. If no stop time is set the result is -1
 	 * @details 
@@ -179,14 +196,16 @@ public:
 	 */
 	void InitEventGenerator();
 	/**
-	 * @brief Initiates the generation of the events with the event generator
+	 * @brief Initiates the generation of the events in the generation queue
 	 * @details
 	 * 
-	 * @param events		 - the number of events to generate
+	 * @param events		 - the number of additional events to generate with the simple 
+	 *                            generator
 	 * @param timestamp  	 - earliest possible point in time for the first event. For negative
-	 *                            numbers the setting of the simulator object is used
+	 *                            numbers the setting of the simulator object is used. Only applies
+	 *                            to the newly generated `events` events
 	 */
-	void GenerateEvents(int events, double starttime = -1);
+	void GenerateEvents(int events = 0, double starttime = -1);
 
 	/**
 	 * @brief calls the ClockUp() Method for all detectors and provides the trigger signal to them
@@ -383,6 +402,17 @@ private:
     //event generation parameters for the event generator:
     int events;			//number of events
     double starttime;	//earliest time possible for the first event
+    std::vector<eventdata> eventstoload; //list of events to load/generate
+
+/*
+	struct eventdata{
+		std::string source;
+		double starttime;
+		int numevents;
+		int firstevent;
+		int eta;
+	}
+*/
 
     //end conditions for the simulation:
     int stoptime;

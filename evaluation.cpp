@@ -366,7 +366,9 @@ double Evaluation::GetDoubleValue(Hit& hit, std::string value)
 {
     double x = -1;
 
-    if(value.compare("timestamp") == 0)
+    if(value.compare("eventid") == 0)
+        x = hit.GetEventIndex();
+    else if(value.compare("timestamp") == 0)
         x = hit.GetTimeStamp();
     else if(value.compare("deadtimeend") == 0)
         x = hit.GetDeadTimeEnd();
@@ -386,7 +388,9 @@ int Evaluation::GetIntValue(Hit& hit, std::string value)
 {
     int x = -1;
 
-    if(value.compare("timestamp") == 0)
+    if(value.compare("eventid") == 0)
+        x = hit.GetEventIndex();
+    else if(value.compare("timestamp") == 0)
         x = hit.GetTimeStamp();
     else if(value.compare("deadtimeend") == 0)
         x = hit.GetDeadTimeEnd();
