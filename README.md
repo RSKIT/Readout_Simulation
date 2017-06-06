@@ -20,5 +20,6 @@ For the analysis of the data the Evaluation class (evaluation.h/.cpp) is provide
 
 For structuring the output of the simulation, all files (except the spline outputs) can be (also or exclusively) written to a zip archive. For this, the miniz.c library is used with a C++ wrapper written by Thomas Fussel (see https://github.com/tfussell/miniz-cpp).
 
+In order to use output of physics simulations, the data analysis framework ROOT is used to access the data. It is available at its [CERN Website](https://root.cern.ch).
 
-This software is NOT released jet. It was tested successfully on Ubuntu 16.04LTS compiled with g++ 5.4.0 and there will be no support for this version. Some information is collected on the [Wiki page](https://github.com/RSKIT/Readout_Simulation/wiki).
+This software is NOT released jet. It was tested successfully on Ubuntu 16.04LTS compiled with g++ 5.4.0 and ROOT 5.34/36 and there will be no support for this version. Some information is collected on the [Wiki page](https://github.com/RSKIT/Readout_Simulation/wiki).
