@@ -318,17 +318,22 @@ void Simulator::GenerateEvents(int events, double starttime)
 		eventstoload.push_back(newevents);
 	}
 
+	std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
+
 	for(auto& it : eventstoload)
 	{
 		switch(it.datatype)
 		{
 			case(GenerateNewEvents):
-			    eventgenerator.GenerateEvents(it.numevents, it.starttime, -1, !archiveonly);
+				std::cout << "  NewSimpleEvents " << it.numevents << std::endl;
+			    eventgenerator.GenerateEvents(it.starttime, it.numevents, -1, !archiveonly);
 			    break;
 			case(PixelHitFile):
+				std::cout << "  Pixel Hit File" << std::endl;
 			    eventgenerator.LoadEventsFromFile(it.source, true, it.starttime);
 			    break;
 			case(ITkFile):
+				std::cout << "  ITk Data" << std::endl;
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
 			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
 			    								it.sort);
