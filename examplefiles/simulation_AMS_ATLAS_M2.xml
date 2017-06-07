@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Simulation>
+<!--
+    ROME (ReadOut Modelling Environment)
+    Copyright © 2017  Rudolf Schimassek (rudolf.schimassek@kit.edu),
+                      Felix Ehrler (felix.ehrler@kit.edu),
+                      Karlsruhe Institute of Technology (KIT)
+                                - ASIC and Detector Laboratory (ADL)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as 
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This file is an example file for the ROME simulation framework usage.
+-->
 	<SimulationEnd t="-1" stopdelay="20"/>
 	<Standardpixel x="60" y="50" z ="30"/>
 	<Detector addrname="Detector" outputfile="readhits_M2.dat" losthitfile="losthits_M2.dat">
@@ -237,8 +258,7 @@
 		<InclinationSigma sigma="0.15"/>
 		<ChargeScale scale="1."/>
 		<MinSize diagonal="2."/>
-		<NumEvents n="5000"/>
-		<EventStart t="0."/>
+		<NumEvents n="5000" start="0."/>
 		<TriggerProbability p="1."/>
 		<TriggerDelay delay="15"/>
 		<TriggerLength length="10"/>

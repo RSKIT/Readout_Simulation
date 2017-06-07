@@ -31,11 +31,11 @@ flags = ["-std=c++11", "-pthread"] #, "-g"]
 rootflags = subprocess.check_output("root-config --cflags", shell=True)
 [flags.append(i) for i in rootflags[:-1].split()]
 
-
 env = Environment(CCFLAGS=flags)
 
 mainfile = 'main.cpp'
 
+# the source files of the project:
 sources = [ 'tinyxml2.cpp',
 			'tinyxml2_addon.cpp',
 			'spline.cpp',
@@ -52,6 +52,8 @@ sources = [ 'tinyxml2.cpp',
 			'EventGenerator.cpp'
 			]
 
+sources.append(mainfile)
+
 libraries = [ 'pthread'
 			]
 library_paths = []
@@ -64,6 +66,5 @@ rootlibs = subprocess.check_output("root-config --glibs", shell=True)
 rootpath = subprocess.check_output("root-config --libdir", shell=True)
 [library_paths.append(i) for i in rootpath[:-1].split()]
 
-sources.append(mainfile)
-
+# build the project:
 env.Program(target = 'rome', source = sources, LIBS = libraries, LIBPATH = library_paths)

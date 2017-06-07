@@ -273,14 +273,26 @@ public:
 	bool Read(int timestamp, std::stringstream* out = 0);
 };
 
-
+/**
+ * @brief implementation of a runtime depiction of combinatory logic between pixel hits. It
+ *                 provides information whether a hit occured and the address resulting from the
+ *                 hite
+ * @details
+ */
 class PixelLogic
 {
 public:
+	/**
+	 * @brief constructor for a logic element
+	 * @details
+	 * 
+	 * @param relation       - the operator between the pixels as specified in the enum operators
+	 */
 	PixelLogic(int relation = 0);
 	PixelLogic(PixelLogic* logic);
 	PixelLogic(const PixelLogic& logic);
 
+	//the operators possible for the combinatory logic
 	enum operators {Or   = 0,
 	                And  = 1,
 	            	Xor  = 2,
@@ -290,21 +302,106 @@ public:
 	            	Not  = 6
 	            };
 
+	/**
+	 * @brief adds a pixel reference to the logic element and specified whether it will contribute
+	 *             to the resulting hit address. This is necessary as surrounding pixels may be
+	 *             included in a group preventing the generation of a hit
+	 * @details
+	 * 
+	 * @param address        - the address of the pixel in the group
+	 * @param ownpixel       - this address will contribute to the resulting group address if this
+	 *                            parameter is true, or not if it is false
+	 */
 	void AddPixelAddress(int address, bool ownpixel = true);
+	/**
+	 * @brief removes all pixels from the logic element
+	 * @details
+	 */
 	void ClearPixelAddresses();
+	/**
+	 * @brief provides the total number of pixels associated with this logic element
+	 * @details
+	 * @return               - the number of pixels in this logic element
+	 */
 	int  GetNumPixelAddresses();
+	/**
+	 * @brief provides the number of pixels contributing to the group address
+	 * @details
+	 * @return               - the number of pixels contributing to the group address
+	 */
 	int  GetNumOwnPixelAddresses();
 
+	/**
+	 * @brief the logic implements recursion to allow implementation of more complex logic. This
+	 *             method adds a subordinate logic element to this logic element. Subordinate logic
+	 *             elements are treated like pixels and can arbitrarily combined.
+	 *             The PixelLogic object is used directly, no copy is generated.
+	 * @details
+	 * 
+	 * @param sublogic       - pointer to the subordinate logic element
+	 */
 	void AddPixelLogic(PixelLogic* sublogic);
+	/**
+	 * @brief the same as above, but a copy of the subordinate logic is created
+	 * @details
+	 * 
+	 * @param sublogic       - the subordinate logic to add a copy of to the current logic element
+	 */
 	void AddPixelLogic(const PixelLogic& sublogic);
+	/**
+	 * @brief removes all subordinate logic elements
+	 * @details
+	 */
 	void ClearPixelLogic();
+	/**
+	 * @brief provides the number of subordinate logic elements inside this logic element
+	 * @details
+	 * @return               - the number of subordinate elements
+	 */
 	int  GetNumPixelSubLogics();
 
+	/**
+	 * @brief provides the code of the logic operator of this logic element. The code used is
+	 *             defined in the enum operators
+	 * @details
+	 * @return               - the code of the operator used in this logic element
+	 */
 	int  GetRelation();
 	void SetRelation(int relation);
 
+	/**
+	 * @brief searches the subordinate logic elements for pixels contributing (or not contributing)
+	 *             to the group address to save them in the vectors passed. This function is called
+	 *             recursively on all subordinate logic elements with the parameters passed here
+	 * @details
+	 * 
+	 * @param masterown      - pointer to the vector to collect all hits that are marked as owned
+	 *                            at least once
+	 * @param masternotown   - pointer to the vector containing hits that were at least once not
+	 *                            declared as own pixels
+	 */
     void FindNewPixels(std::vector<int>* masterown, std::vector<int>* masternotown);
+    /**
+     * @brief evaluates whether there was a hit in the passed readout cell
+     * @details 
+     * 
+     * @param cell           - the readout cell to evaluate
+     * @param timestamp      - the current time stamp at which the readout cell is to be evaluated
+     * 
+     * @return               - true, if the logic result is positive, false if not
+     */
 	bool Evaluate(ReadoutCell* cell, int timestamp);
+	/**
+	 * @brief generates the group hit according to the logic for whether a hit is to be generated
+	 *             and which pixels are to be considered for the address
+	 * @details
+	 * 
+	 * @param cell           - the readout cell to evaluate
+	 * @param timestamp      - the current time stamp of the evaluation
+	 * @param out            - output stream for the logging of failed readout
+	 * @return               - the resulting hit object or an invalid hit object when there was no
+	 *                            hit to be read out
+	 */
 	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
 private:
 	std::vector<PixelLogic*> sublogics;
@@ -314,18 +411,64 @@ private:
 	int relation;
 };
 
+/**
+ * @brief implementation of the pixel readout with complex logic between the pixels
+ * @details
+ */
 class ComplexReadout : public PixelReadout
 {
 public:
 	ComplexReadout(ReadoutCell* roc);
 
+	/**
+	 * @brief evaluates the pixels in the readout cell for hits and reads them according to the
+	 *             combinatory logic supplied
+	 * @details
+	 * 
+	 * @param timestamp      - current time stamp of the evaluation
+	 * @param out            - output stream for the failed reads (lost/overwritten hits,...)
+	 * 
+	 * @return               - true if a hit was generated, false if not
+	 */
 	bool Read(int timestamp, std::stringstream* out = 0);
 
+	/**
+	 * @brief sets a new combinatory logic structure for the evaluation of the pixels. The object
+	 *             the passed pointer is pointing at is directly used, no copy is created
+	 * @details
+	 * 
+	 * @param logic          - pointer to the data structure representing the combinatory logic
+	 */
 	void SetPixelLogic(PixelLogic* logic);
+	/**
+	 * @brief same as above, but a copy of the logic structure is generated
+	 * @details
+	 * 
+	 * @param logic          - the logic to add as a copy
+	 */
 	void SetPixelLogic(const PixelLogic& logic);
+	/**
+	 * @brief provides a pointer to the logic inside the object
+	 * @details
+	 * @return               - a pointer to the combinatory logic data structure
+	 */
 	PixelLogic* GetPixelLogic();
 
+
+	/**
+	 * @brief changes the readout cell the ComplexReadout object is referenced to as this structure
+	 *             is more complex than the other options and copying is also more complex
+	 * @details
+	 * 
+	 * @param roc            - the new readout cell the object is referenced to
+	 */
 	void SetReadoutCell(ReadoutCell* roc);
+	/**
+	 * @brief method to determine whether the PixelReadout pointer in a readout cell needs special
+	 *             treatment
+	 * @details
+	 * @return               - true, as this ComplexReadout class needs special treatment
+	 */
 	bool NeedsROCReset();
 private:
 	PixelLogic* logic;

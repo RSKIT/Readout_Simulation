@@ -1042,7 +1042,8 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 
 int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numlines, 
 									double firsttime, int eta,
-									TCoord<double> granularity, int numthreads,	bool writeout)
+									TCoord<double> granularity, int numthreads,	bool writeout,
+									bool sort)
 {
 	//data structure for the clustered hit information:
 	std::map<unsigned int, std::vector<ChargeDistr> > clusters;	//eventID and Charge Distribution
@@ -1246,7 +1247,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 	fout.close();
 
-	std::sort(clusterparts.begin(), clusterparts.end());
+	if(sort)
+		std::sort(clusterparts.begin(), clusterparts.end());
 
 
 	return numevents;

@@ -330,7 +330,8 @@ void Simulator::GenerateEvents(int events, double starttime)
 			    break;
 			case(ITkFile):
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
-			    								it.eta, TCoord<double>::Null, -1, !archiveonly);
+			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
+			    								it.sort);
 			    break;
 			default:
 				std::cout << "Unknown Data Type for source \"" << it.source << "\"" << std::endl;
