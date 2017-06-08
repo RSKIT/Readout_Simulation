@@ -40,8 +40,14 @@
 #include "TAxis.h"
 #include "TPaletteAxis.h"
 #include "TList.h"
+#include "TLegend.h"
 
 #include "hit.cpp"
+
+#if __cplusplus >= 201103L  //C++11 support 
+  #include "zip_file.cpp"
+  #define mycpp11support
+#endif
 
 class Evaluation
 {
@@ -51,13 +57,25 @@ public:
     Evaluation();
 
     /**
-     * @brief loads data from the EventGenerator's output
+     * @brief loads data from the EventGenerator's output file
      * @details
      * 
      * @param filename       - the file to load from
      * @return               - the number of Hit objects loaded
      */
     int     LoadInputHits(std::string filename);
+    /**
+     * @brief loads data from the EventGenertor's output file in an archive
+     * @details
+     * 
+     * @param archivename    - file name of the archive
+     * @param filename       - name of the file in the archive
+     * 
+     * @return               - the number of Hit objects loaded
+     */
+    #ifdef mycpp11support
+      int     LoadInputHits(std::string archivename, std::string filename);
+    #endif
     /**
      * @brief loads data for successfully read out hits from a file
      * @details
@@ -67,6 +85,18 @@ public:
      */
     int     LoadPassedOutputHits(std::string filename);
     /**
+     * @brief loads data for successfully read out hits from an archive
+     * @details
+     * 
+     * @param archivename    - file name of the archive
+     * @param filename       - name of the file in the archive
+     * 
+     * @return               - the number of Hit objects loaded
+     */
+    #ifdef mycpp11support
+      int     LoadPassedOutputHits(std::string archivename, std::string filename);
+    #endif
+    /**
      * @brief loads data for Hits lost during the simulation
      * @details
      * 
@@ -74,6 +104,18 @@ public:
      * @return               - the number of Hit object loaded
      */
     int     LoadFailedOutputHits(std::string filename);
+    /**
+     * @brief loads data for Hits lost during the simulation from an archive
+     * @details
+     * 
+     * @param archivename    - file name of the archive
+     * @param filename       - name of the file in the archive
+     * 
+     * @return               - the number of Hit objects loaded
+     */
+    #ifdef mycpp11support
+      int     LoadFailedOutputHits(std::string archivename, std::string filename);
+    #endif
 
     /**
      * @brief provides a Hit object from one of the three sources (EventGenerator, Read Hits, 
@@ -179,14 +221,53 @@ public:
      * @param xtitle         - title for the x axis
      * @param ytitle         - title for the y axis
      * @param options        - drawing options for the ROOT Draw[Clone]() method
+     * @param leg            - optional pointer to a TLegend object. If provided, an entry for the
+     *                            object to draw is added with option "p" for graphs, "l" for
+     *                            histograms and "f" for 2D histograms
+     * @param legtitle       - text to write in the legend entry, not used if leg == 0
+     * 
      * @return               - a pointer to the canvas used to plot the graph
      */
     TCanvas* Plot(TGraph* graph, std::string xtitle, std::string ytitle, 
-                                    std::string options = "AP*");
+                                    std::string options = "AP*", TLegend* leg = 0,
+                                    std::string legtitle = "");
     TCanvas* Plot(TH1* histogram, std::string xtitle, std::string ytitle, 
-                                    std::string options = "");
+                                    std::string options = "", TLegend* leg = 0,
+                                    std::string legtitle = "");
     TCanvas* Plot(TH2* histogram, std::string xtitle, std::string ytitle, std::string ztitle, 
-                    std::string options = "colz");
+                    std::string options = "colz", TLegend* leg = 0, std::string legtitle = "");
+
+    /**
+     * @brief adds a plot to an existing canvas. No formatting is done on the graph/histogram
+     * @details
+     * 
+     * @param canvas         - the canvas to add the plot to. For canvas=0, the method aborts
+     * @param graph          - the graph to plot into the canvas
+     * @param options        - drawing options for the graph. Do NOT include "A" for printing axes.
+     *                            the "same" option can be omitted
+     * @param leg            - pointer to a TLegend object. If provided, an entry for the object to
+     *                            draw is added to it
+     * @param legtitle       - caption of the legend entry
+     * 
+     * @return               - the canvas which was provided in `canvas`
+     */
+    TCanvas* AddPlot(TCanvas* canvas, TGraph* graph, std::string options = "P*", TLegend* leg = 0,
+                                    std::string legtitle = "");
+    TCanvas* AddPlot(TCanvas* canvas, TH1* histogram, std::string options = "", TLegend* leg = 0,
+                                    std::string legtitle = "");
+    TCanvas* AddPlot(TCanvas* canvas, TH2* histogram, std::string options = "colz", 
+                                    TLegend* leg = 0, std::string legtitle = "");
+
+    /**
+     * @brief adds a legend to the plot
+     * @details
+     * 
+     * @param canvas         - the canvas to add the legend into
+     * @param legend         - the legend itself
+     * 
+     * @return               - the canvas provided
+     */
+    TCanvas* AddLegend(TCanvas* canvas, TLegend* legend);
 
     /**
      * @brief extracts all hits from the group hit provided using a dictionary provided
@@ -222,6 +303,16 @@ private:
      * @return               - the number of Hit objects loaded
      */
     int LoadHits(std::vector<Hit>* vec, std::string filename);
+    /**
+     * @brief loads hit data from a stringstream instead of a file
+     * @details
+     * 
+     * @param vec            - the vector to write the loaded hits to
+     * @param filecontents   - data stream containing the data
+     * 
+     * @return               - the number of Hit objects loaded
+     */
+    int LoadHits(std::vector<Hit>* vec, std::stringstream& filecontents);
     /**
      * @brief provides the vector corresponding to the category of data
      * @details

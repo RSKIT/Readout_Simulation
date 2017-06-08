@@ -308,6 +308,8 @@ void Simulator::InitEventGenerator()
 
 void Simulator::GenerateEvents(int events, double starttime)
 {
+	//legacy call support: before the pregenerated data was available, the generator was just
+	//  called with a number of events
 	if(events > 0)
 	{
 		eventdata newevents;
@@ -318,22 +320,22 @@ void Simulator::GenerateEvents(int events, double starttime)
 		eventstoload.push_back(newevents);
 	}
 
-	std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
+	//std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
 
 	for(auto& it : eventstoload)
 	{
 		switch(it.datatype)
 		{
 			case(GenerateNewEvents):
-				std::cout << "  NewSimpleEvents " << it.numevents << std::endl;
+				//std::cout << "  NewSimpleEvents " << std::endl;
 			    eventgenerator.GenerateEvents(it.starttime, it.numevents, -1, !archiveonly);
 			    break;
 			case(PixelHitFile):
-				std::cout << "  Pixel Hit File" << std::endl;
+				//std::cout << "  Pixel Hit File" << std::endl;
 			    eventgenerator.LoadEventsFromFile(it.source, true, it.starttime);
 			    break;
 			case(ITkFile):
-				std::cout << "  ITk Data" << std::endl;
+				//std::cout << "  ITk Data" << std::endl;
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
 			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
 			    								it.sort);
@@ -343,6 +345,9 @@ void Simulator::GenerateEvents(int events, double starttime)
 				break;
 		}
 	}
+	if(eventstoload.size() > 1)
+		eventgenerator.SortEventQueue();
+
 	eventstoload.clear();
 }
 
@@ -459,10 +464,10 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	{
 		std::string filename = eventgenerator.GetOutputFileName();
 		//check whether the 
-		if(oldarchive.has_file(filename.c_str()))
+		if(oldarchive.has_file(filename))
 		{
 			std::stringstream s("");
-			s << oldarchive.read(filename.c_str()) << std::endl
+			s << oldarchive.read(filename) << std::endl
 			  << eventgenerator.GenerateLog();
 
 			archive.writestr(filename, s.str());

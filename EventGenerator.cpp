@@ -538,6 +538,11 @@ void EventGenerator::ClearEventQueue()
 	clusterparts.clear();
 }
 
+void EventGenerator::SortEventQueue()
+{
+	std::sort(clusterparts.begin(), clusterparts.end());
+}
+
 int EventGenerator::GetNumEventsGenerated()
 {
 	return eventindex;

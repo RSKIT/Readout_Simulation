@@ -34,15 +34,90 @@ int Evaluation::LoadInputHits(std::string filename)
     return LoadHits(&input, filename);
 }
 
+#ifdef mycpp11support
+int Evaluation::LoadInputHits(std::string archivename, std::string filename)
+{
+    zip_file archive;
+
+    std::fstream f;
+    f.open(archivename.c_str(), std::ios::in | std::ios::binary);
+    if(!f.is_open())
+        return 0;
+
+    f.close();
+
+    archive.load(archivename);
+
+    if(!archive.has_file(filename))
+        return 0;
+
+    std::stringstream data("");
+
+    data << archive.read(filename) << std::endl;
+
+    return LoadHits(&input, data);
+}
+#endif //C++11 support
+
 int Evaluation::LoadPassedOutputHits(std::string filename)
 {
     return LoadHits(&outputpass, filename);
 }
 
+#ifdef mycpp11support
+int Evaluation::LoadPassedOutputHits(std::string archivename, std::string filename)
+{
+    zip_file archive;
+
+    std::fstream f;
+    f.open(archivename.c_str(), std::ios::in | std::ios::binary);
+    if(!f.is_open())
+        return 0;
+
+    f.close();
+
+    archive.load(archivename);
+
+    if(!archive.has_file(filename))
+        return 0;
+
+    std::stringstream data("");
+
+    data << archive.read(filename) << std::endl;
+
+    return LoadHits(&outputpass, data);
+}
+#endif //C++11 support
+
 int Evaluation::LoadFailedOutputHits(std::string filename)
 {
     return LoadHits(&outputfail, filename);
 }
+
+#ifdef mycpp11support
+int Evaluation::LoadFailedOutputHits(std::string archivename, std::string filename)
+{
+    zip_file archive;
+
+    std::fstream f;
+    f.open(archivename.c_str(), std::ios::in | std::ios::binary);
+    if(!f.is_open())
+        return 0;
+
+    f.close();
+
+    archive.load(archivename);
+
+    if(!archive.has_file(filename))
+        return 0;
+
+    std::stringstream data("");
+
+    data << archive.read(filename) << std::endl;
+
+    return LoadHits(&outputfail, data);
+}
+#endif //C++11 support
 
 Hit Evaluation::GetHit(unsigned int index, int input)
 {
@@ -85,6 +160,11 @@ TGraph* Evaluation::GenerateScatterplot(std::string xaxis, std::string yaxis, in
     std::vector<Hit>* vec = GetVectorPointer(input);
 
     TGraph* graph = new TGraph(0);
+    static int idcounter = 0;
+    std::stringstream s("");
+    s << "Scatterplot_" << ++idcounter;
+
+    graph->SetName(s.str().c_str());
 
     double x;
     double y;
@@ -146,6 +226,12 @@ TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
 {
     TGraph* graph = new TGraph(0);
 
+    static int idcounter = 0;
+    std::stringstream s("");
+    s << "IntegrationCurve_" << ++idcounter;
+
+    graph->SetName(s.str().c_str());
+
     double start = histogram->GetBinLowEdge(0);
     double binwidth = histogram->GetBinWidth(0);
 
@@ -160,7 +246,7 @@ TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
 }
 
 TCanvas* Evaluation::Plot(TGraph* graph, std::string xtitle, std::string ytitle, 
-                            std::string options)
+                            std::string options, TLegend* leg, std::string legtitle)
 {
     TCanvas* c = new TCanvas();
     c->SetWindowSize(1000,700);
@@ -177,7 +263,10 @@ TCanvas* Evaluation::Plot(TGraph* graph, std::string xtitle, std::string ytitle,
 
     graph->GetYaxis()->SetTitleOffset(1.1);
 
-    graph->DrawClone(options.c_str());
+    graph->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(graph, legtitle.c_str(), "p");
 
     c->Update();
 
@@ -185,7 +274,7 @@ TCanvas* Evaluation::Plot(TGraph* graph, std::string xtitle, std::string ytitle,
 }
 
 TCanvas* Evaluation::Plot(TH1* histogram, std::string xtitle, std::string ytitle, 
-                            std::string options)
+                            std::string options, TLegend* leg, std::string legtitle)
 {
     TCanvas* c = new TCanvas();
     c->SetWindowSize(1000,700);
@@ -202,7 +291,10 @@ TCanvas* Evaluation::Plot(TH1* histogram, std::string xtitle, std::string ytitle
 
     histogram->GetYaxis()->SetTitleOffset(1.1);
 
-    histogram->DrawClone(options.c_str());
+    histogram->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(histogram, legtitle.c_str(), "l");
 
     c->Update();
 
@@ -210,7 +302,8 @@ TCanvas* Evaluation::Plot(TH1* histogram, std::string xtitle, std::string ytitle
 }
 
 TCanvas* Evaluation::Plot(TH2* histogram, std::string xtitle, std::string ytitle, 
-                            std::string ztitle, std::string options)
+                            std::string ztitle, std::string options, TLegend* leg,
+                            std::string legtitle)
 {
     TCanvas* c = new TCanvas();
     c->SetWindowSize(1080, 700);
@@ -241,12 +334,90 @@ TCanvas* Evaluation::Plot(TH2* histogram, std::string xtitle, std::string ytitle
         palette->Draw();
     }
     else
-        histogram->DrawClone(options.c_str());
+        histogram->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(histogram, legtitle.c_str(), "f");
 
     c->Update();
 
     return c;
 
+}
+
+TCanvas* Evaluation::AddPlot(TCanvas* canvas, TGraph* graph, std::string options, 
+                                TLegend* leg, std::string legtitle)
+{
+    if(canvas == 0 || graph == 0)
+        return canvas;
+
+    if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
+        options = options + "same";
+
+    if(leg != 0)
+        graph->SetMarkerColor(leg->GetNRows()+1);
+
+    graph->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(graph, legtitle.c_str(), "p");
+
+    canvas->Update();
+
+    return canvas;
+}
+
+TCanvas* Evaluation::AddPlot(TCanvas* canvas, TH1* histogram, std::string options, 
+                                TLegend* leg, std::string legtitle)
+{
+    if(canvas == 0 || histogram == 0)
+        return canvas;
+
+    if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
+        options = options + "same";
+
+    if(leg != 0)
+        graph->SetLineColor(leg->GetNRows()+1);
+
+    histogram->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(histogram, legtitle.c_str(), "l");
+
+    canvas->Update();
+
+    return canvas;
+}
+
+TCanvas* Evaluation::AddPlot(TCanvas* canvas, TH2* histogram, std::string options, 
+                                TLegend* leg, std::string legtitle)
+{
+    if(canvas == 0 || histogram == 0)
+        return canvas;
+
+    if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
+        options = options + "same";
+
+    histogram->Draw(options.c_str());
+
+    if(leg != 0)
+        leg->AddEntry(histogram, legtitle.c_str(), "f");
+
+    canvas->Update();
+
+    return canvas;
+}
+
+TCanvas* Evaluation::AddLegend(TCanvas* canvas, TLegend* legend)
+{
+    if(canvas == 0 || legend == 0)
+        return canvas;
+
+    legend->Draw();
+
+    canvas->Update();
+
+    return canvas;
 }
 
 std::vector<Hit> Evaluation::SeparateHit(std::map<int, int>& encoding, Hit& hit, 
@@ -343,6 +514,50 @@ int Evaluation::LoadHits(std::vector<Hit>* vec, std::string filename)
     }
 
     f.close();
+
+    return hitcounter;
+}
+
+int Evaluation::LoadHits(std::vector<Hit>* vec, std::stringstream& filecontents)
+{
+    const int linelength = 1024;
+    char line[linelength];
+    int eventindex = -1;
+    bool trigger = false;
+
+    int hitcounter = 0;
+
+    while(filecontents.getline(line, 1024, '\n'))
+    {
+        if(line[0] != '#')
+        {
+            Hit h = Hit(std::string(line));
+            if(h.is_valid())
+            {
+                if(trigger && h.GetEventIndex() == eventindex)
+                    h.AddReadoutTime("Trigger", 1);
+                else
+                    h.AddReadoutTime("Trigger", 0);
+
+                vec->push_back(h);
+                ++hitcounter;
+            }
+        }
+        else
+        {
+            std::string text;
+            std::stringstream s("");
+            s << line;
+            s >> text >> text;
+            if(text.compare("Trigger") == 0)
+                trigger = true;
+            else if(text.compare("Event") == 0)
+            {
+                s >> eventindex;
+                trigger = false;
+            }
+        }
+    }
 
     return hitcounter;
 }
