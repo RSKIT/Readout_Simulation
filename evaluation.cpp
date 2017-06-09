@@ -235,7 +235,7 @@ TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
     double start = histogram->GetBinLowEdge(0);
     double binwidth = histogram->GetBinWidth(0);
 
-    for(int i = 0; i < histogram->GetNbinsX(); ++i)
+    for(int i = 0; i <= histogram->GetNbinsX(); ++i)    //all bins, including the overflow bin
         graph->SetPoint(i, start + i * binwidth, histogram->Integral(0,i));
 
     double maximum = graph->GetY()[graph->GetN()-1];
@@ -377,7 +377,7 @@ TCanvas* Evaluation::AddPlot(TCanvas* canvas, TH1* histogram, std::string option
         options = options + "same";
 
     if(leg != 0)
-        graph->SetLineColor(leg->GetNRows()+1);
+        histogram->SetLineColor(leg->GetNRows()+1);
 
     histogram->Draw(options.c_str());
 
