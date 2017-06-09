@@ -371,25 +371,25 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 		double theta = distribution(generator);
 		if(theta < 0)
 			theta = -theta;
-		double phi = 2* 3.14159265 * (generator() / double(RAND_MAX));
+		double phi = 2* 3.14159265 * (generator() / double(generator.max()));
 		track.direction[0] = cos(phi)*sin(theta);
 		track.direction[1] = sin(phi)*sin(theta);
 		track.direction[2] = cos(theta);
 
 		for(int i = 0; i < 3; ++i)
-			track.setpoint[i] = generator() / double(RAND_MAX) 
+			track.setpoint[i] = generator() / double(generator.max()) 
 									* (detectorend[i] - detectorstart[i]) + detectorstart[i];
 
 		//generate the next time stamp:
 		if(totalrate)
-			time += -log(generator()/double(RAND_MAX)) / eventrate;
+			time += -log(generator()/double(generator.max())) / eventrate;
 		else
-			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
+			time += -log(generator()/double(generator.max())) / eventrate / detectorarea;
 
 		track.time = time;
 
 		//generate the trigger for this event:
-		if(generator()/double(RAND_MAX) < triggerprobability)
+		if(generator()/double(generator.max()) < triggerprobability)
 		{
 			track.trigger = true;
 			//if the trigger arrives slightly after the clock transition it will be recognised
@@ -939,7 +939,8 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
                                         minsize, clustersize, numsigmas, print);
 
-			if(charge > it->GetThreshold() && generator()/double(RAND_MAX) <= it->GetEfficiency())
+			if(charge > it->GetThreshold() 
+					&& generator()/double(generator.max()) <= it->GetEfficiency())
 			{
 				if(print)
 					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 
@@ -1148,13 +1149,13 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	{
 		//generate the next time stamp:
 		if(totalrate)
-			time += -log(generator()/double(RAND_MAX)) / eventrate;
+			time += -log(generator()/double(generator.max())) / eventrate;
 		else
-			time += -log(generator()/double(RAND_MAX)) / eventrate / detectorarea;
+			time += -log(generator()/double(generator.max())) / eventrate / detectorarea;
 
 		clustertimes.insert(std::make_pair(it.first, time));
 
-		if(generator()/double(RAND_MAX) < triggerprobability)
+		if(generator()/double(generator.max()) < triggerprobability)
 		{
 			//if the trigger arrives slightly after the clock transition it will be recognised
 			//  one timestamp later -> +0.9 timestamps
@@ -1286,7 +1287,8 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 											print);
 
 			if(pixelcharge > it->GetThreshold() && 
-				(it->GetEfficiency() == 1 || generator()/double(RAND_MAX) <= it->GetEfficiency()))
+				(it->GetEfficiency() == 1 || generator()/double(generator.max()) 
+													<= it->GetEfficiency()))
 			{
 				if(print)
 					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 

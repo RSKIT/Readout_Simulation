@@ -29,7 +29,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
-#include <cstdlib>
+//#include <cstdlib>	//supplied RAND_MAX
 #include <time.h>
 #include <random>
 #include <math.h>
@@ -623,8 +623,8 @@ private:
 	double eventrate;
 	bool   totalrate;
 
-	std::default_random_engine generator;	//a uniform random generator
-	//std::mt19937_64 generator;	//instantiation of the Mersenne Twister random generator
+	//std::default_random_engine generator;	//a uniform random generator
+	std::mt19937_64 generator;	//instantiation of the Mersenne Twister random generator
 	int seed;
 
 	int threads;				//the number of threads to use for the calculation of the event
