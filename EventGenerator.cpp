@@ -703,17 +703,31 @@ double EventGenerator::GetCharge(TCoord<double> x0, TCoord<double> r, TCoord<dou
 }
 
 double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double> position, 
-						TCoord<double> size, TCoord<double> granularity, bool print)
+						TCoord<double> size, TCoord<double> granularity, 
+						TCoord<double> detectorsize, bool print)
 {
 	TCoord<double> start = position;
 	TCoord<double> end   = position + size;
 
 	double pixelcharge = 0;
 
+	//get the maximum index fitting into the defined detector for folding back the data:
+	int xfold = detectorsize[0] / granularity[0];
+	int yfold = detectorsize[1] / granularity[1];
+
+	//maximum index for fitting complete detectors into the data. E.g. for a detector fitting
+	//  3.7 times into the width of the data, the data after 3 times the test detector width is
+	//  rejected. But 3 times the width without folding back is used:
+	int xmax = 8000 * granularity[0] / detectorsize[0];
+	int ymax = 8000 * granularity[1] / detectorsize[1];
+
 	for(auto& it : charge)
 	{
-		TCoord<double> cstart = {granularity[0]*it.etaindex,
-								 granularity[1]*it.phiindex,
+		if(it.etaindex > xmax || it.phiindex > ymax)
+			continue;
+
+		TCoord<double> cstart = {granularity[0]*(it.etaindex % xfold),
+								 granularity[1]*(it.phiindex % yfold),
 								 0};
 		TCoord<double> cend   = cstart + granularity;
 
@@ -1069,9 +1083,41 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		return 0;
 	}
 
-	//TODO: add loading of the granularity from the root file (to be implemented by Ettore first)
+	//loading of the granularity from the root file. Use {5,5,50} if not provided in ROOT file:
 	if(granularity.isZero())
-		granularity = TCoord<double>{5.,5.,50.};
+	{
+		TVectorF* v;
+
+		//get eta dimension:
+		f->GetObject("eta_dim", v);
+		if(v != 0)
+		{
+			granularity[0] = (*v)(0);
+			delete v;
+		}
+		else
+			granularity[0] = 5;
+
+		//get phi dimension:
+		f->GetObject("phi_dim", v);
+		if(v != 0)
+		{
+			granularity[1] = (*v)(0);
+			delete v;
+		}
+		else
+			granularity[1] = 5;
+
+		//get depletion thickness:
+		f->GetObject("thickness", v);
+		if(v != 0)
+		{
+			granularity[2] = (*v)(0);
+			delete v;
+		}
+		else
+			granularity[2] = 50;
+	}
 
 	//=== clustering of the charge distribution information ===
 	unsigned int eventid;
@@ -1189,15 +1235,15 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 
 	//Test output of the read charge distributions:
-	for(auto& it : clusters)
-	{
-		std::cout << "Event: " << it.first << std::endl;
-		for(auto& it2 : it.second)
-		{
-			std::cout << "  " << it2.etaindex << " ; " << it2.phiindex << " : " << it2.charge
-					<< std::endl;
-		}
-	}
+	//for(auto& it : clusters)
+	//{
+	//	std::cout << "Event: " << it.first << std::endl;
+	//	for(auto& it2 : it.second)
+	//	{
+	//		std::cout << "  " << it2.etaindex << " ; " << it2.phiindex << " : " << it2.charge
+	//				<< std::endl;
+	//	}
+	//}
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
@@ -1210,7 +1256,7 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		std::thread* worker = new std::thread(GenerateHitsFromChargeDistributions, this, 
 												startpoints[i], startpoints[i+1], 
 												&clustertimes, &triggeredevents,
-												granularity,
+												granularity, detectorend - detectorstart,
 												&(threadhits[i]), &(outputs[i]),
 												eventindex + (numevents/numthreads+1)*i ,i);
 
@@ -1262,7 +1308,9 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
 													std::vector<ChargeDistr>& charge,
-													TCoord<double> granularity, bool print)
+													TCoord<double> granularity, 
+													TCoord<double> detectorsize,
+													bool print)
 {
 	std::vector<Hit> globalhits;
 
@@ -1275,7 +1323,8 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		//scan sub-cells:
 		for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); ++it)
 		{
-			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, granularity);
+			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, granularity,
+															detectorsize);
 
 			globalhits.insert(globalhits.end(), localhits.begin(), localhits.end());
 		}
@@ -1284,7 +1333,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double pixelcharge = GetCharge(charge, it->GetPosition(), it->GetSize(), granularity,
-											print);
+											detectorsize, print);
 
 			if(pixelcharge > it->GetThreshold() && 
 				(it->GetEfficiency() == 1 || generator()/double(generator.max()) 
@@ -1321,6 +1370,7 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 							std::map<unsigned int, double>* times,
 							std::map<unsigned int, bool>* triginfos,
 							TCoord<double> granularity,
+							TCoord<double> detectorsize,
 							std::vector<Hit>* pixelhits,
 							std::stringstream* output, int firsteventid, int id)
 {
@@ -1358,7 +1408,7 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 			for(auto rit = dit->GetROCVectorBegin(); rit != dit->GetROCVectorEnd(); ++rit)
 			{
 				localhits = itself->ScanReadoutCell(hittemplate, &(*rit), it->second, 
-													granularity, false);
+													granularity, detectorsize, false);
 
 				//copy the pixel hits to the output vector:
 				pixelhits->insert(pixelhits->end(), localhits.begin(), localhits.end());
