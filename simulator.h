@@ -42,7 +42,7 @@ public:
 	enum datatypes {GenerateNewEvents=0, PixelHitFile=1, ITkFile=2};
 	struct eventdata{
 		eventdata() : datatype(-1), source(""), starttime(0.), numevents(0), firstevent(0), 
-				eta(0), sort(false) {}
+				eta(0), sort(false), distance(0) {}
 		int datatype;
 		std::string source;
 		double starttime;
@@ -50,6 +50,7 @@ public:
 		int firstevent;
 		int eta;
 		bool sort;
+		double distance;
 	};
 
 	Simulator();

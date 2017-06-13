@@ -338,7 +338,7 @@ void Simulator::GenerateEvents(int events, double starttime)
 				//std::cout << "  ITk Data" << std::endl;
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
 			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
-			    								it.sort);
+			    								it.distance, it.sort);
 			    break;
 			default:
 				std::cout << "Unknown Data Type for source \"" << it.source << "\"" << std::endl;
@@ -804,6 +804,9 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 				neweventgroup.starttime = 0;
 			if(element->QueryBoolAttribute("sort", &neweventgroup.sort) != tinyxml2::XML_NO_ERROR)
 				neweventgroup.sort = false;
+			if(element->QueryDoubleAttribute("regroup", &neweventgroup.distance) 
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.distance = 0;
 
 			eventstoload.push_back(neweventgroup);
 		}

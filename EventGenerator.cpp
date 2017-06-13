@@ -721,6 +721,9 @@ double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double
 	int xmax = 8000 * granularity[0] / detectorsize[0];
 	int ymax = 8000 * granularity[1] / detectorsize[1];
 
+	xmax = (xmax * detectorsize[0]) / granularity[0];
+	ymax = (ymax * detectorsize[1]) / granularity[1];
+
 	for(auto& it : charge)
 	{
 		if(it.etaindex > xmax || it.phiindex > ymax)
@@ -1063,7 +1066,7 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numlines, 
 									double firsttime, int eta,
 									TCoord<double> granularity, int numthreads,	bool writeout,
-									bool sort)
+									double regroup, bool sort)
 {
 	//data structure for the clustered hit information:
 	std::map<unsigned int, std::vector<ChargeDistr> > clusters;	//eventID and Charge Distribution
@@ -1162,6 +1165,79 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	}
 	delete f;
 	//=== end clustering ===
+
+	std::cout << "Clusters: " << clusters.size() << std::endl;
+
+	//=== regrouping ===
+	if(regroup > 0)
+	{
+		std::cout << "Start regrouping events ... (" << clusters.size() << ")" << std::endl;
+
+		//find number of threads to use:
+		int rgthreads = numthreads;
+		if(rgthreads < 0)
+			rgthreads = threads;
+		if(rgthreads == 0)
+			rgthreads = std::thread::hardware_concurrency();
+
+		//prepare start end end points for the threads:
+		std::vector<std::map<unsigned int, std::vector<ChargeDistr> >::iterator> startpoints;
+		int totalclusters = clusters.size();
+		int index = 0;
+		for(auto it = clusters.begin(); it != clusters.end(); ++it)
+		{
+			if((index % (totalclusters/rgthreads+1)) == 0)
+				startpoints.push_back(it);
+			++index;
+		}
+		startpoints.push_back(clusters.end());
+
+		//resulting new clusters of the threads:
+		std::map<unsigned int, std::vector<ChargeDistr> > threadclusters[rgthreads];
+		std::thread* workers[rgthreads];
+
+		//start the worker threads:
+		for(int i = 0; i < rgthreads; ++i)
+		{
+			std::thread* worker = new std::thread(SeparateClusters, &(threadclusters[i]),
+											startpoints[i], startpoints[i+1], granularity,
+											regroup, i, totalclusters/rgthreads+1);
+
+			workers[i] = worker;
+		}
+
+		//wait for all threads to finish:
+		for(int i = 0; i < rgthreads; ++i)
+		{
+			if(workers[i]->joinable())
+			{
+				workers[i]->join();
+				std::cout << "Thread #" << i << " joined." << std::endl;
+			}
+		}
+
+		std::cout << "Clusters (old): " << clusters.size() << std::endl;
+		for(int i = 0; i < rgthreads; ++i)
+			std::cout << " Clusters (new): " << threadclusters[i].size() << std::endl;
+
+		//replace the old data with the newly generated data:
+		clusters.clear();
+		for(int i = 0; i < rgthreads; ++i)
+		{
+			for(auto& it : (threadclusters[i]))
+			{
+				int newid = it.first;
+				//find an unused event ID:
+				while(clusters.find(newid) != clusters.end())
+					newid += 128;
+
+				clusters.insert(std::make_pair(newid, it.second));
+			}
+		}
+
+		std::cout << "Regrouping done. (" << clusters.size() << ")" << std::endl;
+	}
+	//=== end regrouping ===
 
 	//calculate the total extent of the detector arrangement:
 	TCoord<double> detectorstart = detectors.front()->GetPosition();
@@ -1434,4 +1510,136 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 	}
 
 	std::sort(pixelhits->begin(), pixelhits->end());
+}
+
+void EventGenerator::SeparateClusters(
+						std::map<unsigned int, std::vector<ChargeDistr> >* resultclusters,
+						std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+						std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+						TCoord<double> granularity, double maxdistance, int id, int numclusters)
+{
+	std::stringstream s("");
+	if(id < 0)
+		s << "Started thread with ID " << std::this_thread::get_id() << std::endl;
+	else
+		s << "Started thread with ID " << id << std::endl;
+	std::cout << s.str();
+	std::cout.flush();
+
+	maxdistance = pow(maxdistance, 2);
+	
+	for(auto itc = begin; itc != end; ++itc)
+	{
+		std::list<ChargeDistr> rawdata;
+		rawdata.clear();
+		std::list<std::list<ChargeDistr>* > newclusters;
+		newclusters.clear();
+
+		rawdata.insert(rawdata.end(), itc->second.begin(), itc->second.end());
+
+		//add the first hit:
+		if(rawdata.size() > 0)
+		{
+			std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
+			nl->push_back(rawdata.front());
+			newclusters.push_back(nl);
+			rawdata.pop_front();
+		}
+
+		auto it = rawdata.end();
+
+		//std::cout << "Rawdata Start Size (" << itc->first << "): " 
+		//		  << rawdata.size() << std::endl;
+
+		bool addedonepixel = false;	//flag for adding a hit from the rawdata list
+		bool newhit = false;		//flag for the newclusters list to break
+		while(rawdata.size() > 0)
+		{
+			//std::cout << "Remaining hits: " << rawdata.size() << std::endl;
+			//check whether the new pixel belongs to an existing cluster:
+			for(auto& it2 : newclusters)
+			{
+				//check for the same eta (i.e. ring of modules; 
+				//	+/- eta is covered by different eventID)
+				if(it->etamodule == it2->front().etamodule)
+				{
+					//check distance to existing pixels in already processes pixels:
+					for(auto& it3 : *it2)
+					{
+						if((pow(granularity[0] * (it->etaindex - it3.etaindex), 2) 
+								+ pow(granularity[1] * (it->phiindex - it3.phiindex), 2))
+										<= maxdistance)
+						{
+							newhit = true;
+							addedonepixel = true;
+
+							it2->push_back(*it);
+							it = rawdata.erase(it);
+							if(it == rawdata.end())
+								it = rawdata.begin();
+							break;
+						}
+					}
+
+					if(newhit == true)
+					{
+						newhit = false;
+						break;
+					}
+				}
+			}
+			
+			if(rawdata.size() == 0)
+				break;
+
+			++it;
+			if(it == rawdata.end())
+			{
+				//add a new cluster if the remaining ones do not belong to any existing cluster:
+				if(addedonepixel == false)
+				{
+					std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
+					nl->push_back(rawdata.front());
+					newclusters.push_back(nl);
+					rawdata.pop_front();
+				}
+				else
+					addedonepixel = false;
+
+				it = rawdata.begin();
+			}
+		}
+
+		unsigned int oldeventid = itc->first;
+		for(auto& it : newclusters)
+		{
+			std::vector<ChargeDistr> onecluster;
+
+			onecluster.insert(onecluster.end(), it->begin(), it->end());
+
+			while(resultclusters->find(oldeventid) != resultclusters->end())
+				oldeventid += 128; // += 1 << 7;	//BC part of the event ID
+
+
+			resultclusters->insert(std::make_pair(oldeventid, onecluster));
+		}
+
+		for(auto& it : newclusters)
+			delete it;
+
+		if((numclusters-- % 10) == 0)
+		{
+			std::stringstream s("");
+			if(id < 0)
+				s << "Process " << std::this_thread::get_id();
+			else
+			{
+				static int numthreads = countDigits(std::thread::hardware_concurrency());
+				s << "Process " << std::setw(numthreads) << id;
+			}
+			s << ": Remaining " << std::setw(4) << numclusters << " Events" << std::endl;
+			std::cout << s.str();
+			std::cout.flush();
+		}
+	}
 }

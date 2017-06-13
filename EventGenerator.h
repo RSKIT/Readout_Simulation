@@ -515,13 +515,16 @@ public:
 	 *  @param numlines      - the number of entries to read from the ROOT file. To read all data
 	 *                            this parameter is set to "-1"
 	 *  @param firsttime     - earliest time possible for the first event
-	 *  @param eta           - the eta index of the modules to use, 1 - 13 for one "ring", 0 for
+	 *  @param eta           - the eta index of the modules to use, 1 - 21 for one "ring", 0 for
 	 *                            all modules
 	 *  @param granularity   - the lengths of the voxels in the data (active volume)
 	 *  @param numthreads    - the number of threads to use for the computation, use 0 to use 
 	 *                            all cores
 	 *  @param writeout      - if true, the log of the generated events is written to a file,
 	 *                            or not if false
+	 *  @param regroup       - divides the events not only by eventID but also spacially if larger
+	 *                            than 0. It specifies the maximum distance between neighbouring
+	 *                            pixels in micrometers
 	 *  @param sort          - sort the resulting hits if true
 	 *  
 	 *  @return              - the number of events loaded from the ROOT file
@@ -529,7 +532,8 @@ public:
 	int LoadITkEvents(std::string filename, int firstline = 0, int numlines = -1, 
 						double firsttime = 0, int eta = 0, 
 						TCoord<double> granularity = TCoord<double>::Null,
-						int numthreads = -1, bool writeout = true, bool sort = true);
+						int numthreads = -1, bool writeout = true, double regroup = 0,
+						bool sort = true);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -621,6 +625,25 @@ private:
 								std::vector<Hit>* pixelhits,
 								std::stringstream* output,
 								int firsteventid, int id = -1);
+
+	/**
+	 * @brief takes a cluster a tries to separate it into several clusters which are spatially
+	 *             separated
+	 * @details
+	 * 
+	 * @param resultclusters - map for storing the resulting clusters
+	 * @param begin          - the first cluster to evaluate
+	 * @param end            - the first cluster to not evaluate any more (like map::end())
+	 * @param granularity    - size of the voxels of the data
+	 * @param maxdistance    - maximum distance of neighbouring pixels in one cluster
+	 * @param id             - identifying number for this call
+	 * @param numclusters    - total number of clusters to evaluate (for output reasons)
+	 */
+	static void SeparateClusters(std::map<unsigned int, std::vector<ChargeDistr> >* resultclusters,
+						std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+						std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+						TCoord<double> granularity, double maxdistance,
+						int id, int numclusters);
 
 	std::vector<DetectorBase*> detectors;
 
