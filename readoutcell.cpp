@@ -292,7 +292,7 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
         }
         //return false; //this way a readoutcell with ROCs and pixels is possible
     }
-    else if (pixelvector.size() > 0)
+    /*else*/ if (pixelvector.size() > 0)
     {
         for (auto &it : pixelvector)
         {
@@ -319,7 +319,15 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
         return false;
     }
     else
+    {
+        if(out != 0)
+        {
+            hit.AddReadoutTime(GetAddressName(), timestamp);
+            hit.AddReadoutTime("EmptyROC", timestamp);
+            *out << hit.GenerateString() << std::endl;
+        }
         return false;
+    }
 }
 
 bool ReadoutCell::LoadPixel(int timestamp, std::stringstream* out)

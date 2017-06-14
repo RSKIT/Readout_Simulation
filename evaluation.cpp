@@ -250,6 +250,8 @@ TCanvas* Evaluation::Plot(TGraph* graph, std::string xtitle, std::string ytitle,
 {
     TCanvas* c = new TCanvas();
     c->SetWindowSize(1000,700);
+    c->SetLeftMargin(0.13);
+    c->SetRightMargin(0.08);
     c->Update();
 
     graph->GetXaxis()->SetTitleSize(0.05);
@@ -278,6 +280,8 @@ TCanvas* Evaluation::Plot(TH1* histogram, std::string xtitle, std::string ytitle
 {
     TCanvas* c = new TCanvas();
     c->SetWindowSize(1000,700);
+    c->SetLeftMargin(0.13);
+    c->SetRightMargin(0.08);
     c->Update();
 
     histogram->GetXaxis()->SetTitleSize(0.05);

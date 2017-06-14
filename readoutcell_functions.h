@@ -31,7 +31,7 @@
 
 #include "hit.h"
 
-class ReadoutCell;
+class ReadoutCell;	//solve circular dependency with ReadoutCell class
 
 //---- Readout Order Classes ----
 

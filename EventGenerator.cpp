@@ -1089,14 +1089,14 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	//loading of the granularity from the root file. Use {5,5,50} if not provided in ROOT file:
 	if(granularity.isZero())
 	{
-		TVectorF* v;
+		TVectorF * v = new TVectorF(1);
 
 		//get eta dimension:
 		f->GetObject("eta_dim", v);
 		if(v != 0)
 		{
-			granularity[0] = (*v)(0);
-			delete v;
+			granularity[0] = (*v)[0];
+			//delete v;
 		}
 		else
 			granularity[0] = 5;
@@ -1106,20 +1106,22 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		if(v != 0)
 		{
 			granularity[1] = (*v)(0);
-			delete v;
+			//delete v;
 		}
 		else
 			granularity[1] = 5;
 
 		//get depletion thickness:
-		f->GetObject("thickness", v);
+		f->GetObject("depletion", v);
 		if(v != 0)
 		{
 			granularity[2] = (*v)(0);
-			delete v;
+			//delete v;
 		}
 		else
 			granularity[2] = 50;
+
+		delete v;
 	}
 
 	//=== clustering of the charge distribution information ===
@@ -1139,6 +1141,9 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		numlines = hits->GetEntries();
 	else
 		numlines += firstline;
+
+	if(numlines > hits->GetEntries())
+		numlines = hits->GetEntries();
 
 	for(int i = firstline; i < numlines; ++i)
 	{
@@ -1213,6 +1218,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 			{
 				workers[i]->join();
 				std::cout << "Thread #" << i << " joined." << std::endl;
+
+				delete workers[i];
 			}
 		}
 
@@ -1531,25 +1538,21 @@ void EventGenerator::SeparateClusters(
 	for(auto itc = begin; itc != end; ++itc)
 	{
 		std::list<ChargeDistr> rawdata;
-		rawdata.clear();
-		std::list<std::list<ChargeDistr>* > newclusters;
-		newclusters.clear();
+		//rawdata.clear();
+		std::list<std::list<ChargeDistr>> newclusters;
+		//newclusters.clear();
 
 		rawdata.insert(rawdata.end(), itc->second.begin(), itc->second.end());
 
 		//add the first hit:
 		if(rawdata.size() > 0)
 		{
-			std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
-			nl->push_back(rawdata.front());
-			newclusters.push_back(nl);
+			newclusters.push_back(std::list<ChargeDistr>());
+			newclusters.back().push_back(rawdata.front());
 			rawdata.pop_front();
 		}
 
-		auto it = rawdata.end();
-
-		//std::cout << "Rawdata Start Size (" << itc->first << "): " 
-		//		  << rawdata.size() << std::endl;
+		auto it = rawdata.begin();
 
 		bool addedonepixel = false;	//flag for adding a hit from the rawdata list
 		bool newhit = false;		//flag for the newclusters list to break
@@ -1561,10 +1564,10 @@ void EventGenerator::SeparateClusters(
 			{
 				//check for the same eta (i.e. ring of modules; 
 				//	+/- eta is covered by different eventID)
-				if(it->etamodule == it2->front().etamodule)
+				if(it->etamodule == it2.front().etamodule)
 				{
 					//check distance to existing pixels in already processes pixels:
-					for(auto& it3 : *it2)
+					for(auto& it3 : it2)
 					{
 						if((pow(granularity[0] * (it->etaindex - it3.etaindex), 2) 
 								+ pow(granularity[1] * (it->phiindex - it3.phiindex), 2))
@@ -1573,10 +1576,8 @@ void EventGenerator::SeparateClusters(
 							newhit = true;
 							addedonepixel = true;
 
-							it2->push_back(*it);
+							it2.push_back(*it);
 							it = rawdata.erase(it);
-							if(it == rawdata.end())
-								it = rawdata.begin();
 							break;
 						}
 					}
@@ -1598,9 +1599,12 @@ void EventGenerator::SeparateClusters(
 				//add a new cluster if the remaining ones do not belong to any existing cluster:
 				if(addedonepixel == false)
 				{
-					std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
-					nl->push_back(rawdata.front());
-					newclusters.push_back(nl);
+					//std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
+					//nl->push_back(rawdata.front());
+					//newclusters.push_back(nl);
+					//rawdata.pop_front();
+					newclusters.push_back(std::list<ChargeDistr>());
+					newclusters.back().push_back(rawdata.front());
 					rawdata.pop_front();
 				}
 				else
@@ -1615,7 +1619,7 @@ void EventGenerator::SeparateClusters(
 		{
 			std::vector<ChargeDistr> onecluster;
 
-			onecluster.insert(onecluster.end(), it->begin(), it->end());
+			onecluster.insert(onecluster.end(), it.begin(), it.end());
 
 			while(resultclusters->find(oldeventid) != resultclusters->end())
 				oldeventid += 128; // += 1 << 7;	//BC part of the event ID
@@ -1624,8 +1628,9 @@ void EventGenerator::SeparateClusters(
 			resultclusters->insert(std::make_pair(oldeventid, onecluster));
 		}
 
-		for(auto& it : newclusters)
-			delete it;
+		//for(auto& it : newclusters)
+		//	delete it;
+		newclusters.clear();
 
 		if((numclusters-- % 10) == 0)
 		{
@@ -1642,4 +1647,6 @@ void EventGenerator::SeparateClusters(
 			std::cout.flush();
 		}
 	}
+
+	std::cout << "Ende Thread #" << id << "!" << std::endl;
 }
