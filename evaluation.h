@@ -273,7 +273,8 @@ public:
      * @brief extracts all hits from the group hit provided using a dictionary provided
      * @details
      * 
-     * @param encoding       - the map connecting the codes with the actual addresses
+     * @param encoding       - the map connecting the codes with the actual addresses. First comes
+     *                            the real address and second the code
      * @param hit            - the group hit object to analyse for all contained hits
      * 
      * @return               - a vector containing all hits as decoded with the provided encoding
@@ -284,7 +285,8 @@ public:
      * @brief replaces the contents of a hit category with its decoded data representation
      * @details
      * 
-     * @param encoding       - the map connecting the codes with the actual addresses
+     * @param encoding       - the map connecting the codes with the actual addresses. First comes
+     *                            the real address and second the code
      * @param addrname       - the address field to use for the decoding
      * @param input          - the category to use for the evaluation
      * 
