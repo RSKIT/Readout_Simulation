@@ -116,6 +116,29 @@ std::vector<ReadoutCell>::iterator DetectorBase::GetROCVectorEnd()
 	return rocvector.end();
 }
 
+bool DetectorBase::CheckROCAddresses()
+{
+    bool changewasnecessary = false;
+    std::vector<int> usedaddresses;
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+    {
+        auto addrit = find(usedaddresses.begin(), usedaddresses.end(), it->GetAddress());
+        while(addrit != usedaddresses.end())
+        {
+            it->SetAddress(it->GetAddress() + 1);
+            addrit = find(usedaddresses.begin(), usedaddresses.end(), it->GetAddress());
+
+            changewasnecessary = true;
+        }
+
+        usedaddresses.push_back(it->GetAddress());
+
+        changewasnecessary |= it->CheckROCAddresses();
+    }
+
+    return changewasnecessary;
+}
+
 TCoord<double> DetectorBase::GetPosition()
 {
 	return position;

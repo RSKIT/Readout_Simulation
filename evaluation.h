@@ -160,6 +160,15 @@ public:
     void    ClearHits(int input = Pass);
 
     /**
+     * @brief counts the hits in the passed category
+     * @details
+     * 
+     * @param input          - the category of the hits to count (Pass, Fail, Input)
+     * @return               - the number of hits in the category
+     */
+    int     GetNumHits(int input = Pass);
+
+    /**
      * @brief generates a scatter plot from the data provided (for options for xaxis and yaxis,
      *             see description of GetDoubleValue())
      * @details

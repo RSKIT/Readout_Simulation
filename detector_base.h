@@ -103,6 +103,13 @@ public:
 	 */
 	std::vector<ReadoutCell>::iterator GetROCVectorBegin();
 	std::vector<ReadoutCell>::iterator GetROCVectorEnd();
+	/**
+	 * @brief checks the addresses of all subordinate readout cells for multiple uses of the same
+	 *             address and changes the addresses if necessary
+	 * @details 
+	 * @return               - true if a change was necessary, false if not
+	 */
+	bool		CheckROCAddresses();
 	
 	/**
 	 * @brief the origin of the detector volume. It is used for the base point of the particle

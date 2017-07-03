@@ -152,7 +152,19 @@ int Evaluation::InsertHits(std::vector<Hit>& hits, int input)
 
 void Evaluation::ClearHits(int input)
 {
-    GetVectorPointer(input)->clear();
+    std::vector<Hit>* vec = GetVectorPointer(input);
+
+    if(vec != 0)
+        vec->clear();
+}
+
+int Evaluation::GetNumHits(int input)
+{
+    std::vector<Hit>* vec = GetVectorPointer(input);
+    if(vec != 0)
+        return GetVectorPointer(input)->size();
+    else
+        return 0;
 }
 
 TGraph* Evaluation::GenerateScatterplot(std::string xaxis, std::string yaxis, int input)

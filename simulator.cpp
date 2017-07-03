@@ -61,6 +61,7 @@ void Simulator::LoadInputFile(std::string filename)
 	doc.PrintError();
 
 	TCoord<double> standardpixel{0,0,0};
+	bool checkaddresses = false;
 
 	tinyxml2::XMLElement* simulation = doc.FirstChildElement();
 	tinyxml2::XMLElement* elem = simulation->FirstChildElement();
@@ -103,11 +104,44 @@ void Simulator::LoadInputFile(std::string filename)
 				|| archivename == "")
 				archiveonly = false;
 		}
+		else if(elementname.compare("CheckAddresses") == 0)
+		{
+			if(elem->QueryBoolAttribute("check", &checkaddresses) != tinyxml2::XML_NO_ERROR)
+				checkaddresses = false;
+		}
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
 		else
 			elem = 0;
+	}
+
+	//check for multiple uses of addresses
+	if(checkaddresses)
+	{
+		bool changewasnecessary = false;
+		std::vector<int> usedaddresses;
+		for(auto it = detectors.begin(); it != detectors.end(); ++it)
+		{
+	        auto addrit = find(usedaddresses.begin(), usedaddresses.end(), (*it)->GetAddress());
+	        while(addrit != usedaddresses.end())
+	        {
+	            (*it)->SetAddress((*it)->GetAddress() + 1);
+	            addrit = find(usedaddresses.begin(), usedaddresses.end(), (*it)->GetAddress());
+
+	            changewasnecessary = true;
+	        }
+
+	        usedaddresses.push_back((*it)->GetAddress());
+
+	        changewasnecessary |= (*it)->CheckROCAddresses();
+		}
+
+		if(changewasnecessary)
+		{
+			logcontent << "Address Changes were applied ..." << std::endl;
+			std::cout << "Address Changes were applied ..." << std::endl;
+		}
 	}
 
 	for(auto it = detectors.begin(); it != detectors.end(); ++it)
@@ -382,7 +416,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	if(eventstoload.size() > 0)
 		GenerateEvents();
 
-	eventgenerator.PrintQueue();
+	//only show the event queue if it is reasonably short:
+	if(eventgenerator.GetNumEventsLeft() <= 100)
+		eventgenerator.PrintQueue();
 
 	std::chrono::steady_clock::time_point endEventGen = std::chrono::steady_clock::now();
 
@@ -635,6 +671,11 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	nam = parent->Attribute("losthitfile");
 	std::string badoutputfile = (nam != 0)?std::string(nam):"";
 
+	//optional check for double addresses:
+	bool checkafterbuild = false;
+	if(parent->QueryBoolAttribute("CheckAfterBuild", &checkafterbuild) != tinyxml2::XML_NO_ERROR)
+		checkafterbuild = false;
+
 	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
@@ -666,6 +707,16 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	}
 
 	det->EnlargeSize();
+
+	//optional check for double addesses:
+	if(checkafterbuild)
+	{
+		if(det->CheckROCAddresses())
+		{
+			logcontent << "Address Changes were applied ..." << std::endl;
+			std::cout << "Address Changes were applied ..." << std::endl;
+		}
+	}
 
 	AddDetector(det);
 }
@@ -1006,6 +1057,11 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(parent->QueryBoolAttribute("Triggered", & triggeredroc) != tinyxml2::XML_NO_ERROR)
 		triggeredroc = false;
 
+	//Address checking:
+	bool checkaddresses = false;
+	if(parent->QueryBoolAttribute("CheckAfterBuild", &checkaddresses) != tinyxml2::XML_NO_ERROR)
+		checkaddresses = false;
+
 	ReadoutCell roc(addressname, address, queuelength, configuration);
 
 	roc.SetReadoutDelay(readoutdelay);
@@ -1034,6 +1090,9 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		else
 			child = 0;
 	}
+
+	if(checkaddresses)
+		roc.CheckROCAddresses();
 
 	return roc;
 }

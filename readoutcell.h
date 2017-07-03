@@ -365,6 +365,15 @@ public:
      * @param sbadout        - output stream to log the removed hits
      */
     void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
+
+    /**
+     * @brief checks the subordinate readout cell addresses for multiple identical addresses and
+     *             changes the addresses if necessary. The function is recursive, it is not
+     *             necessary to call it on every level.
+     * @details
+     * @return               - true if an address was changed, false if not
+     */
+    bool 		CheckROCAddresses();
 	
 private:
 	std::string 				addressname;

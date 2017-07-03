@@ -427,3 +427,26 @@ void ReadoutCell::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
     if(triggered)
         buf->NoTriggerRemoveHits(timestamp, sbadout);
 }
+
+bool ReadoutCell::CheckROCAddresses()
+{
+    bool changedanaddress = false;
+    std::vector<int> usedaddresses;
+    for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
+    {
+        auto addrit = find(usedaddresses.begin(), usedaddresses.end(), it->GetAddress());
+        while(addrit != usedaddresses.end())
+        {
+            it->SetAddress(it->GetAddress() + 1);
+            addrit = find(usedaddresses.begin(), usedaddresses.end(), it->GetAddress());
+
+            changedanaddress = true;
+        }
+
+        usedaddresses.push_back(it->GetAddress());
+
+        changedanaddress |= it->CheckROCAddresses();
+    }
+
+    return changedanaddress;
+}
