@@ -789,6 +789,14 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 		return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
 	else
 	{
+		//write rejected hits to the lost hit file:
+		Hit h = logic->ReadHit(cell, timestamp, out);
+		if(h.is_valid())
+		{
+			h.AddReadoutTime("LogicReject", timestamp);
+			*out << h.GenerateString() << std::endl;
+		}
+
 		if(!cell->GetZeroSuppression())
 			return cell->buf->InsertHit(Hit());
 		else

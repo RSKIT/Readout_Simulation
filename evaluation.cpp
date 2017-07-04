@@ -257,6 +257,53 @@ TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
     return graph;
 }
 
+int Evaluation::FilterEvents(std::string field, int operation, double value, int input)
+{
+    std::vector<Hit>* vec = GetVectorPointer(input);
+    //return error on wrong input parameter:
+    if(vec == 0)
+        return -1;
+
+    std::vector<Hit>::iterator it = vec->begin();
+                        //reverse iterator to save computing time (delete from vector)
+    while(it != vec->end())
+    {
+        double lvalue = GetDoubleValue(*it, field);
+        bool keep = false;
+        switch(operation)
+        {
+            case(Smaller):
+                keep = (lvalue < value);
+                break;
+            case(SmallerEqual):
+                keep = (lvalue <= value);
+                break;
+            case(Equal):
+                keep = (lvalue == value);
+                break;
+            case(NotEqual):
+                keep = (lvalue != value);
+                break;
+            case(Larger):
+                keep = (lvalue > value);
+                break;
+            case(LargerEqual):
+                keep = (lvalue >= value);
+                break;
+            default:
+                keep = true;
+                break;
+        }
+
+        if(!keep)
+            it = vec->erase(it);
+        else
+            ++it;
+    }
+
+    return vec->size();
+}
+
 TCanvas* Evaluation::Plot(TGraph* graph, std::string xtitle, std::string ytitle, 
                             std::string options, TLegend* leg, std::string legtitle)
 {

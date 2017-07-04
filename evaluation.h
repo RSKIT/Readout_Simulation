@@ -54,6 +54,13 @@ class Evaluation
 public:
     enum source {Input = 0, Pass = 1, Fail = 2};
 
+    enum operations {Smaller        =  1,
+                     SmallerEqual   =  2,
+                     Equal          =  3,
+                     NotEqual       =  4,
+                     Larger         =  5,
+                     LargerEqual    =  6};
+
     Evaluation();
 
     /**
@@ -221,6 +228,20 @@ public:
      * @return               - a TGraph containing the integration curve
      */
     TGraph* GenerateIntegrationCurve(TH1* histogram);
+
+    /**
+     * @brief removes Hits from a Hit vector using a logic operation on any property of the hit
+     *             objects. The hit is kept when the logic operation returns true.
+     * @details
+     * 
+     * @param field          - the property of the hit object to use (for options see 
+     *                            GetDoubleValue())
+     * @param operation      - the logic operation to use (for options see enum operations)
+     * @param value          - the right value of the logic operation
+     * @param input          - the vector to use (Input, Pass, Fail)
+     * @return               - the number of hits left in the vector
+     */
+    int FilterEvents(std::string field, int operation, double value, int input = Pass);
 
     /**
      * @brief takes an object, formats it and generates the plot in a new window
