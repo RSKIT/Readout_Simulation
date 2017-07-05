@@ -16,7 +16,8 @@ The configurable parts include:
 
 For the characteristics of the deadtime and the time walk q-splines are used. For this, Tino Kluge's implementation (see https://github.com/ttk592/spline/) is used.
 
-For the analysis of the data the Evaluation class (evaluation.h/.cpp) is provided intended for use in the ROOT data analysis framework. An example script if provided in test.cpp.
+For the analysis of the data, the Evaluation class (evaluation.h/.cpp) is provided intended for use in the ROOT data analysis framework.
+An example script is provided in test.cpp.
 
 For structuring the output of the simulation, all files (except the spline outputs) can be (also or exclusively) written to a zip archive. For this, the miniz.c library is used with a C++ wrapper written by Thomas Fussel (see https://github.com/tfussell/miniz-cpp).
 
