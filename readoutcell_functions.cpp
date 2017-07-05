@@ -472,7 +472,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
-		Hit ph = it->LoadHit(timestamp);
+		Hit ph = it->LoadHit(timestamp, out);
 
 		if(ph.is_valid()) // && ph.is_available(timestamp))
 		{
@@ -516,7 +516,15 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 
 	if(h.is_valid() || !cell->zerosuppression)
 	{
-		return cell->buf->InsertHit(h);
+		if(cell->buf->InsertHit(h))
+			return true;
+		else
+		{
+			h.AddReadoutTime("BufferFull", timestamp);
+			if(out != NULL)
+				*out << h.GenerateString() << std::endl;
+			return false;
+		}
 	}
 	else
 		return false;
@@ -707,7 +715,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 		{
 			if(pix->HitIsValid())
 			{
-				h = pix->LoadHit(timestamp);
+				h = pix->LoadHit(timestamp, out);
 
 				if(cell->GetNumPixels() > 1)
 				{

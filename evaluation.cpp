@@ -264,6 +264,9 @@ int Evaluation::FilterEvents(std::string field, int operation, double value, int
     if(vec == 0)
         return -1;
 
+    std::vector<Hit> newvec;
+    newvec.reserve(vec->size());
+
     std::vector<Hit>::iterator it = vec->begin();
                         //reverse iterator to save computing time (delete from vector)
     while(it != vec->end())
@@ -295,11 +298,15 @@ int Evaluation::FilterEvents(std::string field, int operation, double value, int
                 break;
         }
 
-        if(!keep)
-            it = vec->erase(it);
-        else
-            ++it;
+        if(keep)
+            newvec.push_back(*it);
+        ++it;
     }
+
+    vec->clear();
+    vec->reserve(newvec.size());
+
+    vec->insert(vec->end(), newvec.begin(), newvec.end());
 
     return vec->size();
 }
@@ -524,6 +531,16 @@ int Evaluation::SeparateHits(std::map<int, int>& encoding, std::string addrname,
     vec->insert(vec->end(), hits.begin(), hits.end());
 
     return vec->size();
+}
+
+std::map<int, int> Evaluation::GetBinaryEncoding(int pixels)
+{
+    std::map<int, int> encode;
+
+    for(int i=0;i<pixels;++i)
+        encode.insert(std::make_pair(i+1,1<<i));
+
+    return encode;
 }
 
 int Evaluation::LoadHits(std::vector<Hit>* vec, std::string filename)

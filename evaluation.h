@@ -324,6 +324,16 @@ public:
      */
     int              SeparateHits(std::map<int, int>& encoding, std::string addrname = "PixelDiode",
                                     int input = Pass);
+
+    /**
+     * @brief generates a map for 1 Bit per Pixel encoding. Indices from 1 to `pixels` are
+     *             associated with the bits in a binary number.
+     * @details
+     * 
+     * @param pixels         - the number of pixels to prepare for
+     * @return               - the map for the separation of hits
+     */
+    static std::map<int, int> GetBinaryEncoding(int pixels);
 private:
     /**
      * @brief opens the input file and loads the Hit objects contained into the passed vector

@@ -131,9 +131,10 @@ public:
 	 * @details
 	 * 
 	 * @param timestamp      - the current timestamp at which the readout happens
+	 * @param sbadout        - output stringstream for logging lost hits
 	 * @return               - the hit object if it was valid and available or an empty hit object
 	 */
-	Hit 		GetHit(int timestamp = -1);
+	Hit 		GetHit(int timestamp = -1, std::stringstream* sbadout = 0);
 	/**
 	 * @brief places a hit into the pixel after checking that it is not occupied
 	 * @details
@@ -156,10 +157,11 @@ public:
 	 * @details 
 	 * 
 	 * @param timestamp      - current timestamp at which the readout is to occur
+	 * @param sbadout        - output stringstream for logging lost hits
 	 * @return               - the hit object stored inside the pixel, or an empty/invalid hit
 	 *                            object if it was empty
 	 */	
-	Hit 		LoadHit(int timestamp);
+	Hit 		LoadHit(int timestamp, std::stringstream* sbadout = 0);
 
 	/**
 	 * @brief provides information about the dead time.
