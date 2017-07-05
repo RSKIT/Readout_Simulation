@@ -791,16 +791,21 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
 	else if(regacc.what.compare("readcell") == 0)
 	{
 	    bool result = false;
+    	int numread = ((regacc.value <= 0)?1:regacc.value);	
+    			//number of times to read from the uppermost readout cell
         for (auto &it: rocvector)
         {
-            Hit hit = it.GetHit(timestamp);  //equivalent to ReadCell()
-            if(hit.is_valid())
+            for(int i = 0; i < numread; ++i)
             {
-            	hit.AddReadoutTime(addressname, timestamp);
-            	SaveHit(hit, false);
-            	IncrementCounter("readhits");
-            	result = true;
-            }
+	            Hit hit = it.GetHit(timestamp);  //equivalent to ReadCell()
+	            if(hit.is_valid())
+	            {
+	            	hit.AddReadoutTime(addressname, timestamp);
+	            	SaveHit(hit, false);
+	            	IncrementCounter("readhits");
+	            	result = true;
+	            }
+        	}
         }
 
         SetCounter("readcell", (result)?1:0);
