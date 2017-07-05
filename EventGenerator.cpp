@@ -352,7 +352,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 
 	//generate the particle tracks:
 	std::vector<particletrack> particles;
-	particles.resize(numevents);
+	particles.reserve(numevents);
 	std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
 	if(numthreads < 0)
 		numthreads = threads;
