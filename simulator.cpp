@@ -1235,7 +1235,7 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 
 	error = parentnode->QueryIntAttribute("n", &numelements);
 	if(error != tinyxml2::XML_NO_ERROR)
-		numelements = 0;
+		numelements = -1;	//set to -1 if missing and reserve 0 for shift of the contents
 	shift = LoadTCoord(parentnode);
 
 	Pixel pix;
@@ -1252,6 +1252,12 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 				pix.SetAddress(parentcell->GetNumPixels());
 			if(globalshift != TCoord<double>::Null)
 				pix.SetPosition(pix.GetPosition() + globalshift);
+			//shifting for single instance:
+			if(numelements == 0)
+			{
+				pix.SetPosition(pix.GetPosition() + shift);
+				parentcell->AddPixel(pix);
+			}
 			for(int i = 0; i < numelements; ++i)
 			{
 				parentcell->AddPixel(pix);
@@ -1267,7 +1273,13 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 				roc.SetAddress(parentcell->GetNumROCs());
 			if(globalshift != TCoord<double>::Null)
 				roc.ShiftCell(globalshift);
-			for(int i = 0; i< numelements; ++i)
+			//shifting for single instance:
+			if(numelements == 0)
+			{
+				roc.ShiftCell(shift);
+				parentcell->AddROC(roc);
+			}
+			for(int i = 0; i < numelements; ++i)
 			{
 				parentcell->AddROC(roc);
 				roc.ShiftCell(shift);
@@ -1277,6 +1289,10 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		else if(name.compare("NTimes") == 0)
 		{
 			TCoord<double> thisshift = globalshift;
+
+			//shifting for single instance:
+			if(numelements == 0)
+				LoadNPixels(parentcell, elem, pixelsize, thisshift + shift);
 
 			for(int i = 0; i < numelements; ++i)
 			{
