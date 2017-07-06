@@ -517,7 +517,13 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 	if(h.is_valid() || !cell->zerosuppression)
 	{
 		if(cell->buf->InsertHit(h))
+		{
+			//remove hits when written to a buffer:
+			for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+				it->ClearHit(false);
+
 			return true;
+		}
 		else
 		{
 			h.AddReadoutTime("BufferFull", timestamp);
@@ -781,6 +787,15 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 	return h;
 }
 
+void PixelLogic::ClearHit(ReadoutCell* cell, bool resetcharge)
+{
+	for(auto& it : pixels)
+	{
+		Pixel* pix = cell->GetPixelAddress(it);
+		pix->ClearHit(resetcharge);
+	}
+}
+
 ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0)
 {
 
@@ -794,7 +809,23 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 		return false;
 	}
 	if(logic->Evaluate(cell, timestamp))
-		return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
+	{
+		Hit h = logic->ReadHit(cell, timestamp, out);
+		if(cell->buf->InsertHit(h))
+		{
+			logic->ClearHit(cell, false);
+			return true;
+		}
+		else
+		{
+			h.AddReadoutTime("BufferFull", timestamp);
+			if(out != NULL)
+				*out << h.GenerateString() << std::endl;
+			return false;
+		}
+		
+		//return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
+	}
 	else
 	{
 		//write rejected hits to the lost hit file:

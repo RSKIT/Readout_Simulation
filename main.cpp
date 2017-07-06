@@ -31,9 +31,6 @@
 #include "EventGenerator.h"
 #include "simulator.h"
 
-const int pixsizex = 50;
-const int pixsizey = 150;
-const int pixsizez = 30;
 
 int main(int argc, char** argv)
 {

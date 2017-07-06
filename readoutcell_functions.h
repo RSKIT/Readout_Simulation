@@ -403,6 +403,14 @@ public:
 	 *                            hit to be read out
 	 */
 	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
+	/**
+	 * @brief removes hits from the pixels used in the PixelLogic object
+	 * @details
+	 * 
+	 * @param cell          - the readout cell to with the pixels belong
+	 * @param resetcharge   - determines whether the charge is kept (false), or not
+	 */
+	void ClearHit(ReadoutCell* cell, bool resetcharge);
 private:
 	std::vector<PixelLogic*> sublogics;
 	std::vector<int> pixels;

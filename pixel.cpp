@@ -199,7 +199,7 @@ void Pixel::ClearHit(bool resetcharge)
 Hit Pixel::LoadHit(int timestamp, std::stringstream* sbadout)
 {
 	Hit h = GetHit(timestamp, sbadout);
-	ClearHit(false);
+	//ClearHit(false);
 	return h;
 }
 
