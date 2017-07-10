@@ -25,7 +25,7 @@
 import subprocess
 
 # Compiler flags:
-flags = ["-std=c++11", "-pthread"] #, "-g"]
+flags = ["-std=c++11", "-pthread", "-O2"] #, "-g"]
 
 # Get and add the compiler flags for ROOT integration:
 rootflags = subprocess.check_output("root-config --cflags", shell=True)

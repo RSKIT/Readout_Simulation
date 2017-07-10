@@ -26,7 +26,8 @@
 ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
-    rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false)
+    rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false), 
+    position(TCoord<double>::Null), size(TCoord<double>::Null)
 {
 	buf          = new FIFOBuffer(this);
     rocreadout   = new NoFullReadReadout(this);
@@ -39,7 +40,7 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
                             int configuration) : hitqueue(std::vector<Hit>()),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
         buf(0), rocreadout(0), pixelreadout(0), zerosuppression(true), readoutdelay(0), 
-        triggered(false)
+        triggered(false), position(TCoord<double>::Null), size(TCoord<double>::Null)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -52,7 +53,7 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         address(roc.address), hitqueue(roc.hitqueue), hitqueuelength(roc.hitqueuelength),
         pixelvector(roc.pixelvector), rocvector(roc.rocvector), buf(0), rocreadout(0), 
         pixelreadout(0), zerosuppression(roc.zerosuppression), readoutdelay(roc.readoutdelay),
-        triggered(roc.triggered)
+        triggered(roc.triggered), position(roc.position), size(roc.size)
 {
     SetConfiguration(roc.configuration);
 
@@ -187,6 +188,26 @@ void ReadoutCell::SetHitqueuelength(int hitqueuelength)
         this->hitqueuelength = hitqueuelength;
 }
 
+TCoord<double> ReadoutCell::GetPosition()
+{
+    return position;
+}
+
+void ReadoutCell::SetPosition(TCoord<double> newposition)
+{
+    position = newposition;
+}
+
+TCoord<double> ReadoutCell::GetSize()
+{
+    return size;
+}
+
+void ReadoutCell::SetSize(TCoord<double> newsize)
+{
+    size = newsize;
+}
+
 
 bool ReadoutCell::AddHit(Hit hit, int timestamp)
 {
@@ -227,6 +248,26 @@ Pixel* ReadoutCell::GetPixelAddress(int address)
 void ReadoutCell::AddPixel(Pixel pixel)
 {
 	pixelvector.push_back(pixel);
+
+    if(position == TCoord<double>::Null && size == TCoord<double>::Null)
+    {
+        position = pixel.GetPosition();
+        size     = pixel.GetSize();
+    }
+    else
+    {
+        //update position and size:
+        for(int i=0;i<3;++i)
+        {
+            if(position[i] > pixel.GetPosition()[i])
+            {
+                size[i] += position[i] - pixel.GetPosition()[i];
+                position[i] = pixel.GetPosition()[i];
+            }
+            if(position[i] + size[i] < pixel.GetPosition()[i] + pixel.GetSize()[i])
+                size[i] = pixel.GetPosition()[i] - position[i] + pixel.GetSize()[i];
+        }
+    }
 }
 
 void ReadoutCell::ClearPixelVector()
@@ -247,6 +288,71 @@ std::vector<Pixel>::iterator ReadoutCell::GetPixelsBegin()
 std::vector<Pixel>::iterator ReadoutCell::GetPixelsEnd()
 {
 	return pixelvector.end();
+}
+
+bool ReadoutCell::UpdateSize()
+{
+    //old values as reference whether something changed:
+    TCoord<double> oldposition = position;
+    TCoord<double> oldsize     = size;
+
+    //try to load first values from the subordinate objects:
+    if(pixelvector.size() > 0)
+    {
+        position = pixelvector.begin()->GetPosition();
+        size     = pixelvector.begin()->GetSize();
+    }
+    else if(rocvector.size() > 0)
+    {
+        rocvector.begin()->UpdateSize();
+        position = rocvector.begin()->GetPosition();
+        size     = rocvector.begin()->GetSize();
+        //if first readout cell is empty, fall back on impossible parameters:
+        if(position == TCoord<double>::Null && size == TCoord<double>::Null)
+        {
+            position = TCoord<double>{1e10,1e10,1e10};
+            size = TCoord<double>{-1e10,-1e10,-1e10};
+        }
+    }
+    else    //a readout cell without contents does not have an extent
+    {
+        position = TCoord<double>::Null;
+        size     = TCoord<double>::Null;
+    }
+
+    for(auto& it : rocvector)
+    {
+        it.UpdateSize();
+        if(it.size.volume() == 0)
+            continue;
+
+        for(int i = 0; i < 3; ++i)
+        {
+            if(it.position[i] < position[i])
+            {
+                size[i] += position[i] - it.position[i];
+                position[i] = it.position[i];
+            }
+            if(it.position[i] + it.size[i] > position[i] + size[i])
+                size[i] = it.position[i] - position[i] + it.size[i];
+        }
+    }
+
+    for(auto& it : pixelvector)
+    {
+        for(int i = 0; i < 3; ++i)
+        {
+            if(it.GetPosition()[i] < position[i])
+            {
+                size[i] += position[i] - it.GetPosition()[i];
+                position[i] = it.GetPosition()[i];
+            }
+            if(it.GetPosition()[i] + it.GetSize()[i] > position[i] + size[i])
+                size[i] = it.GetPosition()[i] - position[i] + it.GetSize()[i];
+        }
+    }
+
+    return ((position == oldposition) && (size == oldsize));
 }
 
 ReadoutCell* ReadoutCell::GetROC(int index)
@@ -270,6 +376,28 @@ ReadoutCell* ReadoutCell::GetROCAddress(int address)
 void ReadoutCell::AddROC(ReadoutCell readoutcell)
 {
 	rocvector.push_back(readoutcell);
+
+    //Update position and size:
+    readoutcell.UpdateSize();
+
+    if(position == TCoord<double>::Null && size == TCoord<double>::Null)
+    {
+        position = readoutcell.GetPosition();
+        size     = readoutcell.GetSize();
+    }
+    else
+    {
+        for(int i = 0; i < 3; ++i)
+        {
+            if(readoutcell.position[i] < position[i])
+            {
+                size[i] += position[i] - readoutcell.position[i];
+                position[i] = readoutcell.position[i];
+            }
+            if(readoutcell.position[i] + readoutcell.size[i] > position[i] + size[i])
+                size[i] = readoutcell.position[i] - position[i] + readoutcell.size[i];
+        }        
+    }
 }
 
 void ReadoutCell::ClearROCVector()
@@ -398,12 +526,13 @@ std::string ReadoutCell::PrintROC(std::string space)
 	std::stringstream s("");
 
 	s << space << "ROC (" << addressname << "): " << address << " contents:\n";
+    s << space << " ( Position: " << position << "; Size: " << size << " )\n";
 
 	for(auto it : rocvector)
 		s << it.PrintROC(space + " ");
 
 	for(auto it : pixelvector)
-		s << space << " " << "Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
+		s << space << " Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
 			<< "; Size: " << it.GetSize() << " Thr: " << it.GetThreshold() << "; Eff: "
             << it.GetEfficiency() << std::endl;
 
@@ -417,6 +546,8 @@ void ReadoutCell::ShiftCell(TCoord<double> distance)
 
     for(auto it = pixelvector.begin(); it != pixelvector.end(); ++it)
         it->SetPosition(it->GetPosition() + distance);
+
+    UpdateSize();
 }
 
 void ReadoutCell::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)

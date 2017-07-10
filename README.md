@@ -24,3 +24,6 @@ For structuring the output of the simulation, all files (except the spline outpu
 In order to use output of physics simulations, the data analysis framework ROOT is used to access the data. It is available at its [CERN Website](https://root.cern.ch).
 
 It was tested successfully on Ubuntu 16.04LTS compiled with g++ 5.4.0 and ROOT 5.34/36. Some information is collected on the [Wiki page](https://github.com/RSKIT/Readout_Simulation/wiki).
+
+At the moment, we are looking for BETA testers for debugging and identifying missing features to deliver a complete system. 
+If You want to use the software and encounter a problem You can send us an e-mail or add an issue with the label "help wanted" - or the corresponding other label.

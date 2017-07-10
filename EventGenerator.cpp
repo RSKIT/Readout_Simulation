@@ -1391,6 +1391,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
 													std::vector<ChargeDistr>& charge,
+													TCoord<double> chargestart,
+													TCoord<double> chargeend,
 													TCoord<double> granularity, 
 													TCoord<double> detectorsize,
 													bool print)
@@ -1406,8 +1408,13 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		//scan sub-cells:
 		for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); ++it)
 		{
-			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, granularity,
-															detectorsize);
+			//do not evaluate readout cells which do not contain charge:
+			if(OverlapVolume(chargestart, chargeend, it->GetPosition(), 
+								it->GetPosition() + it->GetSize()).volume() == 0)
+				continue;
+
+			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, chargestart,
+															chargeend, granularity, detectorsize);
 
 			globalhits.insert(globalhits.end(), localhits.begin(), localhits.end());
 		}
@@ -1469,6 +1476,42 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 
 	for(auto it = begin; it != end; ++it)
 	{
+		//== calculate the extent of the charge distribution ==
+		TCoord<double> start = TCoord<double>{1e10,1e10,1e10};
+		TCoord<double> end   = TCoord<double>{-1e10,-1e10,-1e10};
+
+		//get the maximum index fitting into the defined detector for folding back the data:
+		int xfold = detectorsize[0] / granularity[0];
+		int yfold = detectorsize[1] / granularity[1];
+
+		int xmax = 8000 * granularity[0] / detectorsize[0];
+		int ymax = 8000 * granularity[1] / detectorsize[1];
+
+		xmax = (xmax * detectorsize[0]) / granularity[0];
+		ymax = (ymax * detectorsize[1]) / granularity[1];
+
+		//loop over the charge contributions:
+		for(auto& itc : it->second)
+		{
+			//skip data which will not be used (see GetCharge()):
+			if(itc.etaindex > xmax || itc.phiindex > ymax)
+				continue;
+
+			TCoord<double> cstart = {granularity[0]*(itc.etaindex % xfold),
+									 granularity[1]*(itc.phiindex % yfold),
+									 0};
+			TCoord<double> cend   = cstart + granularity;
+
+			for(int i = 0; i < 3; ++i)
+			{
+				if(start[i] > cstart[i])
+					start[i] = cstart[i];
+				if(end[i] < cend[i])
+					end[i] = cend[i];
+			}
+		}
+		//== end charge distribution size calculation ==
+
 		hittemplate.SetTimeStamp((*times)[it->first]);
 		hittemplate.SetEventIndex(eventid);
 		++eventid;
@@ -1487,11 +1530,21 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 		//loop all detectors
 		for(auto& dit : itself->detectors)
 		{
+			//do not scan detectors with no overlap with the charge distribution:
+			if(OverlapVolume(start, end, dit->GetPosition(), 
+					dit->GetPosition() + dit->GetSize()).volume() == 0)
+				continue;
+
 			//loop the ROCs in the current detector:
 			for(auto rit = dit->GetROCVectorBegin(); rit != dit->GetROCVectorEnd(); ++rit)
 			{
+				//skip readout cells which do not contain charge from this event:
+				if(OverlapVolume(start, end, rit->GetPosition(), 
+						rit->GetPosition() + rit->GetSize()).volume() == 0)
+					continue;
+
 				localhits = itself->ScanReadoutCell(hittemplate, &(*rit), it->second, 
-													granularity, detectorsize, false);
+													start, end, granularity, detectorsize, false);
 
 				//copy the pixel hits to the output vector:
 				pixelhits->insert(pixelhits->end(), localhits.begin(), localhits.end());

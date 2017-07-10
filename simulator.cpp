@@ -495,11 +495,11 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	}
 
 	//save event generator output to the archive (writing out to file was already done 
-	//  if was requested)
+	//  if it was requested)
 	if(archivename != "")
 	{
 		std::string filename = eventgenerator.GetOutputFileName();
-		//check whether the 
+		//check whether the file exists already in the archive
 		if(oldarchive.has_file(filename))
 		{
 			std::stringstream s("");
@@ -510,6 +510,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		}
 		else
 			archive.writestr(eventgenerator.GetOutputFileName(), eventgenerator.GenerateLog());
+
+		eventgenerator.ClearLog();
 	}
 
 	//count the signals read out from the detectors:
@@ -540,7 +542,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		if(!archiveonly)
 		{
 			(*it)->FlushOutput();
+			(*it)->ClearOutput();
 			(*it)->FlushBadOutput();
+			(*it)->ClearBadOutput();
 		}
 		dethitcounter += (*it)->GetHitCounter();
 	}
@@ -552,8 +556,10 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
 			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
+	//save the log file:
 	if(logfile != "")
 	{
+		//generate log content:
 		if(printdetector)
 			logcontent << PrintDetectors() << std::endl;
 		logcontent << "Simulated " << timestamp << " timestamps" << std::endl;
@@ -566,6 +572,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		logcontent << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
 				   << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
+		//save to archive:
 		if(archivename != "")
 		{
 			if(oldarchive.has_file(logfile.c_str()))
@@ -578,6 +585,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				archive.writestr(logfile, logcontent.str());
 		}
 
+		//save to normal file:
 		if(!archiveonly)
 		{
 			std::fstream logf;
@@ -590,6 +598,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		}
 	}
 
+	//add the XML configuration file to the archive:
 	if(archivename != "")
 	{
 		//write the input XML file into the archive:
@@ -625,9 +634,11 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				archive.writestr(it, oldarchive.read(it));
 		}
 
-		//save the archive:
-		archive.save(archivename);
 	}
+
+	//save the archive:
+	if(archivename != "")
+		archive.save(archivename);
 }
 
 void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixelsize)

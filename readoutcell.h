@@ -161,6 +161,23 @@ public:
 	 */
     int			GetHitqueuelength();
 	void		SetHitqueuelength(int hitqueuelength);
+
+	/**
+	 * @brief provides the position of the readout cell
+	 * @details
+	 * @return               - a vector containing the position of the corner at smaller 
+	 * 							  coordinates
+	 */	
+	TCoord<double> GetPosition();
+	void        SetPosition(TCoord<double> newposition);
+	/**
+	 * @brief provides the size of the readout cell
+	 * @details
+	 * @return               - a vector containing the lengths of the readout cell along the 3
+	 *                            coordinate axes
+	 */
+	TCoord<double> GetSize();
+	void        SetSize(TCoord<double> newsize);
 	
 	/**
 	 * @brief places a new hit in this structure
@@ -233,6 +250,12 @@ public:
 	 */
 	std::vector<Pixel>::iterator GetPixelsBegin();
 	std::vector<Pixel>::iterator GetPixelsEnd();
+	/**
+	 * @brief recalculates position and size of the readout cell
+	 * @details
+	 * @return               - true if changes were made, false if not
+	 */
+	bool UpdateSize();
 	
 	/**
 	 * @brief returns a pointer to a subordinate readoutcell
@@ -382,6 +405,9 @@ private:
 	std::vector<Hit> 			hitqueue;
 	std::vector<Pixel> 			pixelvector;
 	std::vector<ReadoutCell> 	rocvector;
+
+	TCoord<double> 				position;
+	TCoord<double>				size;
 
 	//function objects to change the behaviour of the Readout Cell:
 	ROCBuffer*		buf;			//readint/writing to the buffer

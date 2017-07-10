@@ -420,6 +420,7 @@ private:
     int stopdelay;
 
     std::string inputfile;
+    std::stringstream inputfilecontent;
 
     std::string logfile;	//name of the file to write logging texts to
     std::stringstream logcontent;
@@ -428,7 +429,6 @@ private:
     std::string archivename;	//filename for the archive to save the data to
     bool archiveonly;			//determines whether the data is also saved using normal files or not
 
-    std::stringstream inputfilecontent;
 };
 
 
