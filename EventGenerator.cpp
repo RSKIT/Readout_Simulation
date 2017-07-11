@@ -454,8 +454,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 				clusterparts.push_back(it);
 
 			if(writeout)
-				fout << outputs[i].rdbuf();
-			genoutput << outputs[i].rdbuf();
+				fout << outputs[i].str();
+			genoutput << outputs[i].str();
 		}
 	}
 
@@ -1372,10 +1372,10 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 			if(fout.is_open())
 			{
-				fout << (outputs[i]).rdbuf();
+				fout << (outputs[i]).str();
 				fout.flush();
 			}
-			genoutput << outputs[i].rdbuf();
+			genoutput << outputs[i].str();
 			genoutput.flush();
 		}
 	}

@@ -527,15 +527,15 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				  << (*it)->GenerateOutput();
 				archive.writestr((*it)->GetOutputFile(), s.str());
 
-				if(archiveonly)
-					(*it)->ClearOutput();
+				//if(archiveonly)
+				//	(*it)->ClearOutput();
 			}
 			else
 			{
 				archive.writestr((*it)->GetOutputFile(), (*it)->GenerateOutput());
 
-				if(archiveonly)
-					(*it)->ClearOutput();
+				//if(archiveonly)
+				//	(*it)->ClearOutput();
 			}
 
 			if(oldarchive.has_file((*it)->GetBadOutputFile()))
@@ -545,15 +545,15 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				  << (*it)->GenerateBadOutput();
 				archive.writestr((*it)->GetBadOutputFile(), s.str());
 
-				if(archiveonly)
-					(*it)->ClearBadOutput();
+				//if(archiveonly)
+				//	(*it)->ClearBadOutput();
 			}
 			else
 			{
 				archive.writestr((*it)->GetBadOutputFile(), (*it)->GenerateBadOutput());
 
-				if(archiveonly)
-					(*it)->ClearBadOutput();
+				//if(archiveonly)
+				//	(*it)->ClearBadOutput();
 			}
 		}
 		if(!archiveonly)
