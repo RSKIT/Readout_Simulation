@@ -490,7 +490,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 
 			if(cell->GetNumPixels() > 1)
 			{
-				ph.AddReadoutTime("merged", timestamp);
+				ph.AddReadoutTime("merged", timestamp);	//for invalid hits this line should be not reachable
 				if(out != 0)
 					*out << ph.GenerateString() << std::endl;
 			}
@@ -517,20 +517,17 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 	if(h.is_valid() || !cell->zerosuppression)
 	{
 		if(cell->buf->InsertHit(h))
-		{
-			//remove hits when written to a buffer:
-			for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
-				it->ClearHit(false);
-
 			return true;
-		}
-		else
+		else if(h.is_valid())
 		{
 			h.AddReadoutTime("BufferFull", timestamp);
 			if(out != NULL)
 				*out << h.GenerateString() << std::endl;
+
 			return false;
 		}
+		else
+			return false;
 	}
 	else
 		return false;
@@ -664,7 +661,7 @@ bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
 			goodresult = false;
 		case(Or):
 			for(auto& it : pixels)
-				if(cell->GetPixelAddress(it)->HitIsValid())
+				if(!cell->GetPixelAddress(it)->IsEmpty(timestamp))
 					return goodresult;
 			for(auto& it : sublogics)
 				if(it->Evaluate(cell, timestamp))
@@ -675,7 +672,7 @@ bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
 			goodresult = false;
 		case(And):
 			for(auto& it : pixels)
-				if(!cell->GetPixelAddress(it)->HitIsValid())
+				if(cell->GetPixelAddress(it)->IsEmpty(timestamp))
 					return !goodresult;
 			for(auto& it : sublogics)
 				if(!it->Evaluate(cell, timestamp))
@@ -687,7 +684,7 @@ bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
 		{
 			int resultcounter = 0;
 			for(auto& it : pixels)
-				if(cell->GetPixelAddress(it)->HitIsValid())
+				if(!cell->GetPixelAddress(it)->IsEmpty(timestamp))
 					++resultcounter;
 			for(auto& it : sublogics)
 				if(it->Evaluate(cell, timestamp))
@@ -700,7 +697,7 @@ bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
 		}
 		case(Not):
 			for(auto& it : pixels)
-				return !cell->GetPixelAddress(it)->HitIsValid();
+				return cell->GetPixelAddress(it)->IsEmpty(timestamp);
 			for(auto& it : sublogics)
 				return !it->Evaluate(cell, timestamp);
 			return true;	//complement of nothing (i.e. false in this case) is true
@@ -738,7 +735,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 		}
 		else if(!pix->IsEmpty(timestamp))
 		{
-			Hit ph = pix->LoadHit(timestamp);
+			Hit ph = pix->LoadHit(timestamp, out);
 			if(out != 0)
 			{
 				Hit saving;
@@ -776,7 +773,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 
 		Pixel* pix = cell->GetPixelAddress(it);
 
-		Hit ph = pix->LoadHit(timestamp);
+		Hit ph = pix->LoadHit(timestamp, out);
 		if(ph.is_valid() && out != 0)
 		{
 			ph.AddReadoutTime("ReferencePixelHitDetected", timestamp);
@@ -811,20 +808,21 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 	if(logic->Evaluate(cell, timestamp))
 	{
 		Hit h = logic->ReadHit(cell, timestamp, out);
-		if(cell->buf->InsertHit(h))
+		if(h.is_valid() || !cell->zerosuppression)
 		{
-			logic->ClearHit(cell, false);
-			return true;
+			if(cell->buf->InsertHit(h))
+				return true;
+			else if(h.is_valid())	//already tested in surrounding if()
+			{
+				h.AddReadoutTime("BufferFull", timestamp);
+				if(out != NULL)
+					*out << h.GenerateString() << std::endl;
+
+				return false;
+			}
+			else
+				return false;
 		}
-		else
-		{
-			h.AddReadoutTime("BufferFull", timestamp);
-			if(out != NULL)
-				*out << h.GenerateString() << std::endl;
-			return false;
-		}
-		
-		//return cell->buf->InsertHit(logic->ReadHit(cell, timestamp, out));
 	}
 	else
 	{

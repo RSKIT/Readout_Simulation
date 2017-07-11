@@ -526,18 +526,35 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				s << oldarchive.read((*it)->GetOutputFile()) << std::endl
 				  << (*it)->GenerateOutput();
 				archive.writestr((*it)->GetOutputFile(), s.str());
+
+				if(archiveonly)
+					(*it)->ClearOutput();
 			}
 			else
+			{
 				archive.writestr((*it)->GetOutputFile(), (*it)->GenerateOutput());
+
+				if(archiveonly)
+					(*it)->ClearOutput();
+			}
+
 			if(oldarchive.has_file((*it)->GetBadOutputFile()))
 			{
 				std::stringstream s("");
 				s << oldarchive.read((*it)->GetBadOutputFile()) << std::endl
 				  << (*it)->GenerateBadOutput();
 				archive.writestr((*it)->GetBadOutputFile(), s.str());
+
+				if(archiveonly)
+					(*it)->ClearBadOutput();
 			}
 			else
+			{
 				archive.writestr((*it)->GetBadOutputFile(), (*it)->GenerateBadOutput());
+
+				if(archiveonly)
+					(*it)->ClearBadOutput();
+			}
 		}
 		if(!archiveonly)
 		{
@@ -596,6 +613,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				logf.close();
 			}			
 		}
+
+		logcontent.str("");
 	}
 
 	//add the XML configuration file to the archive:
@@ -635,6 +654,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		}
 
 	}
+
+	oldarchive.reset();
 
 	//save the archive:
 	if(archivename != "")
