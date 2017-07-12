@@ -1518,7 +1518,7 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 		++eventid;
 
 		//log the event header:
-		*output << "# Event " << it->first << std::endl
+		*output << "# Event " << eventid << std::endl  //it->first << std::endl
 		        << "# Time " << (*times)[it->first] << std::endl;
 		if((*triginfos)[it->first])
 		{
