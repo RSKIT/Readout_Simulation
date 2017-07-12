@@ -234,7 +234,7 @@ TH1* Evaluation::GenerateDelayHistogram(std::string firsttime, std::string secon
     return hist;
 }
 
-TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
+TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram, double normalise)
 {
     TGraph* graph = new TGraph(0);
 
@@ -250,9 +250,12 @@ TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram)
     for(int i = 0; i <= histogram->GetNbinsX()+1; ++i)    //all bins, including the overflow bin
         graph->SetPoint(i, start + i * binwidth, histogram->Integral(0,i));
 
-    double maximum = graph->GetY()[graph->GetN()-1];
-    for(int i = 0; i < graph->GetN(); ++i)
-        graph->SetPoint(i, graph->GetX()[i], graph->GetY()[i]/maximum);
+    if(normalise > 0)
+    {
+        double maximum = graph->GetY()[graph->GetN()-1] / normalise;
+        for(int i = 0; i < graph->GetN(); ++i)
+            graph->SetPoint(i, graph->GetX()[i], graph->GetY()[i]/maximum);
+    }
 
     return graph;
 }
@@ -397,7 +400,8 @@ TCanvas* Evaluation::Plot(TH2* histogram, std::string xtitle, std::string ytitle
         histogram->Draw("COLZ");
 
         gPad->Update();
-        TPaletteAxis *palette = (TPaletteAxis*)histogram->GetListOfFunctions()->FindObject("palette");
+        TPaletteAxis *palette = (TPaletteAxis*)histogram->GetListOfFunctions()
+                                                                ->FindObject("palette");
         palette->SetX2NDC(palette->GetX1NDC()+0.03);
         if(histogram->GetXaxis()->GetBinLowEdge(histogram->GetNbinsX()) < 1e-3)
             palette->SetY1NDC(0.17);    //avoid overlap with the power label of the x axis

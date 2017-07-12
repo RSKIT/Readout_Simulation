@@ -26,10 +26,10 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		seed(0), threads(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
-		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(-1), genoutput(std::stringstream(""))
+		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
+		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream(""))
 {
 	SetSeed(0);
 }
@@ -40,7 +40,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
 		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
-		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1),
+		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1), 
 		genoutput(std::stringstream(""))
 {
 	detectors.push_back(detector);
@@ -52,10 +52,10 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		eventindex(0), chargescale(1), threads(0), inclinationsigma(0.3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
-		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()),
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1),
-		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
-		pointsintwspline(-1), genoutput(std::stringstream(""))
+		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
+		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream(""))
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -290,12 +290,13 @@ void EventGenerator::SortOnTimeStamps()
 void EventGenerator::ClearOnTimeStamps()
 {
 	triggerturnontimes.clear();
+	triggerstate = true;
 }
 
 bool EventGenerator::GetTriggerState(int timestamp)
 {
 	if(triggerturnontimes.size() == 0)
-		return true;
+		return triggerstate;
 
 	if(timestamp == triggerturnontimes.front())
 	{

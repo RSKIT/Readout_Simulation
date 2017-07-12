@@ -225,9 +225,11 @@ public:
      * @details
      * 
      * @param histogram      - the histogram to generate the integration curve from
+     * @param normalise      - the value to which the curve is normalised. For negative values 
+     *                            (<= 0) the normalisation is skipped.
      * @return               - a TGraph containing the integration curve
      */
-    TGraph* GenerateIntegrationCurve(TH1* histogram);
+    TGraph* GenerateIntegrationCurve(TH1* histogram, double normalise = 1);
 
     /**
      * @brief removes Hits from a Hit vector using a logic operation on any property of the hit

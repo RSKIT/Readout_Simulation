@@ -683,7 +683,7 @@ private:
 	double triggerprobability;	//generation probability for a trigger to an event
 	int triggerdelay;			//delay of the trigger signal after the hit implantation
 	int triggerlength;			//length of the trigger signal in timestamps
-	bool triggerstate;			//state of the trigger
+	bool triggerstate;			//state of the trigger, set to true if no triggers are added
 
 	std::list<int> triggerturnontimes;
 	int triggerturnofftime;
