@@ -47,6 +47,8 @@ public:
 	DetectorBase();
 	DetectorBase(const DetectorBase& templ);
 	~DetectorBase();
+
+	virtual void Cleanup();
 	
 	/**
 	 * @brief the identifying string of the address part determining the detector address
@@ -151,22 +153,28 @@ public:
 	 * @param timestamp      - current timestamp that is to be worked on
 	 * @param trigger        - trigger signal for triggered readout. The trigger signal is a
 	 *                            positive signal.
+	 * @param print          - turns on (true) or off printing to terminal
+	 * @param updatepitch    - the number of timestamps per which one time output is generated
 	 * 
 	 * @return               - true if everything was ok. false indicates problems in the state
 	 *                            machine execution and should stop the simulation
 	 */
-    virtual bool        StateMachineCkUp(int timestamp, bool trigger = true);
+    virtual bool        StateMachineCkUp(int timestamp, bool trigger = true,
+    										bool print = false, int updatepitch = 1);
     /**
      * @brief the same as StateMachineCkUp() but for the falling edge of the clock
      * @details
      * 
      * @param timestamp      - current timestamp
      * @param trigger        - trigger signal for triggered readout.
+     * @param print          - turns on (true) or off printing to terminal
+     * @param updatepitch    - the number of timestamps per which one time output is generated
      * 
      * @return               - false indicates problems in the execution and is a signal to stop
      *                            the simulation
      */
-    virtual bool 		StateMachineCkDown(int timestamp, bool trigger = true);
+    virtual bool 		StateMachineCkDown(int timestamp, bool trigger = true,
+    										bool print = false, int updatepitch = 1);
     /**
      * @brief executes StateMachineCkUp() and StateMachineCkDown() at once
      * @details

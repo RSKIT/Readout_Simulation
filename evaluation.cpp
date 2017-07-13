@@ -572,7 +572,7 @@ int Evaluation::LoadHits(std::vector<Hit>* vec, std::string filename)
             Hit h = Hit(std::string(line));
             if(h.is_valid())
             {
-                if(trigger && h.GetEventIndex() == eventindex)
+                if(trigger) // && h.GetEventIndex() == eventindex)
                     h.AddReadoutTime("Trigger", 1);
                 else
                     h.AddReadoutTime("Trigger", 0);
@@ -587,6 +587,7 @@ int Evaluation::LoadHits(std::vector<Hit>* vec, std::string filename)
             std::stringstream s("");
             s << line;
             s >> text >> text;
+
             if(text.compare("Trigger") == 0)
                 trigger = true;
             else if(text.compare("Event") == 0)
@@ -618,7 +619,7 @@ int Evaluation::LoadHits(std::vector<Hit>* vec, std::stringstream& filecontents)
             Hit h = Hit(std::string(line));
             if(h.is_valid())
             {
-                if(trigger && h.GetEventIndex() == eventindex)
+                if(trigger) // && h.GetEventIndex() == eventindex)
                     h.AddReadoutTime("Trigger", 1);
                 else
                     h.AddReadoutTime("Trigger", 0);
@@ -633,6 +634,7 @@ int Evaluation::LoadHits(std::vector<Hit>* vec, std::stringstream& filecontents)
             std::stringstream s("");
             s << line;
             s >> text >> text;
+
             if(text.compare("Trigger") == 0)
                 trigger = true;
             else if(text.compare("Event") == 0)

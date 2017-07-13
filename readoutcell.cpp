@@ -78,6 +78,23 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
     
 }
 */
+void ReadoutCell::Cleanup()
+{
+    pixelvector.clear();
+
+    for(auto& it : rocvector)
+        it.Cleanup();
+
+    rocvector.clear();
+
+    if(pixelreadout != 0)
+        delete pixelreadout;
+    if(buf != 0)
+        delete buf;
+    if(rocreadout)
+        delete rocreadout;
+
+}
 
 int ReadoutCell::GetConfiguration()
 {

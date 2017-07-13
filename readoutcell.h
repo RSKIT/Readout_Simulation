@@ -74,6 +74,8 @@ public:
 	ReadoutCell();
 	ReadoutCell(const ReadoutCell& roc);
 
+	void Cleanup();
+
 	//~ReadoutCell();
 
 	/**

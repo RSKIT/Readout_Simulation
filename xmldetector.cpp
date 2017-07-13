@@ -364,6 +364,13 @@ StateTransition::StateTransition(const StateTransition& trans) : nextstate(trans
 	condition = new Comparison(*(trans.condition));
 }
 
+void StateTransition::Cleanup()
+{
+	counterchanges.clear();
+
+	delete condition;
+}
+
 std::string StateTransition::GetNextState()
 {
 	return nextstate;
@@ -438,6 +445,20 @@ StateMachineState::StateMachineState() : name(""), registerchanges(std::vector<R
 		transitions(std::vector<StateTransition*>())
 {
 
+}
+
+void StateMachineState::Cleanup()
+{
+	for(auto& it : transitions)
+	{
+		it->Cleanup();
+
+		delete it;
+	}
+
+	transitions.clear();
+
+	registerchanges.clear();
 }
 
 std::string StateMachineState::GetStateName()
@@ -529,7 +550,26 @@ XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ),
 		states.push_back(new StateMachineState(*it));
 }
 
-bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
+void XMLDetector::Cleanup()
+{
+	for(auto& it : rocvector)
+		it.Cleanup();
+
+	rocvector.clear();
+
+	counters.clear();
+
+	for(auto& it : states)
+	{
+		it->Cleanup();
+
+		delete it;
+	}
+
+	states.clear();
+}
+
+bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
 	//check for valid state:
 	if(currentstate >= states.size() || currentstate < 0)
@@ -541,7 +581,8 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
     //do not execute anything when a delay is active:
     if(GetCounter("delay") > 0)
     {
-    	std::cout << "Delay: " << GetCounter("delay") << std::endl;
+    	if(print)
+    		std::cout << "Delay: " << GetCounter("delay") << std::endl;
     	DecrementCounter("delay");
     	return true;
     }
@@ -549,12 +590,13 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 	StateMachineState* state = states[currentstate];
 
 
-	std::cout << "State: " << state->GetStateName() << std::endl;
+	if(print)
+		std::cout << "State: " << state->GetStateName() << std::endl;
 
 	//change Registers, LoadPixels, LoadROCs,...:
 	auto itend = state->GetRegisterChangesEnd();
 	for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
-		ExecuteRegisterChanges(*it, timestamp);
+		ExecuteRegisterChanges(*it, timestamp, print);
 
 	//state transitions:
 	//nextstate = -1;
@@ -570,7 +612,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 
 			auto itend = (*it)->GetRegisterChangesEnd();
 			for(auto regit = (*it)->GetRegisterChangesBegin(); regit != itend; ++regit)
-				ExecuteRegisterChanges(*regit, timestamp);
+				ExecuteRegisterChanges(*regit, timestamp, print);
 
 			//find the next state:
 			int index = 0;
@@ -602,7 +644,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger)
 	return true;
 }
 
-bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
+bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, int updatepitch)
 {
 	if(!trigger)
 	{
@@ -618,7 +660,7 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 		//change Registers, LoadPixels, LoadROCs,...:
 		auto itend = state->GetRegisterChangesEnd();
 		for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
-			ExecuteRegisterChanges(*it, timestamp);
+			ExecuteRegisterChanges(*it, timestamp, print);
 	}
 
 	//execute a state transition for the "normal" state machine part:
@@ -628,7 +670,8 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger)
 
     currentstate = nextstate;
     nextstate = -1;
-    std::cout << "-- State Transition --" << std::endl;
+    if(print)
+    	std::cout << "-- State Transition --" << std::endl;
 
     return true;
 }
@@ -742,23 +785,23 @@ double XMLDetector::GetCounter(std::string name)
 		return it->second;
 }
 
-void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp)
+void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp, bool print)
 {
-	if(regacc.what.compare("cout") == 0)
+	if(print && regacc.what.compare("cout") == 0)
 	{
 		if(regacc.value != 0)
 			std::cout << regacc.parameter << std::endl;
 		else
 			std::cout << regacc.parameter;
 	}
-	else if(regacc.what.compare("printhitsavailable") == 0)
+	else if(print && regacc.what.compare("printhitsavailable") == 0)
 	{
 		if(regacc.value != 0)
 			std::cout << HitsAvailable(regacc.parameter) << std::endl;
 		else
 			std::cout << HitsAvailable(regacc.parameter);
 	}
-	else if(regacc.what.compare("printcounter") == 0)
+	else if(print && regacc.what.compare("printcounter") == 0)
 	{
 		if(regacc.value != 0)
 			std::cout << GetCounter(regacc.parameter) << std::endl;

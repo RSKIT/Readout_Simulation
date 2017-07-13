@@ -40,14 +40,16 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 }
 
-bool Detector::StateMachineCkUp(int timestamp, bool trigger)
+bool Detector::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
-    std::cout << "State: " << GetCurrentStateName() << std::endl;
+    if(print)
+        std::cout << "State: " << GetCurrentStateName() << std::endl;
 
     //to pause the state machine in any state:
     if(delay > 0)
     {
-        std::cout << "Delay: " << delay << std::endl;
+        if(print)
+            std::cout << "Delay: " << delay << std::endl;
         --delay;
         return true;
     }
@@ -61,13 +63,14 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 
         case LdCol:
             {
-                std::cout << "--> Load Column <--" << std::endl;
+                if(print)
+                    std::cout << "--> Load Column <--" << std::endl;
 
                 bool result = false;
                 for (auto &it : rocvector)
                     result |= it.LoadCell("Column", timestamp, &sbadout);
 
-                if(result)
+                if(result && print)
                     std::cout << "Hit(s) Loaded" << std::endl;
 
                 static int counter = 0;
@@ -84,7 +87,8 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 
         case LdPix:
             {
-                std::cout << "--> Load Pixels <--" << std::endl;
+                if(print)
+                    std::cout << "--> Load Pixels <--" << std::endl;
 
                 int hitsavailable = 0;
                 bool result = false;
@@ -94,7 +98,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
                     result |= it.LoadCell("Pixel", timestamp, &sbadout);
                 }
 
-                if(result)
+                if(result && print)
                     std::cout << "Hit(s) found" << std::endl;
 
                 static int counter = 0;
@@ -129,7 +133,8 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
 
         case RdCol:
             {
-                std::cout << "--> Read Column <--" << std::endl;
+                if(print)
+                    std::cout << "--> Read Column <--" << std::endl;
 
                 bool result = false;
                 for (auto &it: rocvector)
@@ -147,7 +152,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
                     }
                 }
 
-                if(result)
+                if(result && print)
                     std::cout << "Hit(s) read out" << std::endl;
 
                 static int counter = 0;
@@ -184,7 +189,7 @@ bool Detector::StateMachineCkUp(int timestamp, bool trigger)
     return true;
 }
 
-bool Detector::StateMachineCkDown(int timestamp, bool trigger)
+bool Detector::StateMachineCkDown(int timestamp, bool trigger, bool print, int updatepitch)
 {
     //write out, where hits are in the detector:
     //std::cout << "hits in the detector: " << HitsAvailable("") << std::endl
@@ -193,16 +198,19 @@ bool Detector::StateMachineCkDown(int timestamp, bool trigger)
     //          << "  CU:     " << HitsAvailable("CU") << std::endl;
 
     //Hit synchronisaation:
-    bool result = false;
-    for (auto &it : rocvector)
-        result |= it.LoadPixel(timestamp, &sbadout);
+    if(print)
+    {
+        bool result = false;
+        for (auto &it : rocvector)
+            result |= it.LoadPixel(timestamp, &sbadout);
 
-    if(result)
-        std::cout << "Hit(s) loaded to Pixel" << std::endl;
-
+        if(result)
+            std::cout << "Hit(s) loaded to Pixel" << std::endl;
+    }
 
     currentstate = nextstate;
-    std::cout << "-- State Transition --" << std::endl;
+    if(print)
+        std::cout << "-- State Transition --" << std::endl;
     return true;
 }
 

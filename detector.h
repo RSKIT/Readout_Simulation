@@ -56,10 +56,13 @@ public:
      * @param timestamp      - the current timestamp for the function call
      * @param trigger        - the trigger signal for the detector readout. In this implementation
      *                            the parameter is not used
+     * @param print          - turns on (true) or off printing to terminal
+     * @param updatepitch    - the number of timestamps per which one time output is generated
      * 
      * @return               - false on an error, true otherwise
      */
-    bool	StateMachineCkUp(int timestamp, bool trigger = true);
+    bool	StateMachineCkUp(int timestamp, bool trigger = true,
+                                bool print = false, int updatepitch = 10);
     /**
      * @brief performs the synchronisation of hits placed in the detector and removes hits from
      *             triggered buffers on missing trigger signals
@@ -69,10 +72,13 @@ public:
      * @param trigger        - the trigger signal for the detector. Hits from triggered
      *                            readoutcells are removed if this parameter is false at the
      *                            triggering timestamp
+     * @param print          - turns on (true) or off printing to terminal
+     * @param updatepitch    - the number of timestamps per which one time output is generated
      * 
      * @return               - false on an error, true otherwise
      */
-    bool	StateMachineCkDown(int timestamp, bool trigger = true);
+    bool	StateMachineCkDown(int timestamp, bool trigger = true,
+                                bool print = false, int updatepitch = 10);
 
     /**
      * @brief the index of the current state of the state machine.

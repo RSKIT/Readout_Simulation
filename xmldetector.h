@@ -218,6 +218,8 @@ public:
 	StateTransition();
 	StateTransition(const StateTransition& trans);
 
+	void Cleanup();
+
 	/**
 	 * @brief the name of the next state
 	 * @details
@@ -312,6 +314,8 @@ class StateMachineState
 {
 public:
 	StateMachineState();
+
+	void Cleanup();
 
 	/**
 	 * @brief the name of the state
@@ -411,6 +415,8 @@ public:
 	XMLDetector();
 	XMLDetector(const XMLDetector& templ);
 
+	void Cleanup();
+
 	/**
 	 * @brief performs the actions on the "rising edge" of the clock. All synchronous actions
 	 *             are executed here.
@@ -418,10 +424,13 @@ public:
 	 * 
 	 * @param timestamp      - the current timestamp of this function call
 	 * @param trigger        - trigger signal for triggered readoutcells. Not used here.
+     * @param print          - turns on (true) or off printing to terminal
+     * @param updatepitch    - the number of timestamps per which one time output is generated
 	 * 
 	 * @return               - true on successful execution, false on an error
 	 */
-    bool	StateMachineCkUp(int timestamp, bool trigger = true);
+    bool	StateMachineCkUp(int timestamp, bool trigger = true, 
+    							bool print = false, int updatepitch = 1);
     /**
      * @brief performs the actions on the "falling edge" of the clock. All synchronisation actions
      *             are executed here (e.g. synchronising hits in the pixels). Also the checking of
@@ -430,10 +439,13 @@ public:
      * 
      * @param timestamp      - the current timestamp of this function call
      * @param trigger        - trigger signal for triggered readoutcells. Actually used here.
+     * @param print          - turns on (true) or off printing to terminal
+     * @param updatepitch    - the number of timestamps per which one time output is generated
      * 
      * @return               - true on successful execution, false on an error
      */
-    bool	StateMachineCkDown(int timestamp, bool trigger = true);
+    bool	StateMachineCkDown(int timestamp, bool trigger = true,
+    							bool print = false, int updatepitch = 1);
 
     /**
      * @brief the index of the current state of the state machine.
@@ -571,8 +583,9 @@ private:
 	 * 
 	 * @param regacc         - action descriptor to execute
 	 * @param timestamp      - timestamp at which the execution is to take place
+	 * @param print          - allows printing to terminal if set to true
 	 */
-	void ExecuteRegisterChanges(RegisterAccess regacc, int timestamp);
+	void ExecuteRegisterChanges(RegisterAccess regacc, int timestamp, bool print = false);
 
 	/**
 	 * @brief evaluates the register accesses in the passed comparison to enable its evaluation

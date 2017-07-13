@@ -298,9 +298,10 @@ public:
 	 * @details
 	 * 
 	 * @param timestamp      - the current timestamp to evaluate for
+	 * @param print          - write the trigger state on change to the terminal if set to true
 	 * @return               - the trigger signal (active true)
 	 */
-	bool 	GetTriggerState(int timestamp);
+	bool 	GetTriggerState(int timestamp, bool print = false);
 
 	/**
 	 * @brief generates the passed number of events
@@ -311,9 +312,12 @@ public:
 	 * @param threads		 - the number of threads to use for this task, use 0 to use all cores,
 	 *                            -1 indicates the use of the internally saved setting
 	 * @param writeout       - determines whether the data is written directly to a file or not
+	 * @param printtoterminal - determines whether the printing to terminal is done (true) or not
+	 *                            (false)
 	 */
 	void GenerateEvents(double firsttime = 0, int numevents = 1, int threads = -1, 
-							bool writeout = true);
+							bool writeout = true, bool printtoterminal = true, 
+							int updatepitch = 10);
 	/**
 	 * @brief loads pixel hits from a file
 	 * @details
@@ -362,6 +366,12 @@ public:
 	 * @return               - the number of events in the event queue (not pixel hits)
 	 */
 	int GetNumEventsLeft();
+	/**
+	 * @brief provides the time stamp of the last event stored in this object
+	 * @details
+	 * @return               - the last time stamp at which hits are inserted into the detector
+	 */
+	int GetLastEventTimestamp();
 
 	/**
 	 * @brief returns a vector containing the pixel hits of the next event and deletes them from
@@ -526,6 +536,9 @@ public:
 	 *                            than 0. It specifies the maximum distance between neighbouring
 	 *                            pixels in micrometers
 	 *  @param sort          - sort the resulting hits if true
+	 *  @param print         - turn on or off output to terminal
+	 *  @param updatepitch   - the number of events to process before printing updated progress
+	 *                            information
 	 *  
 	 *  @return              - the number of events loaded from the ROOT file
 	 */
@@ -533,7 +546,7 @@ public:
 						double firsttime = 0, int eta = 0, 
 						TCoord<double> granularity = TCoord<double>::Null,
 						int numthreads = -1, bool writeout = true, double regroup = 0,
-						bool sort = true);
+						bool sort = true, bool print = false, int updatepitch = 10);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -589,13 +602,18 @@ private:
 	 *                            for each thread
 	 * @param id			 - number for the identification of the thread. Only for printing to
 	 *                            std::cout
+	 * @param printtoterminal - determines whether output is written to terminal (true) or not
+	 * @param updatepitch    - the pitch between two update outputs of the generation. Only values
+	 *                            >0 are allowed. For invalid numbers the parameter is set to 10.
 	 */
 	static void GenerateHitsFromTracks(EventGenerator* itself, 
 										std::vector<particletrack>::iterator begin,
 										std::vector<particletrack>::iterator end,
 										std::vector<Hit>* pixelhits,
 										std::stringstream* output,
-										int id = -1);
+										int id = -1,
+										bool printtoterminal = true,
+										int updatepitch = 10);
 
 	/**
 	 * @brief method to be called by threads for the evaluation of charge distributions. It
@@ -617,6 +635,9 @@ private:
 	 * @param firsteventid   - event ID to use for the pixel hits of the event in `begin`. The
 	 *                            next events will get an incremented event ID
 	 * @param id             - ID for the thread for identification in the output
+	 * @param print          - turns on (true) or off the printing to the terminal
+	 * @param updatepitch    - the number of events to analyse of which once a progress update line
+	 *                            is written to the terminal
 	 */
 	static void GenerateHitsFromChargeDistributions(EventGenerator* itself,
 								std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
@@ -627,7 +648,9 @@ private:
 								TCoord<double> detectorsize,
 								std::vector<Hit>* pixelhits,
 								std::stringstream* output,
-								int firsteventid, int id = -1);
+								int firsteventid, int id = -1,
+								bool print = false,
+								int updatepitch = 10);
 
 	/**
 	 * @brief takes a cluster a tries to separate it into several clusters which are spatially
@@ -641,12 +664,15 @@ private:
 	 * @param maxdistance    - maximum distance of neighbouring pixels in one cluster
 	 * @param id             - identifying number for this call
 	 * @param numclusters    - total number of clusters to evaluate (for output reasons)
+	 * @param print          - turns on (true) or off printing to the terminal
+	 * @param updatepitch    - the number of events after which an progress update is written to
+	 *                            the terminal. If <=0 it will be set to 10.
 	 */
 	static void SeparateClusters(std::map<unsigned int, std::vector<ChargeDistr> >* resultclusters,
 						std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
 						std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
 						TCoord<double> granularity, double maxdistance,
-						int id, int numclusters);
+						int id, int numclusters, bool print = false, int updatepitch = 10);
 
 	std::vector<DetectorBase*> detectors;
 
@@ -678,6 +704,7 @@ private:
 
 
 	std::deque<Hit> clusterparts;	//the event queue containing the pixel hits
+	int lasteventtimestamp;
 
 	//trigger signal generation:
 	double triggerprobability;	//generation probability for a trigger to an event

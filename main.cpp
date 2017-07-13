@@ -21,7 +21,10 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <string>
+#include <chrono>
+#include <ctime>
 
 #include "hit.h"
 #include "TCoord.h"
@@ -31,15 +34,47 @@
 #include "EventGenerator.h"
 #include "simulator.h"
 
+std::string GetDateTime()
+{
+    std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    char buffer[80];
+    strftime(buffer, 80,"%e.%m.%y %X", localtime(&tt));
+
+    return std::string(buffer);
+}
+
 
 int main(int argc, char** argv)
 {
+    std::fstream fgenerallog;
+    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
+
+    bool writelog = fgenerallog.is_open();
+
+    if(writelog)
+    {
+        //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        fgenerallog << "Call at: " << GetDateTime() << " with " << (argc-1) << " arguments" 
+                    << std::endl;
+    }
+
     //Load Data from command line arguments:
     if(argc > 1)
     {
         for(int i = 1; i < argc; ++i)
         {
-            std::cout << "Loading from file \"" << argv[i] << "\" ..." << std::endl;
+            //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            //char buffer[80];
+            //strftime(buffer, 80,"%e.%m.%y %X", localtime(&tt));
+            std::string now = GetDateTime();
+            if(writelog)
+            {
+                fgenerallog << "[" << now << "] Starting Simulation " 
+                            << i << "/" << (argc-1) << ": \"" << argv[i] << "\"" << std::endl;
+            }
+            std::cout << "[" << now << "] Loading from file \"" << argv[i] 
+                        << "\" ..." << std::endl;
+
             Simulator sim(argv[i]);
             sim.LoadInputFile();
 
@@ -55,17 +90,43 @@ int main(int argc, char** argv)
         while(std::cin >> file)
             files.push_back(file);
 
+        int i = 1;  //index for the simulation files
         for(auto& it : files)
         {
-            std::cout << "Loading from file \"" << it << "\" ..." << std::endl;
+            //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            std::string now = GetDateTime();
+            if(writelog)
+            {
+                fgenerallog << "[" << now << "] Starting Simulation " 
+                            << i << "/" << files.size() << ": \"" << it << "\"" << std::endl;
+            }
+            std::cout << "[" << now << "] Loading from file \"" << it 
+                        << "\" ..." << std::endl;
+
             Simulator sim(it);
             sim.LoadInputFile();
 
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+
+            ++i;
         }
 
         //state that no file was provided - if this statement is true:
         if(files.size() == 0)
+        {
+            if(writelog)
+                fgenerallog << "No Parameters passed! Nothing to do here ..." << std::endl;
             std::cout << "No Parameters passed! Nothing to do here ..." << std::endl;
+        }
     }
+
+    //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::string now = GetDateTime();
+    if(writelog)
+        fgenerallog << "[" << now << "] Simulation(s) finished" << std::endl;
+    std::cout << "[" << now << "] Simulation(s) finished" << std::endl;
+
+    fgenerallog.close();
+
+    return 0;
 }

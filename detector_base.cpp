@@ -57,6 +57,14 @@ DetectorBase::~DetectorBase()
     CloseBadOutputFile();
 }
 
+void DetectorBase::Cleanup()
+{
+    for(auto& it : rocvector)
+        it.Cleanup();
+
+    rocvector.clear();
+}
+
 std::string DetectorBase::GetAddressName()
 {
 	return addressname;
@@ -256,12 +264,12 @@ bool DetectorBase::StateMachine(int timestamp, bool trigger)
     return result;
 }
 
-bool DetectorBase::StateMachineCkUp(int timestamp, bool trigger)
+bool DetectorBase::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
     return false;
 }
 
-bool DetectorBase::StateMachineCkDown(int timestamp, bool trigger)
+bool DetectorBase::StateMachineCkDown(int timestamp, bool trigger, bool print, int updatepitch)
 {
     return false;
 }

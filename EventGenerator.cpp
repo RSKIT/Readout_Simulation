@@ -29,7 +29,8 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream(""))
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream("")),
+		lasteventtimestamp(-1)
 {
 	SetSeed(0);
 }
@@ -41,7 +42,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
 		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
 		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1), 
-		genoutput(std::stringstream(""))
+		genoutput(std::stringstream("")), lasteventtimestamp(-1)
 {
 	detectors.push_back(detector);
 
@@ -55,7 +56,8 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream(""))
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream("")),
+		lasteventtimestamp(-1)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -136,7 +138,7 @@ int EventGenerator::GetThreads()
 
 void EventGenerator::SetThreads(unsigned int numthreads)
 {
-	std::cout << "Set Threads to " << numthreads << " (was " << threads << ")" << std::endl;
+	//std::cout << "Set Threads to " << numthreads << " (was " << threads << ")" << std::endl;
 	if(numthreads > std::thread::hardware_concurrency())
 		threads = 0;
 	else
@@ -293,7 +295,7 @@ void EventGenerator::ClearOnTimeStamps()
 	triggerstate = true;
 }
 
-bool EventGenerator::GetTriggerState(int timestamp)
+bool EventGenerator::GetTriggerState(int timestamp, bool print)
 {
 	if(triggerturnontimes.size() == 0)
 		return triggerstate;
@@ -306,18 +308,21 @@ bool EventGenerator::GetTriggerState(int timestamp)
 		while(triggerturnontimes.front() == timestamp)
 			triggerturnontimes.pop_front();
 
-		std::cout << "Trigger on" << std::endl;
+		if(print)
+			std::cout << "Trigger on" << std::endl;
 	}
 	else if(timestamp == triggerturnofftime)
 	{
 		triggerstate = false;
-		std::cout << "Trigger off" << std::endl;
+		if(print)
+			std::cout << "Trigger off" << std::endl;
 	}
 
 	return triggerstate;
 }
 
-void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads, bool writeout)
+void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads, bool writeout,
+									bool printtoterminal, int updatepitch)
 {
 	if(!IsReady() || numevents == 0)
 		return;
@@ -354,7 +359,9 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	//generate the particle tracks:
 	std::vector<particletrack> particles;
 	particles.reserve(numevents);
-	std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
+	if(printtoterminal)
+		std::cout << "Thread numbers (set/requested): " << threads << " / " << numthreads
+					<< std::endl;
 	if(numthreads < 0)
 		numthreads = threads;
 	if(numthreads == 0)
@@ -411,10 +418,12 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	}
 	startpoints.push_back(particles.end());
 
-	std::cout << "Generating " << numevents << " particle tracks done." << std::endl;
-
-	std::cout << "Starting parallel evaluation of the tracks on " << numthreads 
-			  << " threads." << std::endl;
+	if(printtoterminal)
+	{
+		std::cout << "Generating " << numevents << " particle tracks done." << std::endl
+				  << "Starting parallel evaluation of the tracks on " << numthreads 
+			  	  << " threads." << std::endl;
+	}
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
@@ -426,7 +435,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	{
 		std::thread* worker = new std::thread(GenerateHitsFromTracks, this, startpoints[i], 
 												startpoints[i+1], &(threadhits[i]), &(outputs[i]),
-												i);
+												i, printtoterminal, updatepitch);
 
 		workers[i] = worker;
 	}
@@ -449,7 +458,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 		{
 			workers[i]->join();
 
-			std::cout << "Thread #" << i << " joined." << std::endl;
+			if(printtoterminal)
+				std::cout << "Thread #" << i << " joined." << std::endl;
 
 			for(auto& it : threadhits[i])
 				clusterparts.push_back(it);
@@ -463,6 +473,11 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	fout.close();
 
 	std::sort(clusterparts.begin(), clusterparts.end());
+
+	if(clusterparts.size() > 0)
+		lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
+	else
+		lasteventtimestamp = -1;
 
 	return;
 }
@@ -514,7 +529,7 @@ int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double t
 			std::string text;
 			s << line;
 			s >> text >> text;
-			if(text.compare("Trigger:") == 0)
+			if(text.compare("Trigger") == 0)
 			{
 				int start;
 				int ende;
@@ -529,6 +544,8 @@ int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double t
 	if(sort)
 		std::sort(clusterparts.begin(), clusterparts.end());
 
+	lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
+
 	eventindex = maxindex + 1;
 
 	return pixelhitcount;
@@ -537,6 +554,7 @@ int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double t
 void EventGenerator::ClearEventQueue()
 {
 	clusterparts.clear();
+	lasteventtimestamp = -1;
 }
 
 void EventGenerator::SortEventQueue()
@@ -566,6 +584,9 @@ std::vector<Hit> EventGenerator::GetNextEvent()
 
 			clusterparts.pop_front();
 	}
+
+	if(clusterparts.size() == 0)
+		lasteventtimestamp = -1;
 
 	return event;
 }
@@ -604,6 +625,9 @@ Hit EventGenerator::GetNextHit()
 		Hit h = clusterparts.front();
 		clusterparts.pop_front();
 
+		if(clusterparts.size() == 0)
+			lasteventtimestamp = -1;
+
 		return h;
 	}
 }
@@ -622,6 +646,11 @@ int EventGenerator::GetNumEventsLeft()
 		return 0;
 	else
 		return eventindex - clusterparts.front().GetEventIndex();
+}
+
+int EventGenerator::GetLastEventTimestamp()
+{
+	return lasteventtimestamp;
 }
 
 void EventGenerator::PrintQueue()
@@ -1004,9 +1033,15 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 									std::vector<particletrack>::iterator begin, 
 									std::vector<particletrack>::iterator end,
 									std::vector<Hit>* pixelhits,
-									std::stringstream* output, int id)
+									std::stringstream* output, int id,
+									bool printtoterminal, int updatepitch)
 {
-	std::cout << "Started thread with id " << std::this_thread::get_id() << " ..." << std::endl;
+	if(printtoterminal)
+		std::cout << "Started thread with id " << std::this_thread::get_id() << " ..." 
+					<< std::endl;
+
+	if(updatepitch <= 0)
+		updatepitch = 10;
 
 	//generate the template hit object for this event:
 	Hit hittemplate;
@@ -1047,16 +1082,19 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 			}
 		}
 
-		if((counter++ % 10) == 0)
+		if(printtoterminal)
 		{
-			if(id < 0)
-				std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
-						  << std::setw(4) << counter << " Events" << std::endl;
-			else
+			if((counter++ % updatepitch) == 0)
 			{
-				static int numthreads = countDigits(std::thread::hardware_concurrency());
-				std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
-						  << std::setw(4) << counter << " Events" << std::endl;
+				if(id < 0)
+					std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
+							  << std::setw(4) << counter << " Events" << std::endl;
+				else
+				{
+					static int numthreads = countDigits(std::thread::hardware_concurrency());
+					std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
+							  << std::setw(4) << counter << " Events" << std::endl;
+				}
 			}
 		}
 	}
@@ -1067,7 +1105,7 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numlines, 
 									double firsttime, int eta,
 									TCoord<double> granularity, int numthreads,	bool writeout,
-									double regroup, bool sort)
+									double regroup, bool sort, bool print, int updatepitch)
 {
 	//data structure for the clustered hit information:
 	std::map<unsigned int, std::vector<ChargeDistr> > clusters;	//eventID and Charge Distribution
@@ -1172,12 +1210,14 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	delete f;
 	//=== end clustering ===
 
-	std::cout << "Clusters: " << clusters.size() << std::endl;
+	if(print)
+		std::cout << "Clusters: " << clusters.size() << std::endl;
 
 	//=== regrouping ===
 	if(regroup > 0)
 	{
-		std::cout << "Start regrouping events ... (" << clusters.size() << ")" << std::endl;
+		if(print)
+			std::cout << "Start regrouping events ... (" << clusters.size() << ")" << std::endl;
 
 		//find number of threads to use:
 		int rgthreads = numthreads;
@@ -1207,7 +1247,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		{
 			std::thread* worker = new std::thread(SeparateClusters, &(threadclusters[i]),
 											startpoints[i], startpoints[i+1], granularity,
-											regroup, i, totalclusters/rgthreads+1);
+											regroup, i, totalclusters/rgthreads+1,
+											print, updatepitch);
 
 			workers[i] = worker;
 		}
@@ -1218,15 +1259,19 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 			if(workers[i]->joinable())
 			{
 				workers[i]->join();
-				std::cout << "Thread #" << i << " joined." << std::endl;
+				if(print)
+					std::cout << "Thread #" << i << " joined." << std::endl;
 
 				delete workers[i];
 			}
 		}
 
-		std::cout << "Clusters (old): " << clusters.size() << std::endl;
-		for(int i = 0; i < rgthreads; ++i)
-			std::cout << " Clusters (new): " << threadclusters[i].size() << std::endl;
+		if(print)
+		{
+			std::cout << "Clusters (old): " << clusters.size() << std::endl;
+			for(int i = 0; i < rgthreads; ++i)
+				std::cout << " Clusters (new): " << threadclusters[i].size() << std::endl;
+		}
 
 		//replace the old data with the newly generated data:
 		clusters.clear();
@@ -1243,7 +1288,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 			}
 		}
 
-		std::cout << "Regrouping done. (" << clusters.size() << ")" << std::endl;
+		if(print)
+			std::cout << "Regrouping done. (" << clusters.size() << ")" << std::endl;
 	}
 	//=== end regrouping ===
 
@@ -1298,7 +1344,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 	//=== start parallel evaluation of the clusters ===
 	//find the number of threads to use:
-	std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
+	if(print)
+		std::cout << "Thread numbers: " << threads << " / " << numthreads << std::endl;
 	if(numthreads < 0)
 		numthreads = threads;
 	if(numthreads == 0)
@@ -1342,7 +1389,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 												&clustertimes, &triggeredevents,
 												granularity, detectorend - detectorstart,
 												&(threadhits[i]), &(outputs[i]),
-												eventindex + (numevents/numthreads+1)*i ,i);
+												eventindex + (numevents/numthreads+1)*i ,i,
+												print, updatepitch);
 
 		workers[i] = worker;
 	}
@@ -1366,7 +1414,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		{
 			workers[i]->join();
 
-			std::cout << "Thread #" << i << " joined." << std::endl;
+			if(print)
+				std::cout << "Thread #" << i << " joined." << std::endl;
 
 			
 			clusterparts.insert(clusterparts.end(), threadhits[i].begin(), threadhits[i].end());
@@ -1378,6 +1427,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 			}
 			genoutput << outputs[i].str();
 			genoutput.flush();
+
+			delete workers[i];
 		}
 	}
 
@@ -1463,9 +1514,15 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 							TCoord<double> granularity,
 							TCoord<double> detectorsize,
 							std::vector<Hit>* pixelhits,
-							std::stringstream* output, int firsteventid, int id)
+							std::stringstream* output, int firsteventid, int id,
+							bool print, int updatepitch)
 {
-	std::cout << "Started thread with id " << std::this_thread::get_id() << " ..." << std::endl;
+	if(print)
+		std::cout << "Started thread with id " << std::this_thread::get_id() << " ..."
+				  << std::endl;
+
+	if(updatepitch <= 0)
+	  	updatepitch = 10;
 
 	if(output == 0)
 		return;
@@ -1556,16 +1613,19 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 			}
 		}
 
-		if((counter++ % 10) == 0)
+		if(print)
 		{
-			if(id < 0)
-				std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
-						  << std::setw(4) << counter << " Events" << std::endl;
-			else
+			if((counter++ % updatepitch) == 0)
 			{
-				static int numthreads = countDigits(std::thread::hardware_concurrency());
-				std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
-						  << std::setw(4) << counter << " Events" << std::endl;
+				if(id < 0)
+					std::cout << "Process " << std::this_thread::get_id() << ": Generated " 
+							  << std::setw(4) << counter << " Events" << std::endl;
+				else
+				{
+					static int numthreads = countDigits(std::thread::hardware_concurrency());
+					std::cout << "Process " << std::setw(numthreads) << id << ": Generated " 
+							  << std::setw(4) << counter << " Events" << std::endl;
+				}
 			}
 		}
 	}
@@ -1577,15 +1637,22 @@ void EventGenerator::SeparateClusters(
 						std::map<unsigned int, std::vector<ChargeDistr> >* resultclusters,
 						std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
 						std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
-						TCoord<double> granularity, double maxdistance, int id, int numclusters)
+						TCoord<double> granularity, double maxdistance, int id, int numclusters,
+						bool print, int updatepitch)
 {
-	std::stringstream s("");
-	if(id < 0)
-		s << "Started thread with ID " << std::this_thread::get_id() << std::endl;
-	else
-		s << "Started thread with ID " << id << std::endl;
-	std::cout << s.str();
-	std::cout.flush();
+	if(print)
+	{
+		std::stringstream s("");
+		if(id < 0)
+			s << "Started thread with ID " << std::this_thread::get_id() << std::endl;
+		else
+			s << "Started thread with ID " << id << std::endl;
+		std::cout << s.str();
+		std::cout.flush();
+	}
+
+	if(updatepitch <= 0)
+		updatepitch = 10;
 
 	maxdistance = pow(maxdistance, 2);
 	
@@ -1686,21 +1753,25 @@ void EventGenerator::SeparateClusters(
 		//	delete it;
 		newclusters.clear();
 
-		if((numclusters-- % 10) == 0)
+		if(print)
 		{
-			std::stringstream s("");
-			if(id < 0)
-				s << "Process " << std::this_thread::get_id();
-			else
+			if((numclusters-- % updatepitch) == 0)
 			{
-				static int numthreads = countDigits(std::thread::hardware_concurrency());
-				s << "Process " << std::setw(numthreads) << id;
+				std::stringstream s("");
+				if(id < 0)
+					s << "Process " << std::this_thread::get_id();
+				else
+				{
+					static int numthreads = countDigits(std::thread::hardware_concurrency());
+					s << "Process " << std::setw(numthreads) << id;
+				}
+				s << ": Remaining " << std::setw(4) << numclusters << " Events" << std::endl;
+				std::cout << s.str();
+				std::cout.flush();
 			}
-			s << ": Remaining " << std::setw(4) << numclusters << " Events" << std::endl;
-			std::cout << s.str();
-			std::cout.flush();
 		}
 	}
 
-	std::cout << "Ende Thread #" << id << "!" << std::endl;
+	if(print)
+		std::cout << "Ende Thread #" << id << "!" << std::endl;
 }

@@ -432,8 +432,8 @@ bool OneByOneReadout::Read(int timestamp, std::stringstream* out)
 			cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			hitfound = true;
 		}
-		else if(child->hitqueue[i].is_valid() && !child->hitqueue[i].is_available(timestamp))
-			std::cout << "available from: " << child->hitqueue[i].GetAvailableTime() << std::endl;
+		//else if(child->hitqueue[i].is_valid() && !child->hitqueue[i].is_available(timestamp))
+		//	std::cout << "available from: " << child->hitqueue[i].GetAvailableTime() << std::endl;
 	}
 
 	return hitfound;

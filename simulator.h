@@ -53,6 +53,12 @@ public:
 		double distance;
 	};
 
+	enum outputkinds   {loadsimulation		= 1,
+						eventgeneration		= 2,
+						statemachineoutput	= 4,
+						timestampoutput     = 8,
+						eventinsertion		= 16};
+
 	Simulator();
 	/**
 	 * @brief constructor setting the filename for the input file: This is an XML file containing
@@ -63,6 +69,12 @@ public:
 	 * @param filename       - filename for the input file to load from
 	 */
 	Simulator(std::string filename);
+
+	/**
+	 * @brief deletes all detectors with their substructures
+	 * @details
+	 */
+	void Cleanup();
 
 	/**
 	 * @brief returns the name of the file to load the configuration from
@@ -153,6 +165,32 @@ public:
 	 */
 	int GetStopDelay();
 	void SetStopDelay(int stopdelay);
+
+	/**
+	 * @brief provides the parts of the output which is written to the terminal using the flags as
+	 *             defined in enum `outputkinds`
+	 * @details
+	 * @return               - the parts of the output which is written to the terminal
+	 */
+	int GetOutputFlags();
+	void SetOutputFlags(int flags);
+
+	/**
+	 * @brief provides the distance between status updates for time stamp and event generation
+	 * @details
+	 * @return               - the number of time stamps (or generated events) between prints
+	 */
+	int GetTSPrintPitch();
+	/**
+	 * @brief sets the number of output lines which are skipped by time stamp and event generation
+	 *             output
+	 * @details
+	 * 
+	 * @param pitch          - the number of lines from which one is printed (e.g. 10 -> 1 in 10
+	 *                            lines is printed). Only positive numbers are allowed. 
+	 *                            Numbers <= 0 are rejected without notice.
+	 */
+	void SetTSPrintPitch(int pitch);
 
 	/**
 	 * @brief provides a pointer to a detector in this simulator addressed by its address
@@ -426,8 +464,12 @@ private:
     std::stringstream logcontent;
     bool printdetector;
 
-    std::string archivename;	//filename for the archive to save the data to
-    bool archiveonly;			//determines whether the data is also saved using normal files or not
+    std::string archivename; //filename for the archive to save the data to
+    bool archiveonly;		 //determines whether the data is also saved using normal files or not
+
+    //output writing of the simulation:
+    int outputlevel;
+    int tsprintpitch;
 
 };
 
