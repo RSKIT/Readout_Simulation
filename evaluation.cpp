@@ -512,7 +512,7 @@ std::vector<Hit> Evaluation::SeparateHit(std::map<int, int>& encoding, Hit& hit,
     return hits;
 }
 
-int Evaluation::SeparateHits(std::map<int, int>& encoding, std::string addrname, int input)
+int Evaluation::SeparateHits(const std::map<int, int>& encoding, std::string addrname, int input)
 {
     std::vector<Hit> hits;
 
@@ -520,7 +520,7 @@ int Evaluation::SeparateHits(std::map<int, int>& encoding, std::string addrname,
 
     for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
     {
-        for(std::map<int, int>::iterator eit = encoding.begin(); eit != encoding.end(); ++eit)
+        for(std::map<int, int>::const_iterator eit = encoding.begin(); eit != encoding.end(); ++eit)
         {
             if((it->GetAddress(addrname) & eit->second) == eit->second)
             {
@@ -537,7 +537,7 @@ int Evaluation::SeparateHits(std::map<int, int>& encoding, std::string addrname,
     return vec->size();
 }
 
-std::map<int, int> Evaluation::GetBinaryEncoding(int pixels)
+const std::map<int, int> Evaluation::GetBinaryEncoding(int pixels)
 {
     std::map<int, int> encode;
 

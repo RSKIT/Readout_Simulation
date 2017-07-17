@@ -497,7 +497,11 @@ int EventGenerator::LoadEventsFromFile(std::string filename, bool sort, double t
 		f.close();
 		return result;
 	}
-
+	
+	if(clusterparts.size() > 0)
+		lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
+	else
+		lasteventtimestamp = -1;
 }
 
 int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double timeshift)
@@ -547,6 +551,11 @@ int EventGenerator::LoadEventsFromStream(std::fstream* file, bool sort, double t
 	lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
 
 	eventindex = maxindex + 1;
+
+	if(clusterparts.size() > 0)
+		lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
+	else
+		lasteventtimestamp = -1;
 
 	return pixelhitcount;
 }
@@ -1437,6 +1446,10 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	if(sort)
 		std::sort(clusterparts.begin(), clusterparts.end());
 
+	if(clusterparts.size() > 0)
+		lasteventtimestamp = clusterparts.rbegin()->GetTimeStamp();
+	else
+		lasteventtimestamp = -1;
 
 	return numevents;
 }
