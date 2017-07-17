@@ -54,13 +54,13 @@ int main(int argc, char** argv)
     if(writelog)
     {
         //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        fgenerallog << "Call at: " << GetDateTime() << " with " << (argc-1) << " arguments" 
-                    << std::endl;
+        fgenerallog << "Call at: " << GetDateTime() << " with ";
     }
 
     //Load Data from command line arguments:
     if(argc > 1)
     {
+        fgenerallog << (argc-1) << " arguments" << std::endl;
         for(int i = 1; i < argc; ++i)
         {
             //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -89,6 +89,8 @@ int main(int argc, char** argv)
 
         while(std::cin >> file)
             files.push_back(file);
+
+        fgenerallog << files.size() << " arguments" << std::endl;
 
         int i = 1;  //index for the simulation files
         for(auto& it : files)

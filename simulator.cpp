@@ -77,9 +77,6 @@ void Simulator::LoadInputFile(std::string filename)
 	TCoord<double> standardpixel{0,0,0};
 	bool checkaddresses = false;
 
-	outputlevel = 0;
-	tsprintpitch = 10;
-
 	tinyxml2::XMLElement* simulation = doc.FirstChildElement();
 	tinyxml2::XMLElement* elem = simulation->FirstChildElement();
 	while(elem != 0)
@@ -129,6 +126,9 @@ void Simulator::LoadInputFile(std::string filename)
 		}
 		else if(elementname.compare("Output") == 0)
 		{
+			outputlevel = 0;
+			tsprintpitch = 10;
+
 			bool test = false;
 			if(elem->QueryBoolAttribute("loadsimulation", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?loadsimulation:0);
