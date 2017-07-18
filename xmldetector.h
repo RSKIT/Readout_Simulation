@@ -217,6 +217,7 @@ class StateTransition
 public:
 	StateTransition();
 	StateTransition(const StateTransition& trans);
+	~StateTransition();
 
 	void Cleanup();
 

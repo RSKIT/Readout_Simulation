@@ -369,10 +369,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	std::vector<std::vector<particletrack>::iterator> startpoints;
 	for (int i = 0; i < numevents; ++i)
 	{
-		//std::cout << "   Generating Particle Track " << i << " of " << numevents 
-		//		  << " ..." << std::endl;
 		//get a new random particle track:
-		particletrack track; // = particletrack();
+		particletrack track;
 
 		track.index = i;
 
@@ -467,6 +465,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 			if(writeout)
 				fout << outputs[i].str();
 			genoutput << outputs[i].str();
+
+			delete workers[i];
 		}
 	}
 
@@ -1142,30 +1142,21 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		//get eta dimension:
 		f->GetObject("eta_dim", v);
 		if(v != 0)
-		{
 			granularity[0] = (*v)[0];
-			//delete v;
-		}
 		else
 			granularity[0] = 5;
 
 		//get phi dimension:
 		f->GetObject("phi_dim", v);
 		if(v != 0)
-		{
-			granularity[1] = (*v)(0);
-			//delete v;
-		}
+			granularity[1] = (*v)[0];
 		else
 			granularity[1] = 5;
 
 		//get depletion thickness:
 		f->GetObject("depletion", v);
 		if(v != 0)
-		{
-			granularity[2] = (*v)(0);
-			//delete v;
-		}
+			granularity[2] = (*v)[0];
 		else
 			granularity[2] = 50;
 
@@ -1372,18 +1363,6 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		++it;
 	}
 	startpoints.push_back(clusters.end());
-
-
-	//Test output of the read charge distributions:
-	//for(auto& it : clusters)
-	//{
-	//	std::cout << "Event: " << it.first << std::endl;
-	//	for(auto& it2 : it.second)
-	//	{
-	//		std::cout << "  " << it2.etaindex << " ; " << it2.phiindex << " : " << it2.charge
-	//				<< std::endl;
-	//	}
-	//}
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
@@ -1733,10 +1712,6 @@ void EventGenerator::SeparateClusters(
 				//add a new cluster if the remaining ones do not belong to any existing cluster:
 				if(addedonepixel == false)
 				{
-					//std::list<ChargeDistr>* nl = new std::list<ChargeDistr>();
-					//nl->push_back(rawdata.front());
-					//newclusters.push_back(nl);
-					//rawdata.pop_front();
 					newclusters.push_back(std::list<ChargeDistr>());
 					newclusters.back().push_back(rawdata.front());
 					rawdata.pop_front();
@@ -1762,8 +1737,8 @@ void EventGenerator::SeparateClusters(
 			resultclusters->insert(std::make_pair(oldeventid, onecluster));
 		}
 
-		//for(auto& it : newclusters)
-		//	delete it;
+		for(auto& it : newclusters)
+			it.clear();
 		newclusters.clear();
 
 		if(print)

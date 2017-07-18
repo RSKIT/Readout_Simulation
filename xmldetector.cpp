@@ -364,6 +364,11 @@ StateTransition::StateTransition(const StateTransition& trans) : nextstate(trans
 	condition = new Comparison(*(trans.condition));
 }
 
+StateTransition::~StateTransition()
+{
+	Cleanup();
+}
+
 void StateTransition::Cleanup()
 {
 	counterchanges.clear();
@@ -398,6 +403,8 @@ Comparison* StateTransition::GetComparison()
 
 void StateTransition::SetComparison(const Comparison& comp)
 {
+	if(condition != 0)
+		delete condition;
 	condition = new Comparison(comp);
 }
 
@@ -498,6 +505,9 @@ int  StateMachineState::GetNumRegisterChanges()
 
 void StateMachineState::ClearStateTransitions()
 {
+	for(auto& it : transitions)
+		delete it;
+
 	transitions.clear();
 }
 
@@ -516,12 +526,12 @@ int  StateMachineState::GetNumStateTransitions()
 	return transitions.size();
 }
 
-/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsBegin()
+std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsBegin()
 {
 	return transitions.begin();
 }
 
-/*const*/ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsEnd()
+std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsEnd()
 {
 	return transitions.end();
 }
@@ -598,8 +608,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger, bool print, int 
 	for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
 		ExecuteRegisterChanges(*it, timestamp, print);
 
-	//state transitions:
-	//nextstate = -1;
+	// nextstate reset (to -1) is done by ClockDown()
 
 	auto endtransitions = state->GetStateTransitionsEnd();
 	for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
@@ -648,7 +657,6 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, in
 {
 	if(!trigger)
 	{
-		//std::cout << "remove hits (missing trigger)" << std::endl;
 		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
 			it->NoTriggerRemoveHits(timestamp, &sbadout);
 	}
