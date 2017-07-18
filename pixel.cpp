@@ -35,7 +35,6 @@ Pixel::Pixel(double3d position, double3d size,
 {
 	this->addressname = addressname;
 	this->address = address;	
-	//hit.AddAddress(addressname, address);
 	this->position = position;
 	this->size = size;
 	this->threshold = threshold;

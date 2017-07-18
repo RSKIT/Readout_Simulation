@@ -186,17 +186,7 @@ void Simulator::LoadInputFile(std::string filename)
 	}
 
 	if(logfile != "")
-	{
 		logcontent << "Loading data from \"" << filename << "\" ..." << std::endl;
-
-		//std::fstream logf;
-		//logf.open(logfile.c_str(), std::ios::out | std::ios::app);
-		//if(logf.is_open())
-		//{
-		//	logf << "Loading data from \"" << filename << "\" ..." << std::endl;
-		//	logf.close();
-		//}
-	}
 
 	if(archivename != "")
 	{
@@ -349,17 +339,10 @@ DetectorBase* Simulator::GetDetector(int address)
 	
 void Simulator::AddDetector(DetectorBase* detector)
 {
-	//std::cout << "Input:  "
-	//		  << detector->GetPosition() << " size: " << detector->GetSize() << std::endl;
-
 	detectors.push_back(detector->Clone());
 	auto it = detectors.end();
 	--it;
 	eventgenerator.AddDetector(*it);
-
-	//auto it = --detectors.end();
-	//std::cout << "Output: "
-	//		  << (*it)->GetPosition() << " size: " << (*it)->GetSize() << std::endl;
 }
 
 void Simulator::ClearDetectors()
@@ -411,23 +394,21 @@ void Simulator::GenerateEvents(int events, double starttime)
 		eventstoload.push_back(newevents);
 	}
 
-	//std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
+	if(outputlevel & eventgeneration)
+		std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
 
 	for(auto& it : eventstoload)
 	{
 		switch(it.datatype)
 		{
 			case(GenerateNewEvents):
-				//std::cout << "  NewSimpleEvents " << std::endl;
 			    eventgenerator.GenerateEvents(it.starttime, it.numevents, -1, !archiveonly,
 			    						(outputlevel & eventgeneration), tsprintpitch);
 			    break;
 			case(PixelHitFile):
-				//std::cout << "  Pixel Hit File" << std::endl;
 			    eventgenerator.LoadEventsFromFile(it.source, true, it.starttime);
 			    break;
 			case(ITkFile):
-				//std::cout << "  ITk Data" << std::endl;
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
 			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
 			    								it.distance, it.sort, 
@@ -600,17 +581,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				s << oldarchive.read((*it)->GetOutputFile()) << std::endl
 				  << (*it)->GenerateOutput();
 				archive.writestr((*it)->GetOutputFile(), s.str());
-
-				//if(archiveonly)
-				//	(*it)->ClearOutput();
 			}
 			else
-			{
 				archive.writestr((*it)->GetOutputFile(), (*it)->GenerateOutput());
-
-				//if(archiveonly)
-				//	(*it)->ClearOutput();
-			}
 
 			if(oldarchive.has_file((*it)->GetBadOutputFile()))
 			{
@@ -618,23 +591,20 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				s << oldarchive.read((*it)->GetBadOutputFile()) << std::endl
 				  << (*it)->GenerateBadOutput();
 				archive.writestr((*it)->GetBadOutputFile(), s.str());
-
-				//if(archiveonly)
-				//	(*it)->ClearBadOutput();
 			}
 			else
-			{
 				archive.writestr((*it)->GetBadOutputFile(), (*it)->GenerateBadOutput());
-
-				//if(archiveonly)
-				//	(*it)->ClearBadOutput();
-			}
 		}
 		if(!archiveonly)
 		{
 			(*it)->FlushOutput();
 			(*it)->ClearOutput();
 			(*it)->FlushBadOutput();
+			(*it)->ClearBadOutput();
+		}
+		else
+		{
+			(*it)->ClearOutput();
 			(*it)->ClearBadOutput();
 		}
 		dethitcounter += (*it)->GetHitCounter();
@@ -799,14 +769,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else if(childname.compare("Size") == 0)
 			det->SetSize(LoadTCoord(child));
 		else if(childname.compare("StateMachine") == 0)	
-		{
 			det = LoadStateMachine(det, child);
-			//std::cout << "States included: " << det->GetNumStates() << std::endl;
-
-			//std::cout << "State Transitions: " 
-			//			<< static_cast<XMLDetector*>(det)->GetState(0)->GetNumStateTransitions()
-			//			<< std::endl;
-		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -841,10 +804,7 @@ TCoord<double> Simulator::LoadTCoord(tinyxml2::XMLElement* coordinate)
 	for(int i = 0; i < 3; ++i)
 	{
 		if(coordinate->QueryDoubleAttribute(axis[i], &coord[i]) != tinyxml2::XML_NO_ERROR)
-		{
-			//std::cout << "Error reading " << axis[i] << " axis" << std::endl;
 			coord[i] = 0;
-		}
 	}
 
 	return coord;
@@ -941,7 +901,6 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			const char* nam = element->Attribute("filename");
 			if(nam != 0)
 				newevents.source = std::string(nam);
-				//eventgenerator.LoadEventsFromFile(std::string(nam), sort, timeshift);
 
 			eventstoload.push_back(newevents);
 		}
@@ -1013,7 +972,6 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			LoadSpline(&eventgenerator, element);
 		}
-
 
 		if(element != eventgen->LastChildElement())
 			element = element->NextSiblingElement();
@@ -1089,8 +1047,6 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 
 	const char* nam = parent->Attribute("addrname");
 	std::string addressname = (nam != 0)?std::string(nam):defaultaddressname;
-	//if(addressname == "")
-	//	addressname = defaultaddressname;
 
 	int address;
 	tinyxml2::XMLError error = parent->QueryIntAttribute("addr", &address);
@@ -1114,8 +1070,6 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	//check whether a name for child ROCs is given:
 	nam = parent->Attribute("childaddrname");
 	std::string childaddressname = (nam != 0)?std::string(nam):("c" + defaultaddressname);
-	//if(childaddressname == "")
-	//	childaddressname = "c" + defaultaddressname;
 
 	int queuelength;
 	error = parent->QueryIntAttribute("queuelength", & queuelength);
@@ -1490,7 +1444,7 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 {
 	if(outputlevel & loadsimulation)
-		std::cout << "    LoadState: "; // << std::endl;
+		std::cout << "    LoadState: ";
 
 	StateMachineState* state = new StateMachineState();
 
@@ -1536,7 +1490,7 @@ StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchange)
 {
 	if(outputlevel & loadsimulation)
-		std::cout << "      LoadRegisterChange: "; // << std::endl;
+		std::cout << "      LoadRegisterChange: ";
 
 	RegisterAccess regacc;
 
@@ -1553,13 +1507,16 @@ RegisterAccess Simulator::LoadRegisterChange(tinyxml2::XMLElement* registerchang
 	if(error != tinyxml2::XML_NO_ERROR)
 		regacc.value = 0;
 
+	if(outputlevel & loadsimulation)
+		std::cout << "\"" << regacc.what << "\"" << std::endl;
+
 	return regacc;
 }
 
 StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition)
 {
 	if(outputlevel & loadsimulation)
-		std::cout << "      LoadStateTransition to "; // << std::endl;
+		std::cout << "      LoadStateTransition to ";
 
 	StateTransition* trans = new StateTransition();
 
@@ -1686,10 +1643,7 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 	}
 
 	if(outputlevel & loadsimulation)
-	{
-		//std::cout << "       Create Relation: " << comp->GetRelation() << std::endl;
 		std::cout << "comparisonLoader:" << std::endl << comp->PrintComparison(" ");
-	}
 
 	return comp;
 }
@@ -1725,7 +1679,7 @@ std::string Simulator::TimesToInterval(TimePoint start, TimePoint end)
 		timetext << duration/60000 << " minutes";
 		duration %= 60000;
 	}
-	if(duration > 1000)
+	if(duration > 1000)		// 1 second
 	{
 		if(started)
 			timetext << " ";

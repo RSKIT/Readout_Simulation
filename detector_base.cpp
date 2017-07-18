@@ -201,7 +201,6 @@ bool DetectorBase::SizeOK()
 
 bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
 {
-    //somewhere here "-nan" values are created...
     bool corrected=false;
     for(auto it = cell->GetROCsBegin(); it != cell->GetROCsEnd(); it++)
     {
@@ -238,8 +237,6 @@ bool DetectorBase::EnlargeSizeROC(ReadoutCell *cell)
             this->SetSize(parentsize);
             corrected = true;
         }
-
-        //std::cout << parentpos << " size: " << parentsize << std::endl;
     }
     return corrected;
 }
@@ -282,10 +279,7 @@ bool DetectorBase::PlaceHit(Hit hit, int timestamp)
     std::string addressname = rocvector.front().GetAddressName();
     for (auto &it : rocvector)
     {
-        int address = hit.GetAddress(addressname);
-        //std::cout << "roc addressname: " << addressname << std::endl;
-        //std::cout << "hit getaddress: " << address << std::endl;
-        if (it.GetAddress() == address)
+        if (it.GetAddress() == hit.GetAddress(addressname))
             return it.PlaceHit(hit, timestamp, &sbadout);
     }
 

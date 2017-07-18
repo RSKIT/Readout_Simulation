@@ -103,8 +103,6 @@ int ReadoutCell::GetConfiguration()
 
 void ReadoutCell::SetConfiguration(int newconfig)
 {
-    //std::cout << "ReadoutCell Configuration: " << newconfig << std::endl;
-
     configuration = newconfig;
 
     zerosuppression = newconfig & ZEROSUPPRESSION;
@@ -120,6 +118,7 @@ void ReadoutCell::SetConfiguration(int newconfig)
 
     if(newconfig & PRIOBUFFER)
         buf = new PrioBuffer(this);
+    //not necessary, as no third alternative and this is the default choice:
     //else if(newconfig & FIFOBUFFER)
     //    buf = new FIFOBuffer(this);
     else
@@ -128,6 +127,7 @@ void ReadoutCell::SetConfiguration(int newconfig)
     if(rocreadout != 0)
         delete rocreadout;
 
+    //not necessary as it is the default choice:
     //if(newconfig & NOREADONFULL)
     //    rocreadout = new NoFullReadReadout(this);
     /*else*/ if(newconfig & NOOVERWRITE)
@@ -154,11 +154,7 @@ int ReadoutCell::GetReadoutDelay()
 
 void ReadoutCell::SetReadoutDelay(int delay)
 {
-    //if(delay <= 0)
-    //    readoutdelay = 0;
-    //else
-        readoutdelay = delay;
-
+    readoutdelay = delay;
 }
 
 bool ReadoutCell::GetZeroSuppression()
@@ -187,7 +183,7 @@ void ReadoutCell::SetAddressName(std::string addressname)
 
 int ReadoutCell::GetAddress()
 {
-		return address;
+	return address;
 }
 
 void ReadoutCell::SetAddress(int address)
@@ -224,7 +220,6 @@ void ReadoutCell::SetSize(TCoord<double> newsize)
 {
     size = newsize;
 }
-
 
 bool ReadoutCell::AddHit(Hit hit, int timestamp)
 {
@@ -266,14 +261,18 @@ void ReadoutCell::AddPixel(Pixel pixel)
 {
 	pixelvector.push_back(pixel);
 
+    //if this is the first element to be added, its position and size are the ones of the readout
+    //  cell:
     if(position == TCoord<double>::Null && size == TCoord<double>::Null)
     {
         position = pixel.GetPosition();
         size     = pixel.GetSize();
     }
+    //if this is not the first element, the size has to be tested whether the new pixel is inside
+    //  the current readout cell volume:
     else
     {
-        //update position and size:
+        //update position and size (use only the new pixel):
         for(int i=0;i<3;++i)
         {
             if(position[i] > pixel.GetPosition()[i])
@@ -430,14 +429,12 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
         for (auto &it : rocvector)
         {
             int address = hit.GetAddress(addressname);
-            //std::cout << "roc addressname: " << addressname << std::endl;
-            //std::cout << "hit address: " << address << std::endl;
             if (it.GetAddress() == address)
                 return it.PlaceHit(hit, timestamp, out);
         }
-        //return false; //this way a readoutcell with ROCs and pixels is possible
     }
-    /*else*/ if (pixelvector.size() > 0)
+    
+    if (pixelvector.size() > 0)
     {
         for (auto &it : pixelvector)
         {
@@ -490,9 +487,7 @@ bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::stringst
 {
     bool result = false;
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
-    {
         result |= it->LoadCell(addressname, timestamp, out);
-    }
 
     if(addressname.compare(this->addressname) == 0)
         result |= rocreadout->Read(timestamp, out);
@@ -514,11 +509,12 @@ int ReadoutCell::HitsAvailable(std::string addressname)
 
     if(addressname.compare(this->addressname) == 0)
         result += buf->GetNumHitsEnqueued();
-    //take into account that for e.g. OneByOneReadout hits can be counted 2 times:
+    //to count all hits in the detector:
+    //  take into account that for e.g. OneByOneReadout hits can be counted 2 times
+    //    (ClearChild()== true):
     else if(addressname.compare("") == 0 && !rocreadout->ClearChild())
         result += buf->GetNumHitsEnqueued();
     
-
     return result;
 }
 

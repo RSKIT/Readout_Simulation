@@ -272,7 +272,7 @@ bool NoFullReadReadout::Read(int timestamp, std::stringstream* out)
 	if(cell->buf->is_full())
 		return false;
 
-	//to save whether a hit was found
+	//to save whether a hit was found:
 	bool hitfound = false;
 
 	//check all child ROCs for hits:
@@ -426,12 +426,12 @@ bool OneByOneReadout::Read(int timestamp, std::stringstream* out)
 		if(!cell->hitqueue[i].is_valid() && child->hitqueue[i].is_valid() 
 				&& child->hitqueue[i].is_available(timestamp))
 		{
-			//std::cout << "1by1 ok" << std::endl;
 			cell->hitqueue[i] = child->hitqueue[i];
 			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName(), timestamp);
 			cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			hitfound = true;
 		}
+		//output from when the hit will be readable:
 		//else if(child->hitqueue[i].is_valid() && !child->hitqueue[i].is_available(timestamp))
 		//	std::cout << "available from: " << child->hitqueue[i].GetAvailableTime() << std::endl;
 	}
@@ -448,7 +448,6 @@ PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 {
 
 }
-
 
 bool PixelReadout::Read(int timestamp, std::stringstream* out)
 {
@@ -474,7 +473,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 	{
 		Hit ph = it->LoadHit(timestamp, out);
 
-		if(ph.is_valid()) // && ph.is_available(timestamp))
+		if(ph.is_valid())
 		{
 			ph.AddReadoutTime(cell->addressname, timestamp);
 			ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
@@ -490,12 +489,10 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 
 			if(cell->GetNumPixels() > 1)
 			{
-				ph.AddReadoutTime("merged", timestamp);	//for invalid hits this line should be not reachable
+				ph.AddReadoutTime("merged", timestamp);	
 				if(out != 0)
 					*out << ph.GenerateString() << std::endl;
 			}
-
-			//it->ClearHit();
 		}
 		else if(!it->IsEmpty(timestamp) && h.is_valid())
 		{
