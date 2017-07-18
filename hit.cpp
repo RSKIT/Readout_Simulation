@@ -245,6 +245,24 @@ void Hit::ClearReadoutTimes()
 	readouttimestamps.size();
 }
 
+std::string Hit::GenerateTitleString()
+{
+	std::stringstream s("");
+
+	s << "Event; Timestamp; DeadTimeEnd; Charge; Address: ";
+
+	for(std::map<std::string, int>::iterator it = address.begin(); it != address.end(); ++it)
+		s << "(" << it->first << ") ";
+
+	s << "; Readout Times: ";
+
+	for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
+			it != readouttimestamps.end(); ++it)
+		s << "(" << it->first << ") ";
+
+	return s.str();
+}
+
 std::string Hit::GenerateString(bool compact)
 {
 	std::stringstream s("");
@@ -271,8 +289,7 @@ std::string Hit::GenerateString(bool compact)
 		  << deadtimeend << " " << charge << " ;";
 
 		//address:
-		for(std::map<std::string, int>::iterator it = address.begin(); 
-					it != address.end(); ++it)
+		for(std::map<std::string, int>::iterator it = address.begin(); it != address.end(); ++it)
 			s << " " << it->second;
 
 		//readouttimestamps:

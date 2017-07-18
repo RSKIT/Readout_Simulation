@@ -174,6 +174,13 @@ public:
 	void 	ClearReadoutTimes();
 
 	/**
+	 * @brief generates a title line for compact output of GenerateString(). It generates a list of
+	 *             all parameters in the correct order without a line ending.
+	 * @details
+	 * @return               - title line for compact hit output
+	 */
+	std::string GenerateTitleString();
+	/**
 	 * @brief generates a string containing all information of the hit
 	 * @details
 	 * 

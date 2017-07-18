@@ -52,10 +52,7 @@ int main(int argc, char** argv)
     bool writelog = fgenerallog.is_open();
 
     if(writelog)
-    {
-        //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         fgenerallog << "Call at: " << GetDateTime() << " with ";
-    }
 
     //Load Data from command line arguments:
     if(argc > 1)
@@ -63,14 +60,16 @@ int main(int argc, char** argv)
         fgenerallog << (argc-1) << " arguments" << std::endl;
         for(int i = 1; i < argc; ++i)
         {
-            //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            //char buffer[80];
-            //strftime(buffer, 80,"%e.%m.%y %X", localtime(&tt));
             std::string now = GetDateTime();
             if(writelog)
             {
+                if(!fgenerallog.is_open())
+                    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
+
                 fgenerallog << "[" << now << "] Starting Simulation " 
                             << i << "/" << (argc-1) << ": \"" << argv[i] << "\"" << std::endl;
+
+                fgenerallog.close();
             }
             std::cout << "[" << now << "] Loading from file \"" << argv[i] 
                         << "\" ..." << std::endl;
@@ -81,9 +80,9 @@ int main(int argc, char** argv)
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
         }
     }
+    //try loading filenames from pipelined data:
     else
     {
-        //try loading filenames from pipelined data:
         std::string file = "";
         std::vector<std::string> files;
 
@@ -95,12 +94,16 @@ int main(int argc, char** argv)
         int i = 1;  //index for the simulation files
         for(auto& it : files)
         {
-            //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::string now = GetDateTime();
             if(writelog)
             {
+                if(!fgenerallog.is_open())
+                    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
+                
                 fgenerallog << "[" << now << "] Starting Simulation " 
                             << i << "/" << files.size() << ": \"" << it << "\"" << std::endl;
+
+                fgenerallog.close();
             }
             std::cout << "[" << now << "] Loading from file \"" << it 
                         << "\" ..." << std::endl;
@@ -122,7 +125,6 @@ int main(int argc, char** argv)
         }
     }
 
-    //std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::string now = GetDateTime();
     if(writelog)
         fgenerallog << "[" << now << "] Simulation(s) finished" << std::endl;
