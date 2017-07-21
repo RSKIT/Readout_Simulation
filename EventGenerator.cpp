@@ -297,10 +297,7 @@ void EventGenerator::ClearOnTimeStamps()
 
 bool EventGenerator::GetTriggerState(int timestamp, bool print)
 {
-	if(triggerturnontimes.size() == 0)
-		return triggerstate;
-
-	if(timestamp == triggerturnontimes.front())
+	if(triggerturnontimes.size() > 0 && timestamp == triggerturnontimes.front())
 	{
 		triggerstate = true;
 		triggerturnofftime = timestamp + triggerlength;
@@ -1564,7 +1561,6 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 
 		hittemplate.SetTimeStamp((*times)[it->first]);
 		hittemplate.SetEventIndex(eventid);
-		++eventid;
 
 		//log the event header:
 		*output << "# Event " << eventid << std::endl  //it->first << std::endl
@@ -1575,6 +1571,8 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 			*output << "# Trigger " << triggerstart << " - " 
 		 		    << int(triggerstart + itself->triggerlength) << std::endl;
 		}
+
+		++eventid;	//increment EventID AFTER it was used for an event
 
 		std::vector<Hit> localhits;
 		//loop all detectors

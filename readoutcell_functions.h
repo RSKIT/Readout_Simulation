@@ -28,10 +28,12 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <deque>
 
 #include "hit.h"
 
 class ReadoutCell;	//solve circular dependency with ReadoutCell class
+
 
 //---- Readout Order Classes ----
 
@@ -74,7 +76,7 @@ public:
 	 * 
 	 * @return               - true if a hit was removed, false if not
 	 */
-	virtual bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
+	virtual bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
 
 	/**
 	 * @brief checks whether all buffers are occupied
@@ -105,7 +107,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
@@ -127,7 +129,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
+	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();
@@ -227,6 +229,45 @@ public:
 	bool ClearChild();
 };
 
+/**
+ * @brief implementation of the ROCReadout class. This readout scheme does not use a priority chain
+ *                 as the ither readout schemes. Instead, a token is passed around to find the next
+ *                 hit. The major difference is, that now for example EoCs can be loaded again
+ *                 before all have been read out. This implies that the readout scheme is like for
+ *                 the NoFullReadReadout.
+ */
+class TokenReadout :public ROCReadout
+{
+public:
+	TokenReadout(ReadoutCell* roc);
+
+	bool Read(int timestamp, std::stringstream* out = 0);
+	bool ClearChild();
+private:
+	int currentindex;
+};
+
+
+class SortedROCReadout : public ROCReadout
+{
+public:
+	SortedROCReadout(ReadoutCell* roc);
+	~SortedROCReadout();
+
+	bool Read(int timestamp, std::stringstream* out = 0);
+	bool ClearChild();
+
+	/**
+	 * @brief sets the pointer to the time stamp which is to be read out at the moment
+	 * @details
+	 * 
+	 * @param front          - pointer to the element presented by the trigger table
+	 */
+	void SetTriggerTableFrontPointer(const int* front);
+private:
+	const int* triggertablefront;
+
+};
 //---- End ROC Readout Classes ----
 
 //---- Pixel Readout Classes ----

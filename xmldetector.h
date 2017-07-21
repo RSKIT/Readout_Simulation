@@ -69,7 +69,8 @@ public:
 		NotEqual 		=  6,
 		Or 				=  7,
 		And 			=  8,
-		Xor 			=  9
+		Xor 			=  9,
+		empty           = 10	//to enable skipping of the writing of the comparison in the XML
 	};
 
 	//property to use for the comparison:
@@ -415,6 +416,7 @@ public:
 	XMLDetector(std::string addressname, int address);
 	XMLDetector();
 	XMLDetector(const XMLDetector& templ);
+	XMLDetector(const DetectorBase* templ);
 
 	void Cleanup();
 

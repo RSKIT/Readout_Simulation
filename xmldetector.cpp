@@ -243,6 +243,10 @@ void Comparison::EvalSecondRegister(double value)
 
 bool Comparison::ReadyForEvaluation()
 {
+	//empty (true) comparison:
+	if(relation == empty)
+		return true;
+
 	switch(firstchoice)
 	{
 		case(Comp):
@@ -286,6 +290,10 @@ bool Comparison::Evaluate()
 {
 	if(!ReadyForEvaluation())
 		return false;
+
+	//do not waste time on an always true comparison:
+	if(relation == empty)
+		return true;
 
 	if(firstchoice == Comp)
 		firstval = (firstcomp->Evaluate())?1:0;
@@ -350,7 +358,7 @@ std::string Comparison::PrintComparison(std::string spaces) const
  *****************************/
 
 StateTransition::StateTransition() : nextstate(""), delay(0), 
-		counterchanges(std::vector<RegisterAccess>()), condition(new Comparison())
+		counterchanges(std::vector<RegisterAccess>()), condition(new Comparison(Comparison::empty))
 {
 
 }
@@ -410,6 +418,8 @@ void StateTransition::SetComparison(const Comparison& comp)
 
 void StateTransition::SetComparison(Comparison* comp)
 {
+	if(condition != 0)
+		delete condition;
 	condition = comp;
 }
 
@@ -560,6 +570,13 @@ XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ),
 		states.push_back(new StateMachineState(*it));
 }
 
+XMLDetector::XMLDetector(const DetectorBase* templ) : DetectorBase(templ), currentstate(0),
+		nextstate(-1), states(std::vector<StateMachineState*>()), 
+		counters(std::map<std::string, double>())
+{
+
+}
+
 void XMLDetector::Cleanup()
 {
 	for(auto& it : rocvector)
@@ -660,6 +677,8 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, in
 		for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
 			it->NoTriggerRemoveHits(timestamp, &sbadout);
 	}
+	else if(triggertabledepth > 0)
+		AddTriggerTableEntry(timestamp);
 
 	//execute special actions for making signals synchronous if they are defined:
 	StateMachineState* state = GetState("synchronisation");
@@ -809,6 +828,20 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp, b
 		else
 			std::cout << HitsAvailable(regacc.parameter);
 	}
+	else if(print && regacc.what.compare("printtriggertablefront") == 0)
+	{
+		if(regacc.value != 0)
+			std::cout << GetTriggerTableFront() << std::endl;
+		else
+			std::cout << GetTriggerTableFront();
+	}
+	else if(print && regacc.what.compare("printtriggertableentries") == 0)
+	{
+		if(regacc.value != 0)
+			std::cout << GetTriggerTableEntries() << std::endl;
+		else
+			std::cout << GetTriggerTableEntries();
+	}
 	else if(print && regacc.what.compare("printcounter") == 0)
 	{
 		if(regacc.value != 0)
@@ -861,6 +894,8 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp, b
 
         SetCounter("readcell", (result)?1:0);
 	}
+	else if(regacc.what.compare("nexttriggertimestamp") == 0)
+		RemoveTriggerTableFront();
 
 }
 
@@ -918,4 +953,10 @@ double XMLDetector::GetValue(RegisterAccess regacc)
 			hits += it.HitsAvailable(regacc.parameter);
 		return hits;
 	}
+	else if(regacc.what.compare("gettriggertablefront") == 0)
+		return GetTriggerTableFront();
+	else if(regacc.what.compare("gettriggertableentries") == 0)
+		return GetTriggerTableEntries();
+	else if(regacc.what.compare("gettriggertablelength") == 0)
+		return GetTriggerTableDepth();
 }

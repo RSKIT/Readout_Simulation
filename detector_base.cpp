@@ -26,7 +26,8 @@ DetectorBase::DetectorBase() :
         addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), outputfile(""),
         sout(std::stringstream("")),fout(std::fstream()), badoutputfile(""), 
         sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
-        position(TCoord<double>::Null), size(TCoord<double>::Null)
+        position(TCoord<double>::Null), size(TCoord<double>::Null), 
+        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1)
 {
 	
 }
@@ -34,7 +35,8 @@ DetectorBase::DetectorBase() :
 DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""),
         sout(std::stringstream("")), fout(std::fstream()), badoutputfile(""), 
         sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
-        position(TCoord<double>::Null), size(TCoord<double>::Null)
+        position(TCoord<double>::Null), size(TCoord<double>::Null), 
+        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -46,9 +48,32 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
         address(templ.address), rocvector(templ.rocvector),
         outputfile(templ.outputfile), fout(std::fstream()), sout(std::stringstream("")),
         badoutputfile(templ.badoutputfile), sbadout(std::stringstream("")),
-        fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size)
+        fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size),
+        triggertabledepth(templ.triggertabledepth), currenttriggerts(templ.currenttriggerts)
 {
+    triggertable.clear();
+    if(templ.triggertable.size() > 0)
+        triggertable.insert(triggertable.end(), templ.triggertable.begin(), 
+                                templ.triggertable.end());
 
+    for(auto& it : rocvector)
+        it.SetTriggerTableFrontPointer(&currenttriggerts);
+}
+
+DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addressname),
+        address(templ->address), rocvector(templ->rocvector), outputfile(templ->outputfile),
+        fout(std::fstream()), sout(std::stringstream("")), badoutputfile(templ->badoutputfile),
+        fbadout(std::fstream()), sbadout(std::stringstream("")), hitcounter(0), 
+        position(templ->position), size(templ->size), triggertabledepth(templ->triggertabledepth),
+        currenttriggerts(templ->currenttriggerts)
+{
+    triggertable.clear();
+    if(templ->triggertable.size() > 0)
+        triggertable.insert(triggertable.end(), templ->triggertable.begin(), 
+                                templ->triggertable.end());
+
+    for(auto& it : rocvector)
+        it.SetTriggerTableFrontPointer(&currenttriggerts);
 }
 
 DetectorBase::~DetectorBase()
@@ -519,4 +544,70 @@ DetectorBase* DetectorBase::Clone()
 int DetectorBase::GetNumStates()
 {
     return 0;
+}
+
+int DetectorBase::GetTriggerTableDepth()
+{
+    return triggertabledepth;
+}
+
+void DetectorBase::SetTriggerTableDepth(int depth)
+{
+    if(depth >= 0)
+        triggertabledepth = depth;
+}
+
+int DetectorBase::GetTriggerTableEntries()
+{
+    return triggertable.size();
+}
+
+const int* DetectorBase::GetTriggerTableFrontPointer()
+{
+    return &currenttriggerts;
+}
+
+int DetectorBase::GetTriggerTableFront()
+{
+    return currenttriggerts;
+}
+
+void DetectorBase::RemoveTriggerTableFront()
+{
+    if(triggertable.size() > 0)
+    {
+        currenttriggerts = triggertable.front();
+        triggertable.pop_front();
+    }
+    else
+        currenttriggerts = -1;
+}
+
+void DetectorBase::ClearTriggerTable()
+{
+    triggertable.clear();
+}
+
+bool DetectorBase::AddTriggerTableEntry(int timestamp)
+{
+    if(triggertable.size() < triggertabledepth)
+    {
+        triggertable.push_back(timestamp);
+        sbadout << "# TriggerTable entry added: " << timestamp << std::endl;
+        return true;
+    }
+    else
+    {
+        sbadout << "# TriggerTable full: " << timestamp << std::endl;
+        return false;
+    }
+}
+
+int DetectorBase::WriteRemainingHitsToBadOut(int timestamp)
+{
+    int hitcounter = 0;
+    for(auto& it : rocvector)
+        hitcounter += it.RemoveAndSaveAllHits(timestamp, &sbadout);
+
+    return hitcounter;
 }

@@ -127,10 +127,16 @@ int main(int argc, char** argv)
 
     std::string now = GetDateTime();
     if(writelog)
-        fgenerallog << "[" << now << "] Simulation(s) finished" << std::endl;
-    std::cout << "[" << now << "] Simulation(s) finished" << std::endl;
+    {
+        if(!fgenerallog.is_open())
+            fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
 
-    fgenerallog.close();
+        fgenerallog << "[" << now << "] Simulation(s) finished" << std::endl;
+
+        fgenerallog.close();
+    }
+
+    std::cout << "[" << now << "] Simulation(s) finished" << std::endl;
 
     return 0;
 }

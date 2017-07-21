@@ -152,6 +152,15 @@ public:
 	 */
 	int 	GetReadoutTime(std::string name);
 	/**
+	 * @brief tries to find the passed name part in a Readout Time Stamp and returns the full 
+	 *             readout time name
+	 * @details
+	 * 
+	 * @param namepart       - part of the name to find
+	 * @return               - the full name of the first occurence of `namepart`
+	 */
+	std::string FindReadoutTime(std::string namepart);
+	/**
 	 * @brief changes an existing readout time stamp
 	 * @details
 	 * 

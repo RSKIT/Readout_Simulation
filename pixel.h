@@ -169,7 +169,7 @@ public:
 	 * 
 	 * @param timestamp      - current timestamp at which the status is queried
 	 * @return               - true if no hit is in the pixel and the dead time of the last hit
-	 *                            is over
+	 *                            is over, false otherwise
 	 */
 	bool        IsEmpty(int timestamp);
 

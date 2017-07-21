@@ -282,6 +282,8 @@ bool NoFullReadReadout::Read(int timestamp, std::stringstream* out)
 		Hit h  = it->buf->GetHit(timestamp);
 		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
+			if(it->GetTriggered())
+				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
 			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			bool result = cell->buf->InsertHit(h);
@@ -329,6 +331,8 @@ bool NoOverWriteReadout::Read(int timestamp, std::stringstream* out)
 		Hit h  = it->buf->GetHit(timestamp);
 		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
+			if(it->GetTriggered())
+				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
 			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
@@ -370,6 +374,8 @@ bool OverWriteReadout::Read(int timestamp, std::stringstream* out)
 		Hit h  = it->buf->GetHit(timestamp);
 		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
+			if(it->GetTriggered())
+				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
 			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
@@ -427,6 +433,10 @@ bool OneByOneReadout::Read(int timestamp, std::stringstream* out)
 				&& child->hitqueue[i].is_available(timestamp))
 		{
 			cell->hitqueue[i] = child->hitqueue[i];
+			//add trigger time information:
+			if(child->GetTriggered())
+				cell->hitqueue[i].AddReadoutTime(child->GetAddressName() + "_Trigger",
+													cell->hitqueue[i].GetAvailableTime());
 			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName(), timestamp);
 			cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
 			hitfound = true;
@@ -443,6 +453,109 @@ bool OneByOneReadout::ClearChild()
 {
 	return true;
 }
+
+TokenReadout::TokenReadout(ReadoutCell* roc) : ROCReadout(roc)
+{
+	currentindex = 0;
+}
+
+bool TokenReadout::Read(int timestamp, std::stringstream* out)
+{
+	int children = cell->rocvector.size();
+
+	//TODO: finish this class
+}
+
+bool TokenReadout::ClearChild()
+{
+	return false;
+}
+
+SortedROCReadout::SortedROCReadout(ReadoutCell* roc) : ROCReadout(roc), triggertablefront(NULL)
+{
+
+}
+
+SortedROCReadout::~SortedROCReadout()
+{
+	triggertablefront = NULL;
+}
+
+bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
+{
+	//get the timestamp which is to be read out:
+	static bool notinitialised = true;
+	int timestamptoread = -1;
+	if(triggertablefront != NULL)
+		timestamptoread = *triggertablefront;
+	else if(notinitialised)
+	{
+		std::cerr << "SortedROCReadout: Detector not initialised!" << std::endl;
+		notinitialised = false;
+	}
+
+	//do not read at all if the buffer is already full:
+	if(cell->buf->is_full())
+		return false;
+
+	//to save whether a hit was found:
+	bool hitfound = false;
+
+	//check all child ROCs for hits:
+	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
+	{
+		//get a hit from the respective ROC:
+		Hit h  = it->buf->GetHit(timestamp, false);
+
+
+		//read without deleting as the event timestamp may be wrong
+		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
+		{
+			std::string triggerfieldname = h.FindReadoutTime("_Trigger");
+			if(timestamptoread != -1 && timestamptoread != h.GetReadoutTime(triggerfieldname))
+				continue;
+
+			it->buf->GetHit(timestamp, true);	//delete the hit from the subordinate ReadoutCell
+
+			//add the trigger timestamp when the ROC was triggered:
+			if(it->GetTriggered())
+				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
+
+			h.AddReadoutTime(cell->addressname, timestamp);
+			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			bool result = cell->buf->InsertHit(h);
+
+			//return on a writing error in own buffer:
+			if(!result)
+			{
+				//log the losing of the hit:
+				if(out != 0)
+					*out << h.GenerateString() << std::endl;
+				return hitfound;
+			}
+
+			//update hit-found flag:
+			hitfound |= result;
+
+			//do not continue reading, if the buffer is full
+			if(cell->buf->is_full())
+				return hitfound;
+		}
+	}
+
+	return hitfound;
+}
+
+bool SortedROCReadout::ClearChild()
+{
+	return false;
+}
+
+void SortedROCReadout::SetTriggerTableFrontPointer(const int* front)
+{
+	triggertablefront = front;
+}
+
 
 PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 {

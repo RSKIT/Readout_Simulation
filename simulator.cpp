@@ -506,12 +506,22 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		++timestamp;
 
 		//delay the stopping of the simulation for "stop-on-done" (see while()):
-		if(nextevent == -1)
+		if(nextevent == -1 && eventgenerator.GetNumOnTimeStamps() == 0)
 		{
 			//count the remaining events:
 			int hitcount = 0;
 			for(auto& it : detectors)
-				hitcount += it->HitsEnqueued();
+			{
+				//check whether 
+				if(it->GetTriggerTableDepth() > 0)
+				{
+					if(it->GetTriggerTableEntries() > 0)
+						hitcount += 1;
+				}
+				//count the hits in the unsorted detectors:
+				else
+					hitcount += it->HitsEnqueued();
+			}
 			if(hitcount == 0)
 				--stopdelay;
 		}
@@ -530,6 +540,15 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 						<< std::endl;
 		}
 	}
+
+	//dump the remaining hits from the detectors into the corresponding lost hit files:
+	int remaininghits = 0;
+	for(auto& it : detectors)
+		remaininghits += it->WriteRemainingHitsToBadOut(timestamp);
+
+	std::cout  << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
+	logcontent << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
+
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
@@ -754,9 +773,16 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	if(parent->QueryBoolAttribute("CheckAfterBuild", &checkafterbuild) != tinyxml2::XML_NO_ERROR)
 		checkafterbuild = false;
 
+	//length of a hit sorting FIFO (only used with SortedROCReadout):
+	int trigtablength = 0;
+	if(parent->QueryIntAttribute("TriggerTableLength", &trigtablength) != tinyxml2::XML_NO_ERROR)
+		trigtablength = 0;
+
 	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
+
+	det->SetTriggerTableDepth(trigtablength);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -789,6 +815,10 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 				std::cout << "Address Changes were applied ..." << std::endl;
 		}
 	}
+
+	//Set the detector pointer of SortedROCReadout:
+	for(auto it = det->GetROCVectorBegin(); it != det->GetROCVectorEnd(); ++it)
+		it->SetTriggerTableFrontPointer(det->GetTriggerTableFrontPointer());
 
 	AddDetector(det);
 }
@@ -1112,6 +1142,10 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		configuration |= ReadoutCell::NOOVERWRITE;
 	else if(readouttype.compare("OneByOne") == 0)
 		configuration |= ReadoutCell::ONEBYONEREADOUT;
+	else if(readouttype.compare("Token") == 0)
+		configuration |= ReadoutCell::TOKENREADOUT;
+	else if(readouttype.compare("Sorted") == 0)
+		configuration |= ReadoutCell::SORTEDROCREADOUT;
 	else //if(readouttype.compare("NoReadOnFull") == 0)
 		configuration |= ReadoutCell::NOREADONFULL;
 
@@ -1396,18 +1430,8 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 	tinyxml2::XMLError error;
 
 	//transform the detector to an XMLDetector:
-	XMLDetector* det = new XMLDetector(detector->GetAddressName(), detector->GetAddress());
-
-	det->SetPosition(detector->GetPosition());
-	det->SetSize(detector->GetSize());
-
-	for(auto it = detector->GetROCVectorBegin(); it != detector->GetROCVectorEnd(); ++it)
-		det->AddROC(*it);
-
-	det->SetBadOutputFile(detector->GetBadOutputFile());
-	det->SetOutputFile(detector->GetOutputFile());
-
-
+	XMLDetector* det = new XMLDetector(detector);
+	
 
 	tinyxml2::XMLElement* child = statemachine->FirstChildElement();
 

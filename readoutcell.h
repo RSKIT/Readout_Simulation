@@ -43,6 +43,8 @@ class ReadoutCell
 	friend class NoOverWriteReadout;
 	friend class OverWriteReadout;
 	friend class OneByOneReadout;
+	friend class TokenReadout;
+	friend class SortedROCReadout;
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
@@ -56,7 +58,9 @@ public:
 				 NOREADONFULL 		=  16,
 				 NOOVERWRITE 		=  32,
 				 OVERWRITEONFULL 	=  64,
-				 ONEBYONEREADOUT 	= 128};
+				 ONEBYONEREADOUT 	= 128,
+				 TOKENREADOUT 		= 256,
+				 SORTEDROCREADOUT 	= 512};
 
 	/**
 	 * @brief constructor with basic configuration of the readout cell
@@ -389,7 +393,7 @@ public:
      * @param timestamp      - current time stamp when this action is to be executed
      * @param sbadout        - output stream to log the removed hits
      */
-    void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout);
+    void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
 
     /**
      * @brief checks the subordinate readout cell addresses for multiple identical addresses and
@@ -399,6 +403,28 @@ public:
      * @return               - true if an address was changed, false if not
      */
     bool 		CheckROCAddresses();
+
+    /**
+     * @brief sets the pointer to the presented element of the trigger table in the 
+     * 			   SortedROCReadout strategy. The call is recursive.
+     * @details
+     * 
+     * @param front          - pointer to the trigger queue front element to insert
+     */
+    void        SetTriggerTableFrontPointer(const int* front);
+
+    /**
+     * @brief saves all hits from the readout cell, its pixels and its substructure into the lost
+     *             hit output for finishing the simulation. The hits get an additional readout
+     *             time stamp called "SimulationEnd"
+     * @details
+     * 
+     * @param timestamp      - time stamp at the end of the simulation
+     * @param sbadout        - output stream for the lost hits
+     * 
+     * @return               - the number of hits removed from the structure
+     */
+    int         RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout = 0);
 	
 private:
 	std::string 				addressname;

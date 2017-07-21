@@ -223,6 +223,21 @@ int Hit::GetReadoutTime(std::string name)
 		return -1;
 }
 
+std::string Hit::FindReadoutTime(std::string namepart)
+{
+	std::map<std::string, int>::iterator it = readouttimestamps.begin();
+
+	while(it != readouttimestamps.end())
+	{
+		if(it->first.find(namepart) != std::string::npos)
+			return it->first;
+
+		++it;
+	}
+
+	return "";
+}
+
 bool Hit::SetReadoutTime(std::string name, int timestamp)
 {
 	std::map<std::string, int>::iterator it = readouttimestamps.find(name);

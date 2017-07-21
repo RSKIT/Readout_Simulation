@@ -136,6 +136,10 @@ void ReadoutCell::SetConfiguration(int newconfig)
         rocreadout = new OverWriteReadout(this);
     else if(newconfig & ONEBYONEREADOUT)
         rocreadout = new OneByOneReadout(this);
+    else if(newconfig & TOKENREADOUT)
+        rocreadout = new TokenReadout(this);
+    else if(newconfig & SORTEDROCREADOUT)
+        rocreadout = new SortedROCReadout(this);
     else
         rocreadout = new NoFullReadReadout(this);    
 }
@@ -593,4 +597,55 @@ bool ReadoutCell::CheckROCAddresses()
     }
 
     return changedanaddress;
+}
+
+void ReadoutCell::SetTriggerTableFrontPointer(const int* front)
+{
+    for(auto& it : rocvector)
+        it.SetTriggerTableFrontPointer(front);
+
+    auto rocr = dynamic_cast<SortedROCReadout*>(rocreadout);
+
+    if(rocr != 0)
+        rocr->SetTriggerTableFrontPointer(front);
+}
+
+int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout)
+{
+    int hitcounter = 0;
+
+    //remove hits from subordinate readout cells:
+    for(auto& it : rocvector)
+        hitcounter += it.RemoveAndSaveAllHits(timestamp, sbadout);
+
+    //remove hits from the pixels:
+    for(auto& it : pixelvector)
+    {
+        Hit h = it.GetHit(timestamp, sbadout);
+        if(h.is_valid())
+        {
+            h.AddReadoutTime("SimulationEnd",timestamp);
+            if(sbadout != NULL)
+                *sbadout << h.GenerateString() << std::endl;
+
+            ++hitcounter;
+        }
+    }
+
+    //remove hits from own hitqueue:
+    for(auto& it : hitqueue)
+    {
+        if(it.is_valid())
+        {
+            it.AddReadoutTime("SimulationEnd", timestamp);
+            if(sbadout != NULL)
+                *sbadout << it.GenerateString() << std::endl;
+
+            //avoid double counting as for OneByOne readout:
+            if(!rocreadout->ClearChild())
+                ++hitcounter;
+        }
+    }
+
+    return hitcounter;
 }

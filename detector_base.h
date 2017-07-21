@@ -46,6 +46,7 @@ public:
     DetectorBase(std::string addressname, int address);
 	DetectorBase();
 	DetectorBase(const DetectorBase& templ);
+	DetectorBase(const DetectorBase* templ);
 	~DetectorBase();
 
 	virtual void Cleanup();
@@ -374,6 +375,63 @@ public:
      */
     virtual int GetNumStates();
 
+    /**
+     * @brief provides the number of entries possible in the FIFO storing event IDs to read out
+     * @details
+     * @return               - the number of entries possible in the event ID FIFO
+     */
+    int GetTriggerTableDepth();
+    void SetTriggerTableDepth(int depth);
+
+    /**
+     * @brief provides the number of entries currently in the trigger table FIFO
+     * @details
+     * @return               - current number of entries in the FIFO
+     */
+    int GetTriggerTableEntries();
+
+    /**
+     * @brief provides a pointer to the output of the trigger table of the detector
+     * @details
+     * @return               - a pointer to the time stamp presented trigger table of the detector
+     */
+    const int* GetTriggerTableFrontPointer();
+
+    /**
+     * @brief gets the currently first entry in the FIFO
+     * @details
+     * @return               - the next time stamp in the trigger table FIFO or -1 if the FIFO is
+     *                            empty
+     */
+    int GetTriggerTableFront();
+    /**
+     * @brief removes the element at the front of the FIFO
+     * @details
+     */
+    void RemoveTriggerTableFront();
+    /**
+     * @brief removes all time stamps from the trigger table
+     * @details
+     */
+    void ClearTriggerTable();
+    /**
+     * @brief adds a new time stamp to the trigger table FIFO
+     * @details
+     * 
+     * @param timestamp      - the time stamp to add to the FIFO
+     * @return               - true if the time stamp was added, false if not
+     */
+    bool AddTriggerTableEntry(int timestamp);
+
+    /**
+     * @brief removes all hits from the buffers and pixels and stores them in the lost hit file
+     * @details
+     * 
+     * @param timestamp      - time stamp at the end of the simulation
+     * @return               - the number of hits written to the lost hit file
+     */
+    int WriteRemainingHitsToBadOut(int timestamp);
+
 protected:
 	std::string 				addressname;
 	int 						address;
@@ -409,6 +467,10 @@ protected:
     std::string 				badoutputfile;
     std::stringstream			sbadout;		//stream to collect the data from the simulation
     std::fstream 				fbadout;
+
+    std::deque<int>             triggertable;	//FIFO for trigger signals for sorted readout
+    int                         triggertabledepth;	//maximum number of entries in the triggertable
+    int 						currenttriggerts;	//the currently selected time stamp to read out
 
 };
 
