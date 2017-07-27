@@ -778,11 +778,16 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	if(parent->QueryIntAttribute("TriggerTableLength", &trigtablength) != tinyxml2::XML_NO_ERROR)
 		trigtablength = 0;
 
+	int trigtimemask = 0;
+	if(parent->QueryIntAttribute("TriggerTimeStampMask", &trigtimemask) != tinyxml2::XML_NO_ERROR)
+		trigtimemask = 0;
+
 	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
 
 	det->SetTriggerTableDepth(trigtablength);
+	det->SetTriggerTimeMask(trigtimemask);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -818,7 +823,8 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 
 	//Set the detector pointer of SortedROCReadout:
 	for(auto it = det->GetROCVectorBegin(); it != det->GetROCVectorEnd(); ++it)
-		it->SetTriggerTableFrontPointer(det->GetTriggerTableFrontPointer());
+		it->SetTriggerTableFrontPointer(det->GetTriggerTableFrontPointer(), 
+											det->GetTriggerTimeMask());
 
 	AddDetector(det);
 }

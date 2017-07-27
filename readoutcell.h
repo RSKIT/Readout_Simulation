@@ -410,8 +410,10 @@ public:
      * @details
      * 
      * @param front          - pointer to the trigger queue front element to insert
+     * @param clearpattern   - bit pattern which is NOT to be used for the match comparison of the
+     *                            trigger timestamp. To use the whole TS set this parameter to 0.
      */
-    void        SetTriggerTableFrontPointer(const int* front);
+    void        SetTriggerTableFrontPointer(const int* front, const int clearpattern = 0);
 
     /**
      * @brief saves all hits from the readout cell, its pixels and its substructure into the lost

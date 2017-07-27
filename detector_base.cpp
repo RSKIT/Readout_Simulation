@@ -27,7 +27,8 @@ DetectorBase::DetectorBase() :
         sout(std::stringstream("")),fout(std::fstream()), badoutputfile(""), 
         sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
-        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1)
+        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
+        triggertablemask(0)
 {
 	
 }
@@ -36,7 +37,8 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
         sout(std::stringstream("")), fout(std::fstream()), badoutputfile(""), 
         sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
-        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1)
+        triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
+        triggertablemask(0)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -49,7 +51,8 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
         outputfile(templ.outputfile), fout(std::fstream()), sout(std::stringstream("")),
         badoutputfile(templ.badoutputfile), sbadout(std::stringstream("")),
         fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size),
-        triggertabledepth(templ.triggertabledepth), currenttriggerts(templ.currenttriggerts)
+        triggertabledepth(templ.triggertabledepth), currenttriggerts(templ.currenttriggerts),
+        triggertablemask(templ.triggertablemask)
 {
     triggertable.clear();
     if(templ.triggertable.size() > 0)
@@ -65,7 +68,7 @@ DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addre
         fout(std::fstream()), sout(std::stringstream("")), badoutputfile(templ->badoutputfile),
         fbadout(std::fstream()), sbadout(std::stringstream("")), hitcounter(0), 
         position(templ->position), size(templ->size), triggertabledepth(templ->triggertabledepth),
-        currenttriggerts(templ->currenttriggerts)
+        currenttriggerts(templ->currenttriggerts), triggertablemask(templ->triggertablemask)
 {
     triggertable.clear();
     if(templ->triggertable.size() > 0)
@@ -510,6 +513,9 @@ std::string DetectorBase::PrintDetector()
 
     s << "Detector Size: " << position << " - " << position + size << std::endl
 	  << "Detector " << address << " Contents:\n";
+
+    if(triggertabledepth > 0)
+        s << "  Trigger Table Depth: " << triggertabledepth << std::endl;
 	for(auto it : rocvector)
 		s << it.PrintROC(" ");
 
@@ -567,6 +573,16 @@ const int* DetectorBase::GetTriggerTableFrontPointer()
     return &currenttriggerts;
 }
 
+const int DetectorBase::GetTriggerTimeMask()
+{
+    return triggertablemask;
+}
+
+void DetectorBase::SetTriggerTimeMask(int pattern)
+{
+    triggertablemask = pattern;
+}
+
 int DetectorBase::GetTriggerTableFront()
 {
     return currenttriggerts;
@@ -590,9 +606,12 @@ void DetectorBase::ClearTriggerTable()
 
 bool DetectorBase::AddTriggerTableEntry(int timestamp)
 {
+    if(triggertable.size() > 0 && (timestamp & ~triggertablemask) == triggertable.back())
+        return true;
+
     if(triggertable.size() < triggertabledepth)
     {
-        triggertable.push_back(timestamp);
+        triggertable.push_back(timestamp & ~triggertablemask);
         sbadout << "# TriggerTable entry added: " << timestamp << std::endl;
         return true;
     }

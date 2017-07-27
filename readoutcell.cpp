@@ -599,7 +599,7 @@ bool ReadoutCell::CheckROCAddresses()
     return changedanaddress;
 }
 
-void ReadoutCell::SetTriggerTableFrontPointer(const int* front)
+void ReadoutCell::SetTriggerTableFrontPointer(const int* front, const int clearpattern)
 {
     for(auto& it : rocvector)
         it.SetTriggerTableFrontPointer(front);
@@ -607,7 +607,10 @@ void ReadoutCell::SetTriggerTableFrontPointer(const int* front)
     auto rocr = dynamic_cast<SortedROCReadout*>(rocreadout);
 
     if(rocr != 0)
+    {
         rocr->SetTriggerTableFrontPointer(front);
+        rocr->SetTriggerPattern(clearpattern);
+    }
 }
 
 int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout)

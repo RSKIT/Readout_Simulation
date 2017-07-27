@@ -454,16 +454,69 @@ bool OneByOneReadout::ClearChild()
 	return true;
 }
 
-TokenReadout::TokenReadout(ReadoutCell* roc) : ROCReadout(roc)
+TokenReadout::TokenReadout(ReadoutCell* roc) : ROCReadout(roc), currentindex(0)
 {
-	currentindex = 0;
+
 }
 
 bool TokenReadout::Read(int timestamp, std::stringstream* out)
 {
 	int children = cell->rocvector.size();
+	int startindex = currentindex;	//to save the starting point as a break index
+	bool hitfound = false;
 
-	//TODO: finish this class
+	Hit h;
+
+	bool start = true;	//to start checking the other buffers of the ROC used the last time
+	while(currentindex != startindex || start)
+	{
+		if(currentindex == startindex)
+			start = false;
+
+		//check for a hit in the ROC:
+		h = cell->rocvector[currentindex].buf->GetHit(timestamp, false);
+
+		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
+		{
+			//add the trigger timestamp when the ROC was triggered:
+			if(cell->rocvector[currentindex].GetTriggered())
+				h.AddReadoutTime(cell->rocvector[currentindex].GetAddressName() + "_Trigger", 
+									h.GetAvailableTime());
+
+			//add the readout timestamp of this ROC:
+			h.AddReadoutTime(cell->addressname, timestamp);
+			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			bool result = cell->buf->InsertHit(h);
+
+			//return on a writing error in own buffer:
+			if(!result)
+			{
+				//log the losing of the hit (not necessary for NoFullRead readout): 
+				//if(out != 0)
+				//	*out << h.GenerateString() << std::endl;
+				return hitfound;
+			}
+
+			//delete the hit from the readout cell
+			cell->rocvector[currentindex].buf->GetHit(timestamp, true);
+
+			//update hit-found flag:
+			hitfound |= result;
+
+			//do not continue reading, if the buffer is full
+			if(cell->buf->is_full())
+				return hitfound;			
+
+		}
+
+		//go to the next subordinate ROC:
+		if(currentindex < children - 1)
+			++currentindex;
+		else
+			currentindex = 0;
+	}
+
+	return hitfound;
 }
 
 bool TokenReadout::ClearChild()
@@ -471,7 +524,8 @@ bool TokenReadout::ClearChild()
 	return false;
 }
 
-SortedROCReadout::SortedROCReadout(ReadoutCell* roc) : ROCReadout(roc), triggertablefront(NULL)
+SortedROCReadout::SortedROCReadout(ReadoutCell* roc) : ROCReadout(roc), triggertablefront(NULL),
+		pattern(~int(0))
 {
 
 }
@@ -487,7 +541,8 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 	static bool notinitialised = true;
 	int timestamptoread = -1;
 	if(triggertablefront != NULL)
-		timestamptoread = *triggertablefront;
+		timestamptoread = *triggertablefront; //(*triggertablefront) & ~pattern; 
+									//pattern application already done in trigger table emplacement
 	else if(notinitialised)
 	{
 		std::cerr << "SortedROCReadout: Detector not initialised!" << std::endl;
@@ -511,8 +566,10 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 		//read without deleting as the event timestamp may be wrong
 		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
+			//check for the correct time stamp parts (exclude bits as stored in this object)
 			std::string triggerfieldname = h.FindReadoutTime("_Trigger");
-			if(timestamptoread != -1 && timestamptoread != h.GetReadoutTime(triggerfieldname))
+			if(timestamptoread != -1 
+				&& timestamptoread != h.GetReadoutTime(triggerfieldname) & pattern)
 				continue;
 
 			it->buf->GetHit(timestamp, true);	//delete the hit from the subordinate ReadoutCell
@@ -556,6 +613,10 @@ void SortedROCReadout::SetTriggerTableFrontPointer(const int* front)
 	triggertablefront = front;
 }
 
+void SortedROCReadout::SetTriggerPattern(int clearpattern)
+{
+	pattern = ~clearpattern;
+}
 
 PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 {

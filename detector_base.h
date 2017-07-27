@@ -396,6 +396,14 @@ public:
      * @return               - a pointer to the time stamp presented trigger table of the detector
      */
     const int* GetTriggerTableFrontPointer();
+    /**
+     * @brief provides the bits of the time stamp to be masked before comparison with the time
+     *             stamp to read out
+     * @details
+     * @return               - the pattern of the bits to mask
+     */
+    const int GetTriggerTimeMask();
+    void SetTriggerTimeMask(int pattern);
 
     /**
      * @brief gets the currently first entry in the FIFO
@@ -471,6 +479,8 @@ protected:
     std::deque<int>             triggertable;	//FIFO for trigger signals for sorted readout
     int                         triggertabledepth;	//maximum number of entries in the triggertable
     int 						currenttriggerts;	//the currently selected time stamp to read out
+
+    int  						triggertablemask;	//bits to mask for time stamp comparison
 
 };
 

@@ -264,8 +264,17 @@ public:
 	 * @param front          - pointer to the element presented by the trigger table
 	 */
 	void SetTriggerTableFrontPointer(const int* front);
+	/**
+	 * @brief sets the bits of the timestamp which should be not considered for the comparison
+	 * @details
+	 * 
+	 * @param clearpattern   - the bit pattern which are to be cleared before comparison with
+	 *                            the trigger timestamp
+	 */
+	void SetTriggerPattern(int clearpattern);
 private:
 	const int* triggertablefront;
+	int pattern;
 
 };
 //---- End ROC Readout Classes ----
