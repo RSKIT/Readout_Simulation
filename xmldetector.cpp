@@ -574,7 +574,8 @@ XMLDetector::XMLDetector(const DetectorBase* templ) : DetectorBase(templ), curre
 		nextstate(-1), states(std::vector<StateMachineState*>()), 
 		counters(std::map<std::string, double>())
 {
-
+	for(auto& it : templ.states)
+		states.push_back(new StateMachineState(*it));
 }
 
 void XMLDetector::Cleanup()

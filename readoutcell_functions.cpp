@@ -569,7 +569,7 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 			//check for the correct time stamp parts (exclude bits as stored in this object)
 			std::string triggerfieldname = h.FindReadoutTime("_Trigger");
 			if(timestamptoread != -1 
-				&& timestamptoread != h.GetReadoutTime(triggerfieldname) & pattern)
+				&& timestamptoread != (h.GetReadoutTime(triggerfieldname) & pattern))
 				continue;
 
 			it->buf->GetHit(timestamp, true);	//delete the hit from the subordinate ReadoutCell
