@@ -468,6 +468,11 @@ public:
 	 */
 	void ClearDeadTimePoints();
 	/**
+	 * @brief update the Dead Time spline with the points in added by now
+	 * @details
+	 */
+	void SetupDeadTimeSpline();
+	/**
 	 * @brief returns the value of the spline at the given position and recalculates the set points
 	 *             of the spline if necessary (number of set points changed) or it is triggered by
 	 *             the programmer/user
@@ -496,16 +501,20 @@ public:
 	 */
 	void ClearTimeWalkPoints();
 	/**
+	 * @brief update the time walk spline with the points added by now
+	 * @details
+	 */
+	void SetupTimeWalkSpline();
+	/**
 	 * @brief evaluated the spline function at the passed position and recalculates the spline
 	 *             function beforehand if necessary (changed number of set points)
 	 * @details
 	 * 
 	 * @param charge         - the x value to evaluate the spline at
-	 * @param forceupdate    - if true, the spline function is recalculated before the evaluation
 	 * 
 	 * @return               - the time walk for the given charge
 	 */
-	double GetTimeWalk(double charge, bool forceupdate = false);
+	double GetTimeWalk(double charge);
 	bool SaveTimeWalkSpline(std::string filename, double resolution);
 
 	/**

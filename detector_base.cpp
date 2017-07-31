@@ -60,7 +60,7 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
                                 templ.triggertable.end());
 
     for(auto& it : rocvector)
-        it.SetTriggerTableFrontPointer(&currenttriggerts);
+        it.SetTriggerTableFrontPointer(&currenttriggerts, triggertablemask);
 }
 
 DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addressname),
@@ -76,7 +76,7 @@ DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addre
                                 templ->triggertable.end());
 
     for(auto& it : rocvector)
-        it.SetTriggerTableFrontPointer(&currenttriggerts);
+        it.SetTriggerTableFrontPointer(&currenttriggerts, triggertablemask);
 }
 
 DetectorBase::~DetectorBase()
@@ -606,12 +606,12 @@ void DetectorBase::ClearTriggerTable()
 
 bool DetectorBase::AddTriggerTableEntry(int timestamp)
 {
-    if(triggertable.size() > 0 && (timestamp & ~triggertablemask) == triggertable.back())
+    if(triggertable.size() > 0 && (timestamp | triggertablemask) == triggertable.back())
         return true;
 
     if(triggertable.size() < triggertabledepth)
     {
-        triggertable.push_back(timestamp & ~triggertablemask);
+        triggertable.push_back(timestamp | triggertablemask);
         sbadout << "# TriggerTable entry added: " << timestamp << std::endl;
         return true;
     }

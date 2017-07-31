@@ -397,6 +397,10 @@ void Simulator::GenerateEvents(int events, double starttime)
 	if(outputlevel & eventgeneration)
 		std::cout << "Entries in loadqueue: " << eventstoload.size() << std::endl;
 
+	//set up detector characteristics:
+	eventgenerator.SetupTimeWalkSpline();
+	eventgenerator.SetupDeadTimeSpline();
+
 	for(auto& it : eventstoload)
 	{
 		switch(it.datatype)

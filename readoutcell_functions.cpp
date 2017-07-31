@@ -525,7 +525,7 @@ bool TokenReadout::ClearChild()
 }
 
 SortedROCReadout::SortedROCReadout(ReadoutCell* roc) : ROCReadout(roc), triggertablefront(NULL),
-		pattern(~int(0))
+		pattern(0)
 {
 
 }
@@ -541,7 +541,7 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 	static bool notinitialised = true;
 	int timestamptoread = -1;
 	if(triggertablefront != NULL)
-		timestamptoread = *triggertablefront; //(*triggertablefront) & ~pattern; 
+		timestamptoread = (*triggertablefront) | pattern; 
 									//pattern application already done in trigger table emplacement
 	else if(notinitialised)
 	{
@@ -561,15 +561,14 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 	{
 		//get a hit from the respective ROC:
 		Hit h  = it->buf->GetHit(timestamp, false);
+			//read without deleting as the event timestamp may be wrong
 
-
-		//read without deleting as the event timestamp may be wrong
 		if((h.is_valid() && h.is_available(timestamp)) || !cell->zerosuppression)
 		{
 			//check for the correct time stamp parts (exclude bits as stored in this object)
 			std::string triggerfieldname = h.FindReadoutTime("_Trigger");
 			if(timestamptoread != -1 
-				&& timestamptoread != (h.GetReadoutTime(triggerfieldname) & pattern))
+				&& timestamptoread != (h.GetReadoutTime(triggerfieldname) | pattern))
 				continue;
 
 			it->buf->GetHit(timestamp, true);	//delete the hit from the subordinate ReadoutCell
@@ -615,7 +614,7 @@ void SortedROCReadout::SetTriggerTableFrontPointer(const int* front)
 
 void SortedROCReadout::SetTriggerPattern(int clearpattern)
 {
-	pattern = ~clearpattern;
+	pattern = clearpattern;
 }
 
 PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)

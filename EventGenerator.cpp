@@ -67,7 +67,8 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 
 bool EventGenerator::IsReady()
 {
-	if(filename != "" && eventrate != 0)
+	if(filename != "" && eventrate != 0 && pointsintwspline == timewalkX.size()
+			&& pointsindtspline == deadtimeX.size())
 		return true;
 	else
 		return false;
@@ -793,45 +794,45 @@ void EventGenerator::ClearDeadTimePoints()
 	deadtimeY.clear();
 }
 
-double EventGenerator::GetDeadTime(double charge, bool forceupdate)
+void EventGenerator::SetupDeadTimeSpline()
 {
-	if(pointsindtspline != deadtimeX.size() || forceupdate)
+	std::vector<double> xvals, yvals;
+	if(deadtimeX.size() < 3)
 	{
-		std::vector<double> xvals, yvals;
-		if(deadtimeX.size() < 3)
+		for(int i=0;i<3;++i)
 		{
-			for(int i=0;i<3;++i)
-			{
-				xvals.push_back(i);
-				yvals.push_back(20);
-			}
-
-			pointsindtspline = 0;
-		}
-		else
-		{
-			auto ity = deadtimeY.begin();
-			for(auto& it : deadtimeX)
-			{
-				auto searchit = xvals.begin();
-				auto sortyit = yvals.begin();
-				while(searchit != xvals.end() && *searchit <= it)
-				{
-					++searchit;
-					++sortyit;
-				}
-				xvals.insert(searchit, it);
-				yvals.insert(sortyit, *ity);
-
-				++ity;
-			}
-
-			pointsindtspline = xvals.size();
+			xvals.push_back(i);
+			yvals.push_back(20);
 		}
 
-		deadtime.set_points(xvals, yvals);
+		pointsindtspline = 0;
+	}
+	else
+	{
+		auto ity = deadtimeY.begin();
+		for(auto& it : deadtimeX)
+		{
+			auto searchit = xvals.begin();
+			auto sortyit = yvals.begin();
+			while(searchit != xvals.end() && *searchit <= it)
+			{
+				++searchit;
+				++sortyit;
+			}
+			xvals.insert(searchit, it);
+			yvals.insert(sortyit, *ity);
+
+			++ity;
+		}
+
+		pointsindtspline = xvals.size();
 	}
 
+	deadtime.set_points(xvals, yvals);
+}
+
+double EventGenerator::GetDeadTime(double charge, bool forceupdate)
+{
 	return deadtime(charge);
 }
 
@@ -878,47 +879,47 @@ void EventGenerator::ClearTimeWalkPoints()
 	timewalkY.clear();
 }
 
-double EventGenerator::GetTimeWalk(double charge, bool forceupdate)
+void EventGenerator::SetupTimeWalkSpline()
 {
-	if(pointsintwspline != timewalkX.size() || forceupdate)
+	std::vector<double> xvals,yvals;
+
+	if(timewalkX.size() < 3)
 	{
-		std::vector<double> xvals,yvals;
-
-		if(timewalkX.size() < 3)
+		for(int i = 0; i < 3; ++i)
 		{
-			for(int i = 0; i < 3; ++i)
-			{
-				xvals.push_back(i);
-				yvals.push_back(0);
-			}
-
-			pointsintwspline = 0;
-		}
-		else
-		{
-			auto ity = timewalkY.begin();
-			for(auto& it : timewalkX)
-			{
-				auto searchit = xvals.begin();
-				auto sortyit = yvals.begin();
-				while(searchit != xvals.end() && *searchit <= it)
-				{
-					++searchit;
-					++sortyit;
-				}
-				xvals.insert(searchit, it);
-				yvals.insert(sortyit, *ity);
-
-				++ity;
-			}
-
-			pointsintwspline = xvals.size();
+			xvals.push_back(i);
+			yvals.push_back(0);
 		}
 
-		timewalk.set_points(xvals, yvals);
+		pointsintwspline = 0;
+	}
+	else
+	{
+		auto ity = timewalkY.begin();
+		for(auto& it : timewalkX)
+		{
+			auto searchit = xvals.begin();
+			auto sortyit = yvals.begin();
+			while(searchit != xvals.end() && *searchit <= it)
+			{
+				++searchit;
+				++sortyit;
+			}
+			xvals.insert(searchit, it);
+			yvals.insert(sortyit, *ity);
+
+			++ity;
+		}
+
+		pointsintwspline = xvals.size();
 	}
 
-	return timewalk(charge);	
+	timewalk.set_points(xvals, yvals);
+}
+
+double EventGenerator::GetTimeWalk(double charge)
+{
+	return timewalk(charge);
 }
 
 bool EventGenerator::SaveTimeWalkSpline(std::string filename, double resolution)

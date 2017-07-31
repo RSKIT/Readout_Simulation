@@ -602,7 +602,7 @@ bool ReadoutCell::CheckROCAddresses()
 void ReadoutCell::SetTriggerTableFrontPointer(const int* front, const int clearpattern)
 {
     for(auto& it : rocvector)
-        it.SetTriggerTableFrontPointer(front);
+        it.SetTriggerTableFrontPointer(front, clearpattern);
 
     auto rocr = dynamic_cast<SortedROCReadout*>(rocreadout);
 
