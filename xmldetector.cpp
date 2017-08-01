@@ -895,7 +895,7 @@ void XMLDetector::ExecuteRegisterChanges(RegisterAccess regacc, int timestamp, b
         SetCounter("readcell", (result)?1:0);
 	}
 	else if(regacc.what.compare("nexttriggertimestamp") == 0)
-		RemoveTriggerTableFront();
+		RemoveTriggerTableFront(timestamp);
 
 }
 

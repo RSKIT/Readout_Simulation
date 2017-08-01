@@ -415,8 +415,11 @@ public:
     /**
      * @brief removes the element at the front of the FIFO
      * @details
+     * 
+     * @param timestamp      - the current timestamp (and the timestamp at which the action is to
+     *                            be executed)
      */
-    void RemoveTriggerTableFront();
+    void RemoveTriggerTableFront(int timestamp);
     /**
      * @brief removes all time stamps from the trigger table
      * @details

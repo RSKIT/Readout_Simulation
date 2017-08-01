@@ -588,12 +588,18 @@ int DetectorBase::GetTriggerTableFront()
     return currenttriggerts;
 }
 
-void DetectorBase::RemoveTriggerTableFront()
+void DetectorBase::RemoveTriggerTableFront(int timestamp)
 {
     if(triggertable.size() > 0)
     {
-        currenttriggerts = triggertable.front();
-        triggertable.pop_front();
+        //only use the trigger time stamp when its validity period is already over:
+        if(triggertable.front() > (timestamp | triggertablemask))
+            currenttriggerts = -1;
+        else
+        {
+            currenttriggerts = triggertable.front();
+            triggertable.pop_front();
+        }
     }
     else
         currenttriggerts = -1;
@@ -607,7 +613,10 @@ void DetectorBase::ClearTriggerTable()
 bool DetectorBase::AddTriggerTableEntry(int timestamp)
 {
     if(triggertable.size() > 0 && (timestamp | triggertablemask) == triggertable.back())
+    {
+        sbadout << "# TriggerTable signals merged: " << timestamp << std::endl;
         return true;
+    }
 
     if(triggertable.size() < triggertabledepth)
     {
