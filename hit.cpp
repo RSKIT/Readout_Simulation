@@ -257,7 +257,7 @@ int Hit::ReadoutTimeSize()
 
 void Hit::ClearReadoutTimes()
 {
-	readouttimestamps.size();
+	readouttimestamps.clear();
 }
 
 std::string Hit::GenerateTitleString()
