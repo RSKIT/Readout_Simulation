@@ -23,10 +23,20 @@
 #ifndef _HIT
 #define _HIT
 
+//comment out this line to use maps for the data. If this is defined, vectors are used to store
+//   the data:
+#define PREFERWRITE
+
 #include <string>
 #include <sstream>
-#include <map>
 #include <utility>
+
+#ifndef PREFERWRITE
+	#include <map>
+#else
+	#include <vector>
+#endif
+
 
 class Hit
 {
@@ -216,8 +226,13 @@ private:
 
 	int availablefrom;		//timestamp from which on the hit is available for output
 
+#ifndef PREFERWRITE
 	std::map<std::string, int> address;
 	std::map<std::string, int> readouttimestamps;
+#else
+	std::vector<std::pair<std::string, int> > address;
+	std::vector<std::pair<std::string, int> > readouttimestamps;
+#endif
 };
 
 #endif //_HIT

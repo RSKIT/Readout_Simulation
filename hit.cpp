@@ -24,18 +24,29 @@
 
 Hit::Hit() : eventindex(-1), timestamp(-1), charge(-1), deadtimeend(-1), availablefrom(-1)
 {
-	address 			= std::map<std::string, int>();
-	readouttimestamps 	= std::map<std::string, int>();
+	#ifndef PREFERWRITE
+		address 			= std::map<std::string, int>();
+		readouttimestamps 	= std::map<std::string, int>();
+	#else
+		address 			= std::vector<std::pair<std::string, int> >();
+		readouttimestamps	= std::vector<std::pair<std::string, int> >();
+	#endif
 }
 
 Hit::Hit(const Hit& hit) : timestamp(hit.timestamp), eventindex(hit.eventindex), 
 		deadtimeend(hit.deadtimeend), charge(hit.charge), availablefrom(hit.availablefrom)
 {
-	std::map<std::string, int>::const_iterator it;
-	for(it = hit.address.begin(); it != hit.address.end(); ++it)
-		address.insert(*it);
-	for(it = hit.readouttimestamps.begin(); it != hit.readouttimestamps.end(); ++it)
-		readouttimestamps.insert(*it);
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::const_iterator it;
+		for(it = hit.address.begin(); it != hit.address.end(); ++it)
+			address.insert(*it);
+		for(it = hit.readouttimestamps.begin(); it != hit.readouttimestamps.end(); ++it)
+			readouttimestamps.insert(*it);
+	#else
+		address.insert(address.end(), hit.address.begin(), hit.address.end());
+		readouttimestamps.insert(readouttimestamps.end(), hit.readouttimestamps.begin(),
+			hit.readouttimestamps.end());
+	#endif
 }
 
 Hit::Hit(std::string hitdata) : timestamp(-1), eventindex(-1), deadtimeend(-1), charge(-1),
@@ -173,29 +184,60 @@ void Hit::SetAvailableTime(int timestamp)
 
 void Hit::AddAddress(std::string name, int addr)
 {
-	address.insert(std::make_pair(name, addr));
+	#ifndef PREFERWRITE
+		address.insert(std::make_pair(name, addr));
+	#else
+		address.push_back(std::make_pair(name, addr));
+	#endif
 }
 
 int Hit::GetAddress(std::string name)
 {
-	std::map<std::string, int>::iterator it = address.find(name);
-	if(it != address.end())
-		return it->second;
-	else
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::iterator it = address.find(name);
+		if(it != address.end())
+			return it->second;
+		else
+			return -1;
+	#else
+		std::vector<std::pair<std::string, int> >::iterator it = address.begin();
+		while(it != address.end())
+		{
+			if(it->first.compare(name) == 0)
+				return it->second;
+
+			++it;
+		}
 		return -1;
+	#endif
 }
 
 bool Hit::SetAddress(std::string name, int addr)
 {
-	std::map<std::string, int>::iterator it = address.find(name);
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::iterator it = address.find(name);
 
-	if(it != address.end())
-	{
-		it->second = addr;
-		return true;
-	}
-	else
-		return false;		
+		if(it != address.end())
+		{
+			it->second = addr;
+			return true;
+		}
+		else
+			return false;
+	#else
+		std::vector<std::pair<std::string, int> >::iterator it = address.begin();
+		while(it != address.end())
+		{
+			if(it->first.compare(name) == 0)
+			{
+				it->second = addr;
+				return true;
+			}
+
+			++it;
+		}
+		return false;
+	#endif
 }
 
 int  Hit::AddressSize()
@@ -210,44 +252,87 @@ void Hit::ClearAddress()
 
 void Hit::AddReadoutTime(std::string name, int timestamp)
 {
-	readouttimestamps.insert(std::make_pair(name, timestamp));
+	#ifndef PREFERWRITE
+		readouttimestamps.insert(std::make_pair(name, timestamp));
+	#else
+		readouttimestamps.push_back(std::make_pair(name, timestamp));
+	#endif
 }
 
 int Hit::GetReadoutTime(std::string name)
 {
-	std::map<std::string, int>::iterator it = readouttimestamps.find(name);
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::iterator it = readouttimestamps.find(name);
 
-	if(it != readouttimestamps.end())
-		return it->second;
-	else 
+		if(it != readouttimestamps.end())
+			return it->second;
+		else 
+			return -1;
+	#else
+		std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin();
+		while(it != readouttimestamps.end())
+		{
+			if(it->first.compare(name) == 0)
+				return it->second;
+
+			++it;
+		}
 		return -1;
+	#endif
 }
 
 std::string Hit::FindReadoutTime(std::string namepart)
 {
-	std::map<std::string, int>::iterator it = readouttimestamps.begin();
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::iterator it = readouttimestamps.begin();
 
-	while(it != readouttimestamps.end())
-	{
-		if(it->first.find(namepart) != std::string::npos)
-			return it->first;
+		while(it != readouttimestamps.end())
+		{
+			if(it->first.find(namepart) != std::string::npos)
+				return it->first;
 
-		++it;
-	}
+			++it;
+		}
 
-	return "";
+		return "";
+	#else
+		std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin();
+		while(it != readouttimestamps.end())
+		{
+			if(it->first.find(namepart) != std::string::npos)
+				return it->first;
+
+			++it;
+		}
+		return "";
+	#endif
 }
 
 bool Hit::SetReadoutTime(std::string name, int timestamp)
 {
-	std::map<std::string, int>::iterator it = readouttimestamps.find(name);
-	if(it == readouttimestamps.end())
+	#ifndef PREFERWRITE
+		std::map<std::string, int>::iterator it = readouttimestamps.find(name);
+		if(it == readouttimestamps.end())
+			return false;
+		else
+		{
+			it->second = timestamp;
+			return true;
+		}
+	#else
+		std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin();
+		while(it != readouttimestamps.end())
+		{
+			if(it->first.compare(name) == 0)
+			{
+				it->second = timestamp;
+				return true;
+			}
+
+			++it;
+		}
 		return false;
-	else
-	{
-		it->second = timestamp;
-		return true;
-	}
+	#endif
 }
 
 int Hit::ReadoutTimeSize()
@@ -266,14 +351,26 @@ std::string Hit::GenerateTitleString()
 
 	s << "Event; Timestamp; DeadTimeEnd; Charge; Address: ";
 
-	for(std::map<std::string, int>::iterator it = address.begin(); it != address.end(); ++it)
-		s << "(" << it->first << ") ";
+	#ifndef PREFERWRITE
+		for(std::map<std::string, int>::iterator it = address.begin(); it != address.end(); ++it)
+			s << "(" << it->first << ") ";
+	#else
+		for(std::vector<std::pair<std::string, int> >::iterator it = address.begin();
+				it != address.end(); ++it)
+			s << "(" << it->first << ") ";
+	#endif
 
 	s << "; Readout Times: ";
 
-	for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
-			it != readouttimestamps.end(); ++it)
-		s << "(" << it->first << ") ";
+	#ifndef PREFERWRITE
+		for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
+				it != readouttimestamps.end(); ++it)
+			s << "(" << it->first << ") ";
+	#else
+		for(std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin();
+				it != readouttimestamps.end(); ++it)
+			s << "(" << it->first << ") ";
+	#endif
 
 	return s.str();
 }
@@ -288,15 +385,27 @@ std::string Hit::GenerateString(bool compact)
 		  << " DeadTimeEnd " << deadtimeend << " Charge " << charge
 		  << " ; Address:";
 
-		for(std::map<std::string, int>::iterator it = address.begin(); 
-					it != address.end(); ++it)
-			s << " (" << it->first << ") " << it->second;
+		#ifndef PREFERWRITE
+			for(std::map<std::string, int>::iterator it = address.begin(); 
+						it != address.end(); ++it)
+				s << " (" << it->first << ") " << it->second;
+		#else
+			for(std::vector<std::pair<std::string, int> >::iterator it = address.begin();
+						it != address.end(); ++it)
+				s << " (" << it->first << ") " << it->second;
+		#endif
 
 		s << " ; Readout:";
 
-		for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
-					it != readouttimestamps.end(); ++it)
-			s << " (" << it->first << ") " << it->second;
+		#ifndef PREFERWRITE
+			for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
+						it != readouttimestamps.end(); ++it)
+				s << " (" << it->first << ") " << it->second;
+		#else
+			for(std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin(); 
+						it != readouttimestamps.end(); ++it)
+				s << " (" << it->first << ") " << it->second;
+		#endif
 	}
 	else
 	{
@@ -304,14 +413,27 @@ std::string Hit::GenerateString(bool compact)
 		  << deadtimeend << " " << charge << " ;";
 
 		//address:
-		for(std::map<std::string, int>::iterator it = address.begin(); it != address.end(); ++it)
-			s << " " << it->second;
+		 #ifndef PREFERWRITE
+			for(std::map<std::string, int>::iterator it = address.begin(); 
+					it != address.end(); ++it)
+				s << " " << it->second;
+		#else
+			for(std::vector<std::pair<std::string, int> >::iterator it = address.begin(); 
+					it != address.end(); ++it)
+				s << " " << it->second;
+		#endif			
 
 		//readouttimestamps:
 		s << " ;";
-		for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
+		#ifndef PREFERWRITE
+			for(std::map<std::string, int>::iterator it = readouttimestamps.begin(); 
 					it != readouttimestamps.end(); ++it)
-			s << " " << it->second;
+				s << " " << it->second;
+		#else
+			for(std::vector<std::pair<std::string, int> >::iterator it = readouttimestamps.begin(); 
+					it != readouttimestamps.end(); ++it)
+				s << " " << it->second;
+		#endif			
 	}
 
 	return s.str();

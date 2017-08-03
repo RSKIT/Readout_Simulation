@@ -25,7 +25,8 @@
 import subprocess
 
 # Compiler flags:
-flags = ["-std=c++11", "-pthread", "-O2"] #, "-g"]
+flags = ["-std=c++11", "-pthread", "-O2"] # normal Settings
+#flags = ["-std=c++11", "-pthread", "-O0", "-g"] # Debug Settings for Valgrind
 
 # Get and add the compiler flags for ROOT integration:
 rootflags = subprocess.check_output("root-config --cflags", shell=True)
