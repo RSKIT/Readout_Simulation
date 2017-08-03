@@ -316,6 +316,7 @@ class StateMachineState
 {
 public:
 	StateMachineState();
+	~StateMachineState();
 
 	void Cleanup();
 

@@ -78,6 +78,8 @@ int main(int argc, char** argv)
             sim.LoadInputFile();
 
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+
+            sim.Cleanup();
         }
     }
     //try loading filenames from pipelined data:
@@ -112,6 +114,8 @@ int main(int argc, char** argv)
             sim.LoadInputFile();
 
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
+
+            sim.Cleanup();
 
             ++i;
         }

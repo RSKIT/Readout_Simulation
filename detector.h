@@ -45,6 +45,7 @@ public:
     Detector(std::string addressname, int address);
 	Detector();
 	Detector(const Detector& templ);
+    ~Detector();
 
     //Names for the states of the state machine:
     enum state {PullDown = 0, LdPix = 1, LdCol = 2, RdCol = 3};

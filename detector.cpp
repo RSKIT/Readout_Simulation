@@ -40,6 +40,11 @@ Detector::Detector(const Detector& templ) : DetectorBase(templ), currentstate(te
 
 }
 
+Detector::~Detector()
+{
+    
+}
+
 bool Detector::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
     if(print)

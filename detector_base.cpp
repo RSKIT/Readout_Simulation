@@ -83,6 +83,8 @@ DetectorBase::~DetectorBase()
 {
     CloseOutputFile();
     CloseBadOutputFile();
+
+    Cleanup();
 }
 
 void DetectorBase::Cleanup()

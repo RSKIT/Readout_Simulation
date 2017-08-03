@@ -75,12 +75,15 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
 
 ReadoutCell::~ReadoutCell()
 {
-    pixelvector.clear();
+    Cleanup();
+    
+    /*pixelvector.clear();
 
     for(auto& it : rocvector)
         it.Cleanup();
 
     rocvector.clear();
+    */
 
     /*if(buf != 0)
         delete buf;
@@ -101,11 +104,20 @@ void ReadoutCell::Cleanup()
     rocvector.clear();
 
     if(pixelreadout != 0)
+    {
         delete pixelreadout;
+        pixelreadout = 0;
+    }
     if(buf != 0)
+    {
         delete buf;
+        buf = 0;
+    }
     if(rocreadout != 0)
+    {
         delete rocreadout;
+        rocreadout = 0;
+    }
 
 }
 
@@ -558,10 +570,10 @@ std::string ReadoutCell::PrintROC(std::string space)
 	s << space << "ROC (" << addressname << "): " << address << " contents:\n";
     s << space << " ( Position: " << position << "; Size: " << size << " )\n";
 
-	for(auto it : rocvector)
+	for(auto& it : rocvector)
 		s << it.PrintROC(space + " ");
 
-	for(auto it : pixelvector)
+	for(auto& it : pixelvector)
 		s << space << " Pixel " << it.GetAddress() << ": Pos: " << it.GetPosition() 
 			<< "; Size: " << it.GetSize() << " Thr: " << it.GetThreshold() << "; Eff: "
             << it.GetEfficiency() << std::endl;

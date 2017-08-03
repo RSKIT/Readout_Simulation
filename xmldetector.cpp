@@ -47,12 +47,12 @@ Comparison::Comparison(const Comparison& comp) : firstchoice(comp.firstchoice),
 
 Comparison::~Comparison()
 {
-	if(firstcomp != 0)
+	if(firstcomp != NULL)
 	{
 		delete firstcomp;
 		firstcomp = NULL;
 	}
-	if(secondcomp != 0)
+	if(secondcomp != NULL)
 	{
 		delete secondcomp;
 		secondcomp = NULL;
@@ -381,7 +381,11 @@ void StateTransition::Cleanup()
 {
 	counterchanges.clear();
 
-	delete condition;
+	if(condition != 0)
+	{
+		delete condition;
+		condition = 0;
+	}
 }
 
 std::string StateTransition::GetNextState()
@@ -464,11 +468,17 @@ StateMachineState::StateMachineState() : name(""), registerchanges(std::vector<R
 
 }
 
+StateMachineState::~StateMachineState()
+{
+	Cleanup();
+}
+
 void StateMachineState::Cleanup()
 {
 	for(auto& it : transitions)
 	{
 		it->Cleanup();
+		it = 0;
 
 		delete it;
 	}
@@ -593,9 +603,8 @@ void XMLDetector::Cleanup()
 
 	for(auto& it : states)
 	{
-		it->Cleanup();
-
 		delete it;
+		it = 0;
 	}
 
 	states.clear();

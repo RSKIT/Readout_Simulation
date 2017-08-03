@@ -815,7 +815,13 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 		else if(childname.compare("Size") == 0)
 			det->SetSize(LoadTCoord(child));
 		else if(childname.compare("StateMachine") == 0)	
-			det = LoadStateMachine(det, child);
+		{
+			DetectorBase* detst = LoadStateMachine(det, child);
+			det->Cleanup();
+			delete det;
+			det = detst;
+			detst = 0;
+		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1369,15 +1375,15 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		numelements = -1;	//set to -1 if missing and reserve 0 for shift of the contents
 	shift = LoadTCoord(parentnode);
 
-	Pixel pix;
-	ReadoutCell roc;
+	//Pixel pix;
+	//ReadoutCell roc;
 	tinyxml2::XMLElement* elem = parentnode->FirstChildElement();
 	while(elem != 0)
 	{
 		std::string name = std::string(elem->Value());
 		if(name.compare("Pixel") == 0)
 		{
-			pix = LoadPixel(elem, pixelsize);
+			Pixel pix = LoadPixel(elem, pixelsize);
 
 			if(pix.GetAddress() < parentcell->GetNumPixels())
 				pix.SetAddress(parentcell->GetNumPixels());
@@ -1398,7 +1404,7 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		}
 		else if(name.compare("ROC") == 0)
 		{
-			roc = LoadROC(elem, pixelsize, "c" + parentcell->GetAddressName());
+			ReadoutCell roc = LoadROC(elem, pixelsize, "c" + parentcell->GetAddressName());
 
 			if(roc.GetAddress() < parentcell->GetNumROCs())
 				roc.SetAddress(parentcell->GetNumROCs());
@@ -1416,6 +1422,8 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 				roc.ShiftCell(shift);
 				roc.SetAddress(roc.GetAddress() + 1);
 			}
+
+			//roc.Cleanup();
 		}
 		else if(name.compare("NTimes") == 0)
 		{

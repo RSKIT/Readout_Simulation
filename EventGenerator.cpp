@@ -755,16 +755,24 @@ double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double
 	//maximum index for fitting complete detectors into the data. E.g. for a detector fitting
 	//  3.7 times into the width of the data, the data after 3 times the test detector width is
 	//  rejected. But 3 times the width without folding back is used:
-	int xmax = 8000 * granularity[0] / detectorsize[0];
-	int ymax = 8000 * granularity[1] / detectorsize[1];
+	int xmax4 = 40000 / detectorsize[0];
+	int xmax2 = 20000 / detectorsize[0];
+	int ymax = 40000 / detectorsize[1];
 
-	xmax = (xmax * detectorsize[0]) / granularity[0];
+	xmax4 = (xmax4 * detectorsize[0]) / granularity[0];
+	xmax2 = (xmax2 * detectorsize[0]) / granularity[0];
 	ymax = (ymax * detectorsize[1]) / granularity[1];
 
 	for(auto& it : charge)
 	{
-		if(it.etaindex > xmax || it.phiindex > ymax)
+		if(it.phiindex > ymax)
 			continue;
+		else if(it.etamodule < 9)
+			if(it.etaindex > xmax4)
+				continue;
+		else
+			if(it.etaindex > xmax2)
+				continue;
 
 		TCoord<double> cstart = {granularity[0]*(it.etaindex % xfold),
 								 granularity[1]*(it.phiindex % yfold),
@@ -1539,18 +1547,28 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 		int xfold = detectorsize[0] / granularity[0];
 		int yfold = detectorsize[1] / granularity[1];
 
-		int xmax = 8000 * granularity[0] / detectorsize[0];
-		int ymax = 8000 * granularity[1] / detectorsize[1];
+		//TODO: here goes the size of the simulated modules (ITk) and this is spefified for 5µm
+		//			granularity
+		int xmax4 = 40000 / detectorsize[0];	//quad module
+		int xmax2 = 20000 / detectorsize[0];	//double module
+		int ymax = 40000 / detectorsize[1];
 
-		xmax = (xmax * detectorsize[0]) / granularity[0];
+		xmax4 = (xmax4 * detectorsize[0]) / granularity[0];
+		xmax2 = (xmax2 * detectorsize[0]) / granularity[0];
 		ymax = (ymax * detectorsize[1]) / granularity[1];
 
 		//loop over the charge contributions:
 		for(auto& itc : it->second)
 		{
 			//skip data which will not be used (see GetCharge()):
-			if(itc.etaindex > xmax || itc.phiindex > ymax)
+			if(itc.phiindex > ymax)
 				continue;
+			else if(itc.etamodule < 9)	//for etamodule \in +/-[1,8] quad module (for >= 9 double)
+				if(itc.etaindex > xmax4)
+					continue;
+			else
+				if(itc.etaindex > xmax2)
+					continue;
 
 			TCoord<double> cstart = {granularity[0]*(itc.etaindex % xfold),
 									 granularity[1]*(itc.phiindex % yfold),
