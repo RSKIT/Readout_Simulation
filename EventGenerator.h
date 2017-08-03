@@ -619,7 +619,7 @@ private:
 										std::vector<particletrack>::iterator begin,
 										std::vector<particletrack>::iterator end,
 										std::vector<Hit>* pixelhits,
-										std::stringstream* output,
+										std::string* output,
 										int id = -1,
 										bool printtoterminal = true,
 										int updatepitch = 10);
@@ -649,17 +649,19 @@ private:
 	 *                            is written to the terminal
 	 */
 	static void GenerateHitsFromChargeDistributions(EventGenerator* itself,
-								std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
-								std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
-								std::map<unsigned int, double>* times,
-								std::map<unsigned int, bool>* triginfos,
-								TCoord<double> granularity,
-								TCoord<double> detectorsize,
-								std::vector<Hit>* pixelhits,
-								std::stringstream* output,
-								int firsteventid, int id = -1,
-								bool print = false,
-								int updatepitch = 10);
+				//std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+				//std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+				std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > >::iterator begin,
+				std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > >::iterator end,
+				std::map<unsigned int, double>* times,
+				std::map<unsigned int, bool>* triginfos,
+				TCoord<double> granularity,
+				TCoord<double> detectorsize,
+				std::vector<Hit>* pixelhits,
+				std::string* output,
+				int firsteventid, int id = -1,
+				bool print = false,
+				int updatepitch = 10);
 
 	/**
 	 * @brief takes a cluster a tries to separate it into several clusters which are spatially
@@ -708,7 +710,7 @@ private:
 	int numsigmas;				//number of sigmas before the gaussian is cut off
 
 	std::string filename;		//filename for the output file
-	std::stringstream genoutput;//storage for the data of the eventgen output file when writing to
+	std::string genoutput;//storage for the data of the eventgen output file when writing to
 	                            // an archive
 
 

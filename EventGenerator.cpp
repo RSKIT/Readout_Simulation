@@ -29,7 +29,7 @@ EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream("")),
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::string("")),
 		lasteventtimestamp(-1)
 {
 	SetSeed(0);
@@ -42,7 +42,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
 		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
 		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1), 
-		genoutput(std::stringstream("")), lasteventtimestamp(-1)
+		genoutput(std::string("")), lasteventtimestamp(-1)
 {
 	detectors.push_back(detector);
 
@@ -56,7 +56,7 @@ EventGenerator::EventGenerator(int seed, double clustersize, double rate) : file
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::stringstream("")),
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::string("")),
 		lasteventtimestamp(-1)
 {
 	this->seed 		  = seed;
@@ -423,7 +423,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
-	std::stringstream outputs[numthreads];
+	std::string outputs[numthreads];
 	std::thread* workers[numthreads];
 
 	//start the worker threads:
@@ -461,8 +461,8 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 				clusterparts.push_back(it);
 
 			if(writeout)
-				fout << outputs[i].str();
-			genoutput << outputs[i].str();
+				fout << outputs[i];
+			genoutput += outputs[i];
 
 			delete workers[i];
 		}
@@ -955,12 +955,12 @@ bool EventGenerator::SaveTimeWalkSpline(std::string filename, double resolution)
 
 std::string EventGenerator::GenerateLog()
 {
-	return genoutput.str();
+	return genoutput;
 }
 
 void EventGenerator::ClearLog()
 {
-	genoutput.str("");
+	genoutput = "";
 }
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
@@ -1040,7 +1040,7 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 									std::vector<particletrack>::iterator begin, 
 									std::vector<particletrack>::iterator end,
 									std::vector<Hit>* pixelhits,
-									std::stringstream* output, int id,
+									std::string* output, int id,
 									bool printtoterminal, int updatepitch)
 {
 	if(printtoterminal)
@@ -1060,14 +1060,17 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
         hittemplate.SetEventIndex(it->index);
 
         //add the event to the output stream:
-		*output << "# Event " << it->index << std::endl
-			    << "# Trajectory: g: x(t) = " << it->setpoint << " + t * " 
-			    << it->direction << std::endl
-	 		    << "# Time: " << it->time << std::endl;
+		std::stringstream s("");
+		s << "# Event " << it->index << std::endl
+		  << "# Trajectory: g: x(t) = " << it->setpoint << " + t * " 
+		  << it->direction << std::endl
+	 	  << "# Time: " << it->time << std::endl;
 	 	if(it->trigger)
-			*output << "# Trigger: " << int(it->time + itself->triggerdelay + 0.9) << " - " 
-		 		    << int(it->time + itself->triggerdelay + 0.9 + itself->triggerlength) 
-		 		    << std::endl;
+			s << "# Trigger: " << int(it->time + itself->triggerdelay + 0.9) << " - " 
+		 	  << int(it->time + itself->triggerdelay + 0.9 + itself->triggerlength) 
+		 	  << std::endl;
+
+		*output += s.str();
 
 		//get the hits from the readout cells:
 		std::vector<Hit> hits;
@@ -1084,7 +1087,7 @@ void EventGenerator::GenerateHitsFromTracks(EventGenerator* itself,
 					pixelhits->push_back(it2);
 
 					//also save the hit in the output file:
-					*output << "  " << it2.GenerateString() << std::endl;
+					*output += std::string("  ") + it2.GenerateString() + "\n";
 				}
 			}
 		}
@@ -1117,6 +1120,9 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	//data structure for the clustered hit information:
 	std::map<unsigned int, std::vector<ChargeDistr> > clusters;	//eventID and Charge Distribution
 		//each event has its own ID (unsigned int) and a vector containing the data on the 
+	std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > > reclusters;
+		//more convenient structure after the regrouping of the data
+
 
 	//Load the ROOT file:
 	TFile* f = new TFile(filename.c_str());
@@ -1275,15 +1281,9 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		clusters.clear();
 		for(int i = 0; i < rgthreads; ++i)
 		{
-			for(auto& it : (threadclusters[i]))
-			{
-				int newid = it.first;
-				//find an unused event ID:
-				while(clusters.find(newid) != clusters.end())
-					newid += 128;
-
-				clusters.insert(std::make_pair(newid, it.second));
-			}
+			reclusters.insert(reclusters.end(), threadclusters[i].begin(), 
+													threadclusters[i].end());
+				//no need to change the event IDs as they are not used any more
 		}
 
 		if(print)
@@ -1319,7 +1319,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	std::map<unsigned int, bool> triggeredevents;	//connects the eventIDs with trigger information
 
 	double time = firsttime;
-	for(auto it : clusters)
+	//for(auto it : clusters)
+	for(auto it : reclusters)
 	{
 		//generate the next time stamp:
 		if(totalrate)
@@ -1348,11 +1349,15 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		numthreads = threads;
 	if(numthreads == 0)
 		numthreads = std::thread::hardware_concurrency();
-	std::vector<std::map<unsigned int, std::vector<ChargeDistr> >::iterator> startpoints;
+	//std::vector<std::map<unsigned int, std::vector<ChargeDistr> >::iterator> startpoints;
+	std::vector<std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > >::iterator> 
+																					startpoints;
 
 	//prepare the distribution of the data over the threads:
-	auto it     = clusters.begin();
-	int numevents = clusters.size();
+	//auto it     = clusters.begin();
+	//int numevents = clusters.size();
+	auto it     = reclusters.begin();
+	int numevents = reclusters.size();
 	for(int i = 0; i < numevents; ++i)
 	{
 		if((i % (numevents / numthreads + 1)) == 0)
@@ -1360,11 +1365,11 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 		++it;
 	}
-	startpoints.push_back(clusters.end());
+	startpoints.push_back(reclusters.end());
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
-	std::stringstream outputs[numthreads];
+	std::string outputs[numthreads];
 	std::thread* workers[numthreads];
 
 	//start the worker threads:
@@ -1408,11 +1413,11 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 			if(fout.is_open())
 			{
-				fout << (outputs[i]).str();
+				fout << outputs[i];
 				fout.flush();
 			}
-			genoutput << outputs[i].str();
-			genoutput.flush();
+			genoutput += outputs[i];
+			//genoutput.flush();
 
 			delete workers[i];
 		}
@@ -1497,15 +1502,17 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 }
 
 void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
-							std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
-							std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
-							std::map<unsigned int, double>* times,
-							std::map<unsigned int, bool>* triginfos,
-							TCoord<double> granularity,
-							TCoord<double> detectorsize,
-							std::vector<Hit>* pixelhits,
-							std::stringstream* output, int firsteventid, int id,
-							bool print, int updatepitch)
+				//std::map<unsigned int, std::vector<ChargeDistr> >::iterator begin,
+				//std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
+				std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > >::iterator begin,
+				std::deque<std::pair<unsigned int, std::vector<ChargeDistr> > >::iterator end,
+				std::map<unsigned int, double>* times,
+				std::map<unsigned int, bool>* triginfos,
+				TCoord<double> granularity,
+				TCoord<double> detectorsize,
+				std::vector<Hit>* pixelhits,
+				std::string* output, int firsteventid, int id,
+				bool print, int updatepitch)
 {
 	if(print)
 		std::cout << "Started thread with id " << std::this_thread::get_id() << " ..."
@@ -1564,14 +1571,17 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 		hittemplate.SetEventIndex(eventid);
 
 		//log the event header:
-		*output << "# Event " << eventid << std::endl  //it->first << std::endl
-		        << "# Time " << (*times)[it->first] << std::endl;
+		std::stringstream s("");
+		s << "# Event " << eventid << std::endl  //it->first << std::endl
+		  << "# Time " << (*times)[it->first] << std::endl;
 		if((*triginfos)[it->first])
 		{
 			int triggerstart = int((*times)[it->first] + itself->triggerdelay + 0.9);
-			*output << "# Trigger " << triggerstart << " - " 
-		 		    << int(triggerstart + itself->triggerlength) << std::endl;
+			s << "# Trigger " << triggerstart << " - " 
+		 	  << int(triggerstart + itself->triggerlength) << std::endl;
 		}
+
+		*output += s.str();
 
 		++eventid;	//increment EventID AFTER it was used for an event
 
@@ -1600,7 +1610,7 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 
 				//save the hits in the output file:
 				for(auto& pit : localhits)
-					*output << "  " << pit.GenerateString() << std::endl;
+					*output += std::string("  ") + pit.GenerateString() + "\n";
 			}
 		}
 
