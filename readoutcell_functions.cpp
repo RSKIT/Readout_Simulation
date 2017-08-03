@@ -28,6 +28,11 @@ ROCBuffer::ROCBuffer(ReadoutCell* roc) : cell(roc)
 	
 }
 
+ROCBuffer::~ROCBuffer()
+{
+	cell = 0;
+}
+
 
 bool ROCBuffer::InsertHit(const Hit& hit)
 {
@@ -65,7 +70,7 @@ Hit ROCBuffer::GetHit(int timestamp, bool remove)
 	}
 }
 
-bool ROCBuffer::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
+bool ROCBuffer::NoTriggerRemoveHits(int timestamp, std::string* sbadout)
 {
 	return false;
 }
@@ -119,7 +124,7 @@ Hit FIFOBuffer::GetHit(int timestamp, bool remove)
 	}
 }
 
-bool FIFOBuffer::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
+bool FIFOBuffer::NoTriggerRemoveHits(int timestamp, std::string* sbadout)
 {
 	bool delsomething = false;
 	auto it = cell->hitqueue.begin();
@@ -130,7 +135,7 @@ bool FIFOBuffer::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
 			if(sbadout != 0)
 			{
 				it->AddReadoutTime("noTrigger", timestamp);
-				*sbadout << it->GenerateString(false) << std::endl;
+				*sbadout += it->GenerateString(false) + "\n";
 			}
 			
 			it = cell->hitqueue.erase(it);
@@ -201,7 +206,7 @@ Hit PrioBuffer::GetHit(int timestamp, bool remove)
 	return Hit();
 }
 
-bool PrioBuffer::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
+bool PrioBuffer::NoTriggerRemoveHits(int timestamp, std::string* sbadout)
 {
 	bool delsomething = false;
 	auto it = cell->hitqueue.begin();
@@ -212,7 +217,7 @@ bool PrioBuffer::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
 			if(sbadout != 0)
 			{
 				it->AddReadoutTime("noTrigger", timestamp);
-				*sbadout << it->GenerateString(false) << std::endl;
+				*sbadout += it->GenerateString(false) + "\n";
 			}
 			
 			*it = Hit();
@@ -250,8 +255,12 @@ ROCReadout::ROCReadout(ReadoutCell* roc) : cell(roc)
 
 }
 
+ROCReadout::~ROCReadout()
+{
+	cell = 0;
+}
 
-bool ROCReadout::Read(int timestamp, std::stringstream* out)
+bool ROCReadout::Read(int timestamp, std::string* out)
 {
 	return false;
 }
@@ -266,7 +275,7 @@ NoFullReadReadout::NoFullReadReadout(ReadoutCell* roc) : ROCReadout(roc)
 
 }
 
-bool NoFullReadReadout::Read(int timestamp, std::stringstream* out)
+bool NoFullReadReadout::Read(int timestamp, std::string* out)
 {
 	//do not read at all if the buffer is already full:
 	if(cell->buf->is_full())
@@ -293,7 +302,7 @@ bool NoFullReadReadout::Read(int timestamp, std::stringstream* out)
 			{
 				//log the losing of the hit:
 				if(out != 0)
-					*out << h.GenerateString() << std::endl;
+					*out += h.GenerateString() + "\n";
 				return hitfound;
 			}
 
@@ -319,7 +328,7 @@ NoOverWriteReadout::NoOverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
 
 }
 
-bool NoOverWriteReadout::Read(int timestamp, std::stringstream* out)
+bool NoOverWriteReadout::Read(int timestamp, std::string* out)
 {
 	//to save whether a hit was found
 	bool hitfound = false;
@@ -341,7 +350,7 @@ bool NoOverWriteReadout::Read(int timestamp, std::stringstream* out)
 				if(out != 0)
 				{
 					h.AddReadoutTime("noSpace", timestamp);
-					*out << h.GenerateString() << std::endl;
+					*out += h.GenerateString() + "\n";
 				}
 			}
 			else
@@ -362,7 +371,7 @@ OverWriteReadout::OverWriteReadout(ReadoutCell* roc) : ROCReadout(roc)
 
 }
 
-bool OverWriteReadout::Read(int timestamp, std::stringstream* out)
+bool OverWriteReadout::Read(int timestamp, std::string* out)
 {
 	//to save whether a hit was found
 	bool hitfound = false;
@@ -387,7 +396,7 @@ bool OverWriteReadout::Read(int timestamp, std::stringstream* out)
 				if(out != 0)
 				{
 					oldhit.AddReadoutTime("overwritten", timestamp);
-					*out << oldhit.GenerateString() << std::endl;
+					*out += oldhit.GenerateString() + "\n";
 				}
 			}
 			else
@@ -408,7 +417,7 @@ OneByOneReadout::OneByOneReadout(ReadoutCell* roc) : ROCReadout(roc)
 
 }
 
-bool OneByOneReadout::Read(int timestamp, std::stringstream* out)
+bool OneByOneReadout::Read(int timestamp, std::string* out)
 {
 	bool hitfound = false;
 
@@ -459,7 +468,7 @@ TokenReadout::TokenReadout(ReadoutCell* roc) : ROCReadout(roc), currentindex(0)
 
 }
 
-bool TokenReadout::Read(int timestamp, std::stringstream* out)
+bool TokenReadout::Read(int timestamp, std::string* out)
 {
 	int children = cell->rocvector.size();
 	int startindex = currentindex;	//to save the starting point as a break index
@@ -493,7 +502,7 @@ bool TokenReadout::Read(int timestamp, std::stringstream* out)
 			{
 				//log the losing of the hit (not necessary for NoFullRead readout): 
 				//if(out != 0)
-				//	*out << h.GenerateString() << std::endl;
+				//	*out += h.GenerateString() + "\n";
 				return hitfound;
 			}
 
@@ -535,7 +544,7 @@ SortedROCReadout::~SortedROCReadout()
 	triggertablefront = NULL;
 }
 
-bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
+bool SortedROCReadout::Read(int timestamp, std::string* out)
 {
 	//get the timestamp which is to be read out:
 	static bool notinitialised = true;
@@ -586,7 +595,7 @@ bool SortedROCReadout::Read(int timestamp, std::stringstream* out)
 			{
 				//log the losing of the hit:
 				if(out != 0)
-					*out << h.GenerateString() << std::endl;
+					*out += h.GenerateString() + "\n";
 				return hitfound;
 			}
 
@@ -622,7 +631,12 @@ PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 
 }
 
-bool PixelReadout::Read(int timestamp, std::stringstream* out)
+PixelReadout::~PixelReadout()
+{
+	cell = 0;
+}
+
+bool PixelReadout::Read(int timestamp, std::string* out)
 {
 	return false;
 }
@@ -638,7 +652,7 @@ PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
 
 }
 
-bool PPtBReadout::Read(int timestamp, std::stringstream* out)
+bool PPtBReadout::Read(int timestamp, std::string* out)
 {
 	Hit h;
 
@@ -664,7 +678,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 			{
 				ph.AddReadoutTime("merged", timestamp);	
 				if(out != 0)
-					*out << ph.GenerateString() << std::endl;
+					*out += ph.GenerateString() + "\n";
 			}
 		}
 		else if(!it->IsEmpty(timestamp) && h.is_valid())
@@ -675,7 +689,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 				sph.SetAddress(it->GetAddressName(), it->GetAddress());
 				sph.SetCharge(ph.GetCharge());
 				sph.AddReadoutTime("remerged", timestamp);
-				*out << sph.GenerateString() << std::endl;
+				*out += sph.GenerateString() + "\n";
 			}
 
 			h.SetAddress(it->GetAddressName(), 
@@ -692,7 +706,7 @@ bool PPtBReadout::Read(int timestamp, std::stringstream* out)
 		{
 			h.AddReadoutTime("BufferFull", timestamp);
 			if(out != NULL)
-				*out << h.GenerateString() << std::endl;
+				*out += h.GenerateString() + "\n";
 
 			return false;
 		}
@@ -736,6 +750,14 @@ PixelLogic::PixelLogic(const PixelLogic& logic) : relation(logic.relation)
 
 	for(auto& it : logic.sublogics)
 		sublogics.push_back(new PixelLogic(it));
+}
+
+PixelLogic::~PixelLogic()
+{
+	for(auto& it : sublogics)
+		delete it;
+
+	sublogics.clear();
 }
 
 void PixelLogic::AddPixelAddress(int address, bool ownpixel)
@@ -878,7 +900,7 @@ bool PixelLogic::Evaluate(ReadoutCell* cell, int timestamp)
 }
 
 
-Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out)
+Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::string* out)
 {
 	Hit h;
 	for(auto& it : ownpixels)
@@ -895,7 +917,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 					Hit ph = h;
 					ph.AddReadoutTime("merged", timestamp);
 					if(out != 0)
-						*out << ph.GenerateString() << std::endl;
+						*out += ph.GenerateString() + "\n";
 				}
 
 				h.AddReadoutTime(cell->GetAddressName(), timestamp);
@@ -921,7 +943,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 					saving = ph;
 					saving.AddReadoutTime("merged", timestamp);
 				}
-				*out << saving.GenerateString() << std::endl;
+				*out += saving.GenerateString() + "\n";
 			}
 
 			h.SetAddress(pix->GetAddressName(), 
@@ -947,7 +969,7 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out
 		if(ph.is_valid() && out != 0)
 		{
 			ph.AddReadoutTime("ReferencePixelHitDetected", timestamp);
-			*out << ph.GenerateString() << std::endl;
+			*out += ph.GenerateString() + "\n";
 		}
 	}
 
@@ -968,7 +990,12 @@ ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0)
 
 }
 
-bool ComplexReadout::Read(int timestamp, std::stringstream* out)
+ComplexReadout::~ComplexReadout()
+{
+	delete logic;
+}
+
+bool ComplexReadout::Read(int timestamp, std::string* out)
 {
 	if(logic == NULL)
 	{
@@ -986,7 +1013,7 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 			{
 				h.AddReadoutTime("BufferFull", timestamp);
 				if(out != NULL)
-					*out << h.GenerateString() << std::endl;
+					*out += h.GenerateString() + "\n";
 
 				return false;
 			}
@@ -1001,7 +1028,7 @@ bool ComplexReadout::Read(int timestamp, std::stringstream* out)
 		if(h.is_valid())
 		{
 			h.AddReadoutTime("LogicReject", timestamp);
-			*out << h.GenerateString() << std::endl;
+			*out += h.GenerateString() + "\n";
 		}
 
 		if(!cell->GetZeroSuppression())

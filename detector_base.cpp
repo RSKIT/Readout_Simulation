@@ -24,8 +24,8 @@
 
 DetectorBase::DetectorBase() : 
         addressname(""), address(0), rocvector(std::vector<ReadoutCell>()), outputfile(""),
-        sout(std::stringstream("")),fout(std::fstream()), badoutputfile(""), 
-        sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
+        sout(std::string("")),fout(std::fstream()), badoutputfile(""), 
+        sbadout(std::string("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
         triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
         triggertablemask(0)
@@ -34,8 +34,8 @@ DetectorBase::DetectorBase() :
 }
 
 DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""),
-        sout(std::stringstream("")), fout(std::fstream()), badoutputfile(""), 
-        sbadout(std::stringstream("")),fbadout(std::fstream()), hitcounter(0), 
+        sout(std::string("")), fout(std::fstream()), badoutputfile(""), 
+        sbadout(std::string("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
         triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
         triggertablemask(0)
@@ -48,8 +48,8 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
 
 DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addressname),
         address(templ.address), rocvector(templ.rocvector),
-        outputfile(templ.outputfile), fout(std::fstream()), sout(std::stringstream("")),
-        badoutputfile(templ.badoutputfile), sbadout(std::stringstream("")),
+        outputfile(templ.outputfile), fout(std::fstream()), sout(std::string("")),
+        badoutputfile(templ.badoutputfile), sbadout(std::string("")),
         fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size),
         triggertabledepth(templ.triggertabledepth), currenttriggerts(templ.currenttriggerts),
         triggertablemask(templ.triggertablemask)
@@ -65,8 +65,8 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
 
 DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addressname),
         address(templ->address), rocvector(templ->rocvector), outputfile(templ->outputfile),
-        fout(std::fstream()), sout(std::stringstream("")), badoutputfile(templ->badoutputfile),
-        fbadout(std::fstream()), sbadout(std::stringstream("")), hitcounter(0), 
+        fout(std::fstream()), sout(std::string("")), badoutputfile(templ->badoutputfile),
+        fbadout(std::fstream()), sbadout(std::string("")), hitcounter(0), 
         position(templ->position), size(templ->size), triggertabledepth(templ->triggertabledepth),
         currenttriggerts(templ->currenttriggerts), triggertablemask(templ->triggertablemask)
 {
@@ -207,7 +207,8 @@ bool DetectorBase::SizeOKROC(ReadoutCell* cell)
     {
         for (int i = 0; i < 3; i++)
         {
-            if(it->GetPosition()[i] + it->GetSize()[i] > this->GetPosition()[i] + this->GetSize()[i])
+            if(it->GetPosition()[i] + it->GetSize()[i] 
+                    > this->GetPosition()[i] + this->GetSize()[i])
                 return false;
             if(it->GetPosition()[i] < this->GetPosition()[i])
                 return false;
@@ -334,7 +335,7 @@ bool DetectorBase::SaveHit(Hit hit, bool compact)
 {
     ++hitcounter;
 
-    sout << hit.GenerateString(compact) << std::endl;
+    sout += hit.GenerateString(compact) + "\n";
 
     return true;
 }
@@ -343,7 +344,7 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
 {
     ++badhitcounter;
 
-    sbadout << hit.GenerateString(compact) << std::endl;
+    sbadout += hit.GenerateString(compact) + "\n";
 
     return true;
 }
@@ -351,7 +352,7 @@ bool DetectorBase::SaveBadHit(Hit hit, bool compact)
 bool DetectorBase::FlushOutput()
 {
     //make sure that the output file is opened:
-    if(sout.str().length() > 0 && !fout.is_open() && outputfile != "")
+    if(sout.length() > 0 && !fout.is_open() && outputfile != "")
     {
         fout.open(outputfile.c_str(), std::ios::out | std::ios::app);
         if(!fout.is_open())
@@ -364,20 +365,20 @@ bool DetectorBase::FlushOutput()
 
     if(fout.is_open())
     {
-        fout << sout.str();
-        sout.str("");
+        fout << sout;
+        sout = "";
         return true;
     }
     else
     {
-        if(sout.str().length() == 0)
+        if(sout.length() == 0)
         {
-            sout.str("");
+            sout = "";
             return true;
         }
         else
         {
-            sout.str("");
+            sout = "";
             return false;
         }
     }
@@ -386,7 +387,7 @@ bool DetectorBase::FlushOutput()
 bool DetectorBase::FlushBadOutput()
 {
     //make sure that the output file is opened:    
-    if(sbadout.str().length() > 0 && !fbadout.is_open() && badoutputfile != "")
+    if(sbadout.length() > 0 && !fbadout.is_open() && badoutputfile != "")
     {
         fbadout.open(badoutputfile.c_str(), std::ios::out | std::ios::app);
         if(!fbadout.is_open())
@@ -399,20 +400,20 @@ bool DetectorBase::FlushBadOutput()
 
     if(fbadout.is_open())
     {
-        fbadout << sbadout.str();
-        sbadout.str("");
+        fbadout << sbadout;
+        sbadout = "";
         return true;
     }
     else
     {
-        if(sbadout.str().length() == 0)
+        if(sbadout.length() == 0)
         {
-            sbadout.str("");
+            sbadout = "";
             return true;
         }
         else
         {
-            sbadout.str("");
+            sbadout = "";
             return false;
         }
     }
@@ -420,22 +421,22 @@ bool DetectorBase::FlushBadOutput()
 
 std::string DetectorBase::GenerateOutput()
 {
-    return sout.str();
+    return sout;
 }
 
 void DetectorBase::ClearOutput()
 {
-    sout.str("");
+    sout = "";
 }
 
 std::string DetectorBase::GenerateBadOutput()
 {
-    return sbadout.str();
+    return sbadout;
 }
 
 void DetectorBase::ClearBadOutput()
 {
-    sbadout.str("");
+    sbadout = "";
 }
 
 int DetectorBase::HitsEnqueued()
@@ -614,19 +615,25 @@ bool DetectorBase::AddTriggerTableEntry(int timestamp)
 {
     if(triggertable.size() > 0 && (timestamp | triggertablemask) == triggertable.back())
     {
-        sbadout << "# TriggerTable signals merged: " << timestamp << std::endl;
+        std::stringstream s("");
+        s << "# TriggerTable signals merged: " << timestamp << std::endl;
+        sbadout += s.str();
         return true;
     }
 
     if(triggertable.size() < triggertabledepth)
     {
         triggertable.push_back(timestamp | triggertablemask);
-        sbadout << "# TriggerTable entry added: " << timestamp << std::endl;
+        std::stringstream s("");
+        s << "# TriggerTable entry added: " << timestamp << std::endl;
+        sbadout += s.str();
         return true;
     }
     else
     {
-        sbadout << "# TriggerTable full: " << timestamp << std::endl;
+        std::stringstream s("");
+        s << "# TriggerTable full: " << timestamp << std::endl;
+        sbadout += s.str();
         return false;
     }
 }

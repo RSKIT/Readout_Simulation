@@ -44,6 +44,7 @@ class ROCBuffer
 {
 public:
 	ROCBuffer(ReadoutCell* roc);
+	~ROCBuffer();
 
 	/**
 	 * @brief put a hit object inside the buffer structure of the readoutcell `cell`
@@ -72,11 +73,12 @@ public:
 	 * 
 	 * @param timestamp      - current timestamp to check whether a hit is expecting a trigger 
 	 *                            signal "now"
-	 * @param fbadout        - output file opened to log deleted hits due to missing trigger
+	 * @param sbadout        - string collecting the data to write to the output file containing
+	 *                            the lost hits due to missing trigger
 	 * 
 	 * @return               - true if a hit was removed, false if not
 	 */
-	virtual bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
+	virtual bool  	NoTriggerRemoveHits(int timestamp, std::string* sbadout = 0);
 
 	/**
 	 * @brief checks whether all buffers are occupied
@@ -107,7 +109,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
+	bool  	NoTriggerRemoveHits(int timestamp, std::string* sbadout = 0);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();	
@@ -129,7 +131,7 @@ public:
 	bool 	InsertHit(const Hit& hit);
 	Hit 	GetHit(int timestamp, bool remove = true);
 
-	bool  	NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
+	bool  	NoTriggerRemoveHits(int timestamp, std::string* sbadout = 0);
 
 	bool 	is_full();
 	int 	GetNumHitsEnqueued();
@@ -147,6 +149,7 @@ class ROCReadout
 {
 public:
 	ROCReadout(ReadoutCell* roc);
+	~ROCReadout();
 
 	/**
 	 * @brief transfers hit objects from subordinate readoutcells to the readoutcell this object
@@ -154,11 +157,11 @@ public:
 	 * @details
 	 * 
 	 * @param timestamp      - current timestamp at which this action is to occur
-	 * @param out 			 - output file opened for logging the hits that get lost in this very
-	 *                            process
+	 * @param out 			 - output string for logging the hits that get lost in this very
+	 *                            process to collect for writing to a file
 	 * @return 				 - true if at least one hit was transferred, false if not
 	 */
-	virtual bool Read(int timestamp, std::stringstream* out = 0);
+	virtual bool Read(int timestamp, std::string* out = 0);
 	/**
 	 * @brief flag that indicates whether the hit exists as a copy in a different object and has to
 	 *             be deleted at several positions. This is necessary for the ROCBuffer classes
@@ -180,7 +183,7 @@ class NoFullReadReadout : public ROCReadout
 public:
 	NoFullReadReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 };
 
@@ -193,7 +196,7 @@ class NoOverWriteReadout : public ROCReadout
 public:
 	NoOverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 };
 
@@ -207,7 +210,7 @@ class OverWriteReadout : public ROCReadout
 public:
 	OverWriteReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 };
 
@@ -225,7 +228,7 @@ class OneByOneReadout : public ROCReadout
 public:
 	OneByOneReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 };
 
@@ -241,7 +244,7 @@ class TokenReadout :public ROCReadout
 public:
 	TokenReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 private:
 	int currentindex;
@@ -254,7 +257,7 @@ public:
 	SortedROCReadout(ReadoutCell* roc);
 	~SortedROCReadout();
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 
 	/**
@@ -289,17 +292,18 @@ class PixelReadout
 {
 public:
 	PixelReadout(ReadoutCell* roc);
+	~PixelReadout();
 
 	/**
 	 * @brief read the hit information from the pixels to the readoutcell
 	 * @details
 	 * 
 	 * @param timestamp      - current timestamp at which the action is to occur
-	 * @param out            - output file opened for logging the lost hits
+	 * @param out            - output string for logging the lost hits into a file
 	 * 
 	 * @return               - true if a hit was loaded, false if not
 	 */
-	virtual bool Read(int timestamp, std::stringstream* out = 0);
+	virtual bool Read(int timestamp, std::string* out = 0);
 	/**
 	 * @brief determines whether the function has to be set manually
 	 * @details
@@ -320,7 +324,7 @@ class PPtBReadout : public PixelReadout
 public:
 	PPtBReadout(ReadoutCell* roc);
 
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 };
 
 /**
@@ -341,6 +345,7 @@ public:
 	PixelLogic(int relation = 0);
 	PixelLogic(PixelLogic* logic);
 	PixelLogic(const PixelLogic& logic);
+	~PixelLogic();
 
 	//the operators possible for the combinatory logic
 	enum operators {Or   = 0,
@@ -448,11 +453,11 @@ public:
 	 * 
 	 * @param cell           - the readout cell to evaluate
 	 * @param timestamp      - the current time stamp of the evaluation
-	 * @param out            - output stream for the logging of failed readout
+	 * @param out            - output string for the logging of failed readout
 	 * @return               - the resulting hit object or an invalid hit object when there was no
 	 *                            hit to be read out
 	 */
-	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::stringstream* out = 0);
+	Hit  ReadHit(ReadoutCell* cell, int timestamp, std::string* out = 0);
 	/**
 	 * @brief removes hits from the pixels used in the PixelLogic object
 	 * @details
@@ -477,6 +482,7 @@ class ComplexReadout : public PixelReadout
 {
 public:
 	ComplexReadout(ReadoutCell* roc);
+	~ComplexReadout();
 
 	/**
 	 * @brief evaluates the pixels in the readout cell for hits and reads them according to the
@@ -484,11 +490,11 @@ public:
 	 * @details
 	 * 
 	 * @param timestamp      - current time stamp of the evaluation
-	 * @param out            - output stream for the failed reads (lost/overwritten hits,...)
+	 * @param out            - output string for the failed reads (lost/overwritten hits,...)
 	 * 
 	 * @return               - true if a hit was generated, false if not
 	 */
-	bool Read(int timestamp, std::stringstream* out = 0);
+	bool Read(int timestamp, std::string* out = 0);
 
 	/**
 	 * @brief sets a new combinatory logic structure for the evaluation of the pixels. The object

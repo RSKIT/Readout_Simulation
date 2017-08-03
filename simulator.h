@@ -444,6 +444,8 @@ private:
     double starttime;	//earliest time possible for the first event
     std::vector<eventdata> eventstoload; //list of events to load/generate
 
+    bool triggersorting;
+
 /*
 	struct eventdata{
 		std::string source;
@@ -459,10 +461,10 @@ private:
     int stopdelay;
 
     std::string inputfile;
-    std::stringstream inputfilecontent;
+    std::string inputfilecontent;
 
     std::string logfile;	//name of the file to write logging texts to
-    std::stringstream logcontent;
+    std::string logcontent;
     bool printdetector;
 
     std::string archivename; //filename for the archive to save the data to

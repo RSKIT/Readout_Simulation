@@ -471,12 +471,12 @@ protected:
 
     int 						hitcounter;
     std::string 				outputfile;
-    std::stringstream			sout;			//stream to collect the data from the simulation
+    std::string 				sout;			//stream to collect the data from the simulation
     std::fstream 				fout;
 
     int 						badhitcounter;
     std::string 				badoutputfile;
-    std::stringstream			sbadout;		//stream to collect the data from the simulation
+    std::string 				sbadout;		//stream to collect the data from the simulation
     std::fstream 				fbadout;
 
     std::deque<int>             triggertable;	//FIFO for trigger signals for sorted readout

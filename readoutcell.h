@@ -77,10 +77,9 @@ public:
   				int configuration = PPTB | ZEROSUPPRESSION | FIFOBUFFER | NOREADONFULL);
 	ReadoutCell();
 	ReadoutCell(const ReadoutCell& roc);
+	~ReadoutCell();
 
 	void Cleanup();
-
-	//~ReadoutCell();
 
 	/**
 	 * @brief the flags set for the configuration of the readoutcell
@@ -314,10 +313,10 @@ public:
 	 * 
 	 * @param hit            - the hit to implant in the detector
 	 * @param timestamp      - current timestamp at which the hit is implanted
-	 * @param out            - pointer to an stringstream for writing for logging failed implants
+	 * @param out            - pointer to an string for writing for logging failed implants
 	 * @return               - true on successful implantation, false on failure
 	 */
-    bool        PlaceHit(Hit hit, int timestamp, std::stringstream* out = 0);
+    bool        PlaceHit(Hit hit, int timestamp, std::string* out = 0);
 
     /**
      * @brief initiates the transition of hits from pixels to their parent readoutcell. The call is
@@ -325,11 +324,11 @@ public:
      * @details
      * 
      * @param timestamp      - current timestamp at which this action occurs
-     * @param out            - output stringstream for logging lost hits
+     * @param out            - output string for logging lost hits
      * 
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadPixel(int timestamp, std::stringstream* out = 0);
+    bool 		LoadPixel(int timestamp, std::string* out = 0);
     /**
      * @brief initiates the transition of hits from one kind of readoutcells to their parent
      *             readoutcell given by the address name. The call is recursive and only changes a
@@ -339,10 +338,10 @@ public:
      * @param addressname    - address name of the readoutcell to transfer the hits to: The parent
      *                            ROC address name
      * @param timestamp      - current timestamp at which this action is to occur
-     * @param out            - output stringstream for logging lost hits
+     * @param out            - output string for logging lost hits
      * @return               - true if at least one hit was transferred, false if not
      */
-    bool 		LoadCell(std::string addressname, int timestamp, std::stringstream* out = 0);
+    bool 		LoadCell(std::string addressname, int timestamp, std::string* out = 0);
     /**
      * @brief reads one hit from the subordinate readoutcells and deletes this hit in them. The
      * 		       same functionality as GetHit(...)
@@ -391,9 +390,9 @@ public:
      * @details
      * 
      * @param timestamp      - current time stamp when this action is to be executed
-     * @param sbadout        - output stream to log the removed hits
+     * @param sbadout        - output string to log the removed hits
      */
-    void 		NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout = 0);
+    void 		NoTriggerRemoveHits(int timestamp, std::string* sbadout = 0);
 
     /**
      * @brief checks the subordinate readout cell addresses for multiple identical addresses and
@@ -422,11 +421,11 @@ public:
      * @details
      * 
      * @param timestamp      - time stamp at the end of the simulation
-     * @param sbadout        - output stream for the lost hits
+     * @param sbadout        - output string for the lost hits
      * 
      * @return               - the number of hits removed from the structure
      */
-    int         RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout = 0);
+    int         RemoveAndSaveAllHits(int timestamp, std::string* sbadout = 0);
 	
 private:
 	std::string 				addressname;

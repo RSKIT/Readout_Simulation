@@ -147,7 +147,7 @@ bool Pixel::HitIsValid()
 	return hit.is_valid();
 }
 
-Hit Pixel::GetHit(int timestamp, std::stringstream* sbadout)
+Hit Pixel::GetHit(int timestamp, std::string* sbadout)
 {
 	if(timestamp != -1 && timestamp >= hit.GetDeadTimeEnd())
 	{
@@ -157,7 +157,7 @@ Hit Pixel::GetHit(int timestamp, std::stringstream* sbadout)
 			//write loss to lost hit file_
 			hit.AddReadoutTime("NotRead", timestamp);
 			if(sbadout != 0)
-				*sbadout << hit.GenerateString() << std::endl;
+				*sbadout += hit.GenerateString() + "\n";
 			//remove the hit:
 			ClearHit();
 		}
@@ -195,7 +195,7 @@ void Pixel::ClearHit(bool resetcharge)
 	hit.ClearReadoutTimes();
 }
 
-Hit Pixel::LoadHit(int timestamp, std::stringstream* sbadout)
+Hit Pixel::LoadHit(int timestamp, std::string* sbadout)
 {
 	Hit h = GetHit(timestamp, sbadout);
 	ClearHit(false);

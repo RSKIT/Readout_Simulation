@@ -417,6 +417,7 @@ public:
 	XMLDetector();
 	XMLDetector(const XMLDetector& templ);
 	XMLDetector(const DetectorBase* templ);
+	~XMLDetector();
 
 	void Cleanup();
 

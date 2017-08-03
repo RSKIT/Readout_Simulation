@@ -24,17 +24,18 @@
 
 Simulator::Simulator() : detectors(std::vector<DetectorBase*>()), eventgenerator(EventGenerator()),
 		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile(""),
-		logcontent(std::stringstream("")), archivename(""), archiveonly(false), 
-		inputfilecontent(std::stringstream("")), outputlevel(23), tsprintpitch(10)
+		logcontent(std::string("")), archivename(""), archiveonly(false), 
+		inputfilecontent(std::string("")), outputlevel(23), tsprintpitch(10), 
+		triggersorting(false)
 {
 
 }
 
 Simulator::Simulator(std::string filename) : detectors(std::vector<DetectorBase*>()), 
 		eventgenerator(EventGenerator()), events(0), starttime(0), stoptime(-1), stopdelay(0),
-		inputfile(filename), logfile(""), logcontent(std::stringstream("")), archivename(""), 
-		archiveonly(false), inputfilecontent(std::stringstream("")), 
-		outputlevel(23), tsprintpitch(10)
+		inputfile(filename), logfile(""), logcontent(std::string("")), archivename(""), 
+		archiveonly(false), inputfilecontent(std::string("")), 
+		outputlevel(23), tsprintpitch(10), triggersorting(false)
 {
 
 }
@@ -92,6 +93,11 @@ void Simulator::LoadInputFile(std::string filename)
 			standardpixel = LoadTCoord(elem);
 		else if(elementname.compare("EventGenerator") == 0)
 			LoadEventGenerator(elem);
+		else if(elementname.compare("SortTriggerTimeStamps") == 0)
+		{
+			if(elem->QueryBoolAttribute("sort", &triggersorting) != tinyxml2::XML_NO_ERROR)
+				triggersorting = false;
+		}
 		else if(elementname.compare("SimulationEnd") == 0)
 		{
 			//load end time:
@@ -174,7 +180,7 @@ void Simulator::LoadInputFile(std::string filename)
 
 		if(changewasnecessary)
 		{
-			logcontent << "Address Changes were applied ..." << std::endl;
+			logcontent += "Address Changes were applied ...\n";
 			std::cout << "Address Changes were applied ..." << std::endl;
 		}
 	}
@@ -186,14 +192,13 @@ void Simulator::LoadInputFile(std::string filename)
 	}
 
 	if(logfile != "")
-		logcontent << "Loading data from \"" << filename << "\" ..." << std::endl;
+		logcontent += "Loading data from \"" + filename + "\" ...\n";
 
 	if(archivename != "")
 	{
 		tinyxml2::XMLPrinter printer;
     	doc.Print( &printer );
-		inputfilecontent.str("");
-		inputfilecontent << printer.CStr();
+		inputfilecontent = std::string(printer.CStr());
 	}
 }
 
@@ -469,7 +474,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	std::chrono::steady_clock::time_point endEventGen = std::chrono::steady_clock::now();
 
-	eventgenerator.SortOnTimeStamps();	//sort the trigger turn on timestamps
+	if(triggersorting)
+		eventgenerator.SortOnTimeStamps();	//sort the trigger turn on timestamps
 
 	int timestamp = 0;
 	double nextevent = eventgenerator.GetHit().GetTimeStamp();
@@ -551,7 +557,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 		remaininghits += it->WriteRemainingHitsToBadOut(timestamp);
 
 	std::cout  << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
-	logcontent << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
+	std::stringstream s("");
+	s << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
+	logcontent += s.str();
 
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -646,28 +654,31 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	{
 		//generate log content:
 		if(printdetector)
-			logcontent << PrintDetectors() << std::endl;
-		logcontent << "Simulated " << timestamp << " timestamps" << std::endl;
+			logcontent += PrintDetectors() + "\n";
+		std::stringstream s("");
+		s << "Simulated " << timestamp << " timestamps" << std::endl;
 
-		logcontent << "Simulation done." << std::endl 
-			 	   << "  injected signals: " << hitcounter << std::endl 
-				   << "  read out signals: " << dethitcounter << std::endl
-				   << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
+		s << "Simulation done." << std::endl 
+		  << "  injected signals: " << hitcounter << std::endl 
+		  << "  read out signals: " << dethitcounter << std::endl
+		  << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
 
-		logcontent << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
-				   << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+		s << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+		  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+
+		logcontent += s.str();
 
 		//save to archive:
 		if(archivename != "")
 		{
 			if(oldarchive.has_file(logfile.c_str()))
 			{
-				std::stringstream s("");
-				s << oldarchive.read(logfile) << std::endl << logcontent.str();
-				archive.writestr(logfile, s.str());
+				//std::stringstream s("");
+				//s << oldarchive.read(logfile) << std::endl << logcontent;
+				archive.writestr(logfile, oldarchive.read(logfile) + "\n" + logcontent);
 			}
 			else
-				archive.writestr(logfile, logcontent.str());
+				archive.writestr(logfile, logcontent);
 		}
 
 		//save to normal file:
@@ -677,12 +688,12 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			logf.open(logfile.c_str(), std::ios::out | std::ios::app);
 			if(logf.is_open())
 			{
-				logf << logcontent.str();
+				logf << logcontent;
 				logf.close();
 			}			
 		}
 
-		logcontent.str("");
+		logcontent = "";
 	}
 
 	//add the XML configuration file to the archive:
@@ -708,10 +719,10 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			}while(oldarchive.has_file(s.str()));
 
 			//write the new configuration into the new archive:
-			archive.writestr(s.str(), inputfilecontent.str());
+			archive.writestr(s.str(), inputfilecontent);
 		}
 		else
-			archive.writestr(inputfile, inputfilecontent.str());
+			archive.writestr(inputfile, inputfilecontent);
 
 		//copy the other files from the old archive:
 		std::vector<std::string> oldfiles = oldarchive.namelist();
@@ -819,7 +830,7 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	{
 		if(det->CheckROCAddresses())
 		{
-			logcontent << "Address Changes were applied ..." << std::endl;
+			logcontent += "Address Changes were applied ...\n";
 			if(outputlevel & loadsimulation)
 				std::cout << "Address Changes were applied ..." << std::endl;
 		}
@@ -831,6 +842,8 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 											det->GetTriggerTimeMask());
 
 	AddDetector(det);
+
+	delete det;
 }
 
 TCoord<double> Simulator::LoadTCoord(tinyxml2::XMLElement* coordinate)

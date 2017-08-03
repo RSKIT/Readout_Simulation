@@ -50,10 +50,11 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
 }
 
 ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname), 
-        address(roc.address), hitqueue(roc.hitqueue), hitqueuelength(roc.hitqueuelength),
-        pixelvector(roc.pixelvector), rocvector(roc.rocvector), buf(0), rocreadout(0), 
-        pixelreadout(0), zerosuppression(roc.zerosuppression), readoutdelay(roc.readoutdelay),
-        triggered(roc.triggered), position(roc.position), size(roc.size)
+        address(roc.address), hitqueue(std::vector<Hit>()), hitqueuelength(roc.hitqueuelength),
+        pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()), buf(0), 
+        rocreadout(0), pixelreadout(0), zerosuppression(roc.zerosuppression), 
+        readoutdelay(roc.readoutdelay), triggered(roc.triggered), 
+        position(roc.position), size(roc.size)
 {
     SetConfiguration(roc.configuration);
 
@@ -63,21 +64,33 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         ro->SetPixelLogic(new PixelLogic(static_cast<ComplexReadout*>(roc.pixelreadout)
                                                                             ->GetPixelLogic()));
         pixelreadout = ro;
+        ro = 0;
     }
+
+    hitqueue.insert(hitqueue.end(), roc.hitqueue.begin(), roc.hitqueue.end());
+
+    pixelvector.insert(pixelvector.end(), roc.pixelvector.begin(), roc.pixelvector.end());
+    rocvector.insert(rocvector.end(), roc.rocvector.begin(), roc.rocvector.end());
 }
 
-/*ReadoutCell::~ReadoutCell()
+ReadoutCell::~ReadoutCell()
 {
-    
-    if(buf != 0)
+    pixelvector.clear();
+
+    for(auto& it : rocvector)
+        it.Cleanup();
+
+    rocvector.clear();
+
+    /*if(buf != 0)
         delete buf;
     if(rocreadout != 0)
         delete rocreadout;
     if(pixelreadout != 0)
         delete pixelreadout;
-    
+    */
 }
-*/
+
 void ReadoutCell::Cleanup()
 {
     pixelvector.clear();
@@ -91,7 +104,7 @@ void ReadoutCell::Cleanup()
         delete pixelreadout;
     if(buf != 0)
         delete buf;
-    if(rocreadout)
+    if(rocreadout != 0)
         delete rocreadout;
 
 }
@@ -425,7 +438,7 @@ void ReadoutCell::ClearROCVector()
 	rocvector.clear();
 }
 
-bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
+bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::string* out)
 {
     if (rocvector.size() > 0)
     {
@@ -450,7 +463,7 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
                 if(!result)
                 {
                     hit.AddReadoutTime("PixelFull", hit.GetTimeStamp() + 1);
-                    *out << hit.GenerateString() << std::endl;
+                    *out += hit.GenerateString() + "\n";
                 }
                 return result;
             }
@@ -460,7 +473,7 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
         if(out != 0)
         {
             hit.AddReadoutTime("PixelNotFound", hit.GetTimeStamp() + 1);
-            *out << hit.GenerateString() << std::endl;
+            *out += hit.GenerateString() + "\n";
         }
         return false;
     }
@@ -470,13 +483,13 @@ bool ReadoutCell::PlaceHit(Hit hit, int timestamp, std::stringstream* out)
         {
             hit.AddReadoutTime(GetAddressName(), timestamp);
             hit.AddReadoutTime("EmptyROC", timestamp);
-            *out << hit.GenerateString() << std::endl;
+            *out += hit.GenerateString() + "\n";
         }
         return false;
     }
 }
 
-bool ReadoutCell::LoadPixel(int timestamp, std::stringstream* out)
+bool ReadoutCell::LoadPixel(int timestamp, std::string* out)
 {
     bool result = false;
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
@@ -487,7 +500,7 @@ bool ReadoutCell::LoadPixel(int timestamp, std::stringstream* out)
     return result;
 }
 
-bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::stringstream* out)
+bool ReadoutCell::LoadCell(std::string addressname, int timestamp, std::string* out)
 {
     bool result = false;
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
@@ -567,7 +580,7 @@ void ReadoutCell::ShiftCell(TCoord<double> distance)
     UpdateSize();
 }
 
-void ReadoutCell::NoTriggerRemoveHits(int timestamp, std::stringstream* sbadout)
+void ReadoutCell::NoTriggerRemoveHits(int timestamp, std::string* sbadout)
 {
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
         it->NoTriggerRemoveHits(timestamp, sbadout);
@@ -613,7 +626,7 @@ void ReadoutCell::SetTriggerTableFrontPointer(const int* front, const int clearp
     }
 }
 
-int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout)
+int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::string* sbadout)
 {
     int hitcounter = 0;
 
@@ -629,7 +642,7 @@ int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout)
         {
             h.AddReadoutTime("SimulationEnd",timestamp);
             if(sbadout != NULL)
-                *sbadout << h.GenerateString() << std::endl;
+                *sbadout += h.GenerateString() + "\n";
 
             ++hitcounter;
         }
@@ -642,7 +655,7 @@ int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::stringstream* sbadout)
         {
             it.AddReadoutTime("SimulationEnd", timestamp);
             if(sbadout != NULL)
-                *sbadout << it.GenerateString() << std::endl;
+                *sbadout += it.GenerateString() + "\n";
 
             //avoid double counting as for OneByOne readout:
             if(!rocreadout->ClearChild())

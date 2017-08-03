@@ -577,6 +577,11 @@ XMLDetector::XMLDetector(const DetectorBase* templ) : DetectorBase(templ), curre
 
 }
 
+XMLDetector::~XMLDetector()
+{
+	Cleanup();
+}
+
 void XMLDetector::Cleanup()
 {
 	for(auto& it : rocvector)
