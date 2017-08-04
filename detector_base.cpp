@@ -28,7 +28,7 @@ DetectorBase::DetectorBase() :
         sbadout(std::string("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
         triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
-        triggertablemask(0)
+        triggertablemask(0), gapfill(false)
 {
 	
 }
@@ -38,7 +38,7 @@ DetectorBase::DetectorBase(std::string addressname, int address) : outputfile(""
         sbadout(std::string("")),fbadout(std::fstream()), hitcounter(0), 
         position(TCoord<double>::Null), size(TCoord<double>::Null), 
         triggertable(std::deque<int>()), triggertabledepth(0), currenttriggerts(-1), 
-        triggertablemask(0)
+        triggertablemask(0), gapfill(false)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -52,7 +52,7 @@ DetectorBase::DetectorBase(const DetectorBase& templ) : addressname(templ.addres
         badoutputfile(templ.badoutputfile), sbadout(std::string("")),
         fbadout(std::fstream()), hitcounter(0), position(templ.position), size(templ.size),
         triggertabledepth(templ.triggertabledepth), currenttriggerts(templ.currenttriggerts),
-        triggertablemask(templ.triggertablemask)
+        triggertablemask(templ.triggertablemask), gapfill(templ.gapfill)
 {
     triggertable.clear();
     if(templ.triggertable.size() > 0)
@@ -68,7 +68,8 @@ DetectorBase::DetectorBase(const DetectorBase* templ) : addressname(templ->addre
         fout(std::fstream()), sout(std::string("")), badoutputfile(templ->badoutputfile),
         fbadout(std::fstream()), sbadout(std::string("")), hitcounter(0), 
         position(templ->position), size(templ->size), triggertabledepth(templ->triggertabledepth),
-        currenttriggerts(templ->currenttriggerts), triggertablemask(templ->triggertablemask)
+        currenttriggerts(templ->currenttriggerts), triggertablemask(templ->triggertablemask),
+        gapfill(templ->gapfill)
 {
     triggertable.clear();
     if(templ->triggertable.size() > 0)
@@ -564,6 +565,11 @@ void DetectorBase::SetTriggerTableDepth(int depth)
 {
     if(depth >= 0)
         triggertabledepth = depth;
+
+    if(triggertabledepth == 0 || gapfill)
+        currenttriggerts = -1;  //signal to read out every time stamp
+    else
+        currenttriggerts = -2;  //do not read out any trigger
 }
 
 int DetectorBase::GetTriggerTableEntries()
@@ -586,6 +592,16 @@ void DetectorBase::SetTriggerTimeMask(int pattern)
     triggertablemask = pattern;
 }
 
+bool DetectorBase::GetGapFill()
+{
+    return gapfill;
+}
+
+void DetectorBase::SetGapFill(bool gapfill)
+{
+    this->gapfill = gapfill;
+}
+
 int DetectorBase::GetTriggerTableFront()
 {
     return currenttriggerts;
@@ -593,24 +609,24 @@ int DetectorBase::GetTriggerTableFront()
 
 void DetectorBase::RemoveTriggerTableFront(int timestamp)
 {
-    if(triggertable.size() > 0)
+    if(triggertable.size() == 0 || triggertable.front() > (timestamp | triggertablemask))
     {
-        //only use the trigger time stamp when its validity period is already over:
-        if(triggertable.front() > (timestamp | triggertablemask))
-            currenttriggerts = -1;
-        else
-        {
-            currenttriggerts = triggertable.front();
-            triggertable.pop_front();
-        }
+        currenttriggerts = ((triggertabledepth == 0 || gapfill)?-1:-2);
+        std::stringstream s("");
+        s << "# TriggerTable empty, clean detector (" << timestamp << ")\n";
+        sout += s.str();
     }
     else
-        currenttriggerts = -1;
+    {
+        currenttriggerts = triggertable.front();
+        triggertable.pop_front();
+    }
 }
 
 void DetectorBase::ClearTriggerTable()
 {
     triggertable.clear();
+    currenttriggerts = ((triggertabledepth == 0 || gapfill)?-1:-2);
 }
 
 bool DetectorBase::AddTriggerTableEntry(int timestamp)

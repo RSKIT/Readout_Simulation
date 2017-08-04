@@ -404,6 +404,16 @@ public:
      */
     const int GetTriggerTimeMask();
     void SetTriggerTimeMask(int pattern);
+    /**
+     * @brief changed the behaviour of the readout of sorted hits: If set to true, gaps between
+     *             trigger time stamps are used to write out hits belonging to lost trigger time
+     *             stamps. If set to false, no hits will be written out.
+     * @details
+     * @return               - setting whether hits belonging to lost trigger time stamps will be
+     *                            read out when no triggers are to be read out or not
+     */
+    bool GetGapFill();
+    void SetGapFill(bool gapfill);
 
     /**
      * @brief gets the currently first entry in the FIFO
@@ -482,6 +492,8 @@ protected:
     std::deque<int>             triggertable;	//FIFO for trigger signals for sorted readout
     int                         triggertabledepth;	//maximum number of entries in the triggertable
     int 						currenttriggerts;	//the currently selected time stamp to read out
+    bool 						gapfill;			//use emptyness of triggertable to write out hits
+    												//  belonging to lost trigger time stamps
 
     int  						triggertablemask;	//bits to mask for time stamp comparison
 

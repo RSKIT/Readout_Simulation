@@ -522,15 +522,18 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			int hitcount = 0;
 			for(auto& it : detectors)
 			{
-				//check whether 
-				if(it->GetTriggerTableDepth() > 0)
+				//check for remaining triggers to read out
+				if(it->GetTriggerTableEntries() > 0)
 				{
-					if(it->GetTriggerTableEntries() > 0)
-						hitcount += 1;
+					hitcount += 1;
+					break;
 				}
-				//count the hits in the unsorted detectors:
-				else
+				//check for triggered hit gap fill readout or for unsorted detectors:
+				else if(it->GetGapFill() || it->GetTriggerTableEntries() == 0)
+				{
 					hitcount += it->HitsEnqueued();
+					break;
+				}
 			}
 			if(hitcount == 0)
 				--stopdelay;
@@ -555,12 +558,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 	int remaininghits = 0;
 	for(auto& it : detectors)
 		remaininghits += it->WriteRemainingHitsToBadOut(timestamp);
-
-	std::cout  << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
-	std::stringstream s("");
-	s << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
-	logcontent += s.str();
-
+	//write out later...
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
@@ -646,8 +644,9 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 				  << std::endl << "  read out signals: " << dethitcounter << std::endl
 				  << "  Efficiency:       " << dethitcounter/double(hitcounter) << std::endl;
 
-	std::cout << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
-			  << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
+	std::cout  << "Remaining Hits in the detector(s): " << remaininghits << std::endl
+			   << "Event Generation Time: " << TimesToInterval(begin, endEventGen) << std::endl
+			   << "Simulation Time:       " << TimesToInterval(endEventGen, end) << std::endl;
 
 	//save the log file:
 	if(logfile != "")
@@ -657,6 +656,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 			logcontent += PrintDetectors() + "\n";
 		std::stringstream s("");
 		s << "Simulated " << timestamp << " timestamps" << std::endl;
+
+		s << "Remaining Hits in the detector(s): " << remaininghits << std::endl;
 
 		s << "Simulation done." << std::endl 
 		  << "  injected signals: " << hitcounter << std::endl 
@@ -797,12 +798,17 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 	if(parent->QueryIntAttribute("TriggerTimeStampMask", &trigtimemask) != tinyxml2::XML_NO_ERROR)
 		trigtimemask = 0;
 
+	bool gapfill = false;
+	if(parent->QueryBoolAttribute("TriggerGapFill", &gapfill) != tinyxml2::XML_NO_ERROR)
+		gapfill = false;
+
 	DetectorBase* det = new Detector(addressname, address);
 	det->SetOutputFile(outputfile);
 	det->SetBadOutputFile(badoutputfile);
 
 	det->SetTriggerTableDepth(trigtablength);
 	det->SetTriggerTimeMask(trigtimemask);
+	det->SetGapFill(gapfill);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
