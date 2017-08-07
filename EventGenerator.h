@@ -292,6 +292,13 @@ public:
 	 * @details
 	 */
 	void 	ClearOnTimeStamps();
+	/**
+	 * @brief generates a string containing a list of all time stamps at which the trigger is
+	 *             turned on
+	 * @details
+	 * @return               - string containing the trigger turn on time stamps
+	 */
+	std::string PrintOnTimeStamps();
 
 	/**
 	 * @brief provides the current trigger state fot the timestamps passed

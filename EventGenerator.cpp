@@ -296,6 +296,16 @@ void EventGenerator::ClearOnTimeStamps()
 	triggerstate = true;
 }
 
+std::string EventGenerator::PrintOnTimeStamps()
+{
+	std::stringstream s("");
+	s << "Trigger On Time Stamps:\n";
+	for(auto& it : triggerturnontimes)
+		s << "  " << it << std::endl;
+
+	return s.str();
+}
+
 bool EventGenerator::GetTriggerState(int timestamp, bool print)
 {
 	if(triggerturnontimes.size() > 0 && timestamp == triggerturnontimes.front())
@@ -1242,9 +1252,12 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		std::vector<std::map<unsigned int, std::vector<ChargeDistr> >::iterator> startpoints;
 		int totalclusters = clusters.size();
 		int index = 0;
+		int writeindex = totalclusters / rgthreads;
+		if((totalclusters % rgthreads) != 0)
+			++writeindex;
 		for(auto it = clusters.begin(); it != clusters.end(); ++it)
 		{
-			if((index % (totalclusters/rgthreads+1)) == 0)
+			if((index % writeindex) == 0)
 				startpoints.push_back(it);
 			++index;
 		}
@@ -1295,7 +1308,7 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		}
 
 		if(print)
-			std::cout << "Regrouping done. (" << clusters.size() << ")" << std::endl;
+			std::cout << "Regrouping done. (" << reclusters.size() << ")" << std::endl;
 	}
 	//=== end regrouping ===
 
