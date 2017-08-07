@@ -529,7 +529,7 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 					break;
 				}
 				//check for triggered hit gap fill readout or for unsorted detectors:
-				else if(it->GetGapFill() || it->GetTriggerTableEntries() == 0)
+				else if(it->GetGapFill() || it->GetTriggerTableDepth() == 0)
 				{
 					hitcount += it->HitsEnqueued();
 					break;
