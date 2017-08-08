@@ -150,6 +150,10 @@ void Simulator::LoadInputFile(std::string filename)
 			if(elem->QueryIntAttribute("outputpitch", &tsprintpitch) != tinyxml2::XML_NO_ERROR)
 				tsprintpitch = 10;
 		}
+		else if(elementname.compare("Scan") == 0)
+		{
+			ScanNode(elem);
+		}
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -1107,6 +1111,54 @@ std::string Simulator::PrintDetectors()
 	return s.str();
 }
 
+bool Simulator::GoToNextParameterSetting(int scanid)
+{
+	// "user" call without scan id. Get the first one:
+	if(scanid == -1)
+	{
+		if(scanindices.size() > 0)
+			scanid = scanindices.begin()->first;
+		else
+			return false;
+	}
+	else //get the next scan id:
+	{
+		auto it = ++(scanindices.find(scanid));
+		if(it != scanindices.end())
+			scanid = it->first;
+		else //return on non existing next scan id
+			return false;
+	}
+	//scanid is a valid key now
+
+	auto it = scanindices.find(scanid);
+	if(it->second < scanindexmaxima.find(scanid)->second)
+	{
+		++(it->second);
+		return true;
+	}
+	else
+	{
+		it->second = 0;
+		return GoToNextParameterSetting(scanid);
+	}
+}
+
+int Simulator::GetNumParameterSettings()
+{
+	int settings = 1;
+	for(auto& it : scanindexmaxima)
+		settings *= it.second + 1;
+
+	return settings;
+}
+
+void Simulator::ClearScanParameters()
+{
+	scanindices.clear();
+	scanindexmaxima.clear();
+}
+
 ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixelsize,
 								std::string defaultaddressname)
 {
@@ -1213,15 +1265,20 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	while(child != 0)
 	{
 		std::string childname = std::string(child->Value());
+
+		tinyxml2::XMLElement* newchild = child;
+		if(childname.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(childname.compare("ROC") == 0)
-			roc.AddROC(LoadROC(child, pixelsize, childaddressname));
+			roc.AddROC(LoadROC(newchild, pixelsize, childaddressname));
 		else if(childname.compare("Pixel") == 0)
-			roc.AddPixel(LoadPixel(child, pixelsize));
+			roc.AddPixel(LoadPixel(newchild, pixelsize));
 		else if(childname.compare("NTimes") == 0)
-			LoadNPixels(&roc, child, pixelsize);
+			LoadNPixels(&roc, newchild, pixelsize);
 		else if(childname.compare("PixelLogic") == 0)
 		{
-			PixelLogic* logic = LoadPixelLogic(child);
+			PixelLogic* logic = LoadPixelLogic(newchild);
 			ComplexReadout* cro = new ComplexReadout(&roc);
 			cro->SetPixelLogic(logic);
 			roc.SetComplexPPtBReadout(cro);
@@ -1267,25 +1324,30 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 	while(properties != 0)
 	{
 		std::string name = std::string(properties->Value());
+
+		tinyxml2::XMLElement* newproperties = properties;
+		if(name.compare("Scan") == 0)
+			newproperties = ScanNode(properties);
+
 		if(name.compare("Position") == 0)
-			position = LoadTCoord(properties);
+			position = LoadTCoord(newproperties);
 		else if(name.compare("Size") == 0)
-			size = LoadTCoord(properties);
+			size = LoadTCoord(newproperties);
 		else if(name.compare("Threshold") == 0)
 		{
-			tinyxml2::XMLError error = properties->QueryDoubleAttribute("thr", &threshold);
+			tinyxml2::XMLError error = newproperties->QueryDoubleAttribute("thr", &threshold);
 			if(error != tinyxml2::XML_NO_ERROR)
 				threshold = 0.;
 		}
 		else if(name.compare("Efficiency") == 0)
 		{
-			tinyxml2::XMLError error = properties->QueryDoubleAttribute("n", &efficiency);
+			tinyxml2::XMLError error = newproperties->QueryDoubleAttribute("n", &efficiency);
 			if(error != tinyxml2::XML_NO_ERROR)
 				efficiency = 1.;
 		}
 		else if(name.compare("DeadTimeScaling") == 0)
 		{
-			tinyxml2::XMLError error = properties->QueryDoubleAttribute("factor", 
+			tinyxml2::XMLError error = newproperties->QueryDoubleAttribute("factor", 
 														&deadtimescaling);
 			if(error != tinyxml2::XML_NO_ERROR)
 				deadtimescaling = 1.;
@@ -1340,19 +1402,23 @@ PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
 	{
 		std::string name = child->Value();
 
+		tinyxml2::XMLElement* newchild = child;
+		if(name.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(name.compare("Pixel") == 0)
 		{
 			int address;
-			if(child->QueryIntAttribute("addr", &address) != tinyxml2::XML_NO_ERROR)
+			if(newchild->QueryIntAttribute("addr", &address) != tinyxml2::XML_NO_ERROR)
 				address = -1;
 			bool ownaddress;
-			if(child->QueryBoolAttribute("own", &ownaddress) != tinyxml2::XML_NO_ERROR)
+			if(newchild->QueryBoolAttribute("own", &ownaddress) != tinyxml2::XML_NO_ERROR)
 				ownaddress = false;
 
 			logic->AddPixelAddress(address, ownaddress);
 		}
 		else if(name.compare("PixelLogic") == 0)
-			logic->AddPixelLogic(LoadPixelLogic(child));
+			logic->AddPixelLogic(LoadPixelLogic(newchild));
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1392,9 +1458,14 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 	while(elem != 0)
 	{
 		std::string name = std::string(elem->Value());
+
+		tinyxml2::XMLElement* newelem = elem;
+		if(name.compare("Scan") == 0)
+			newelem = ScanNode(elem);
+
 		if(name.compare("Pixel") == 0)
 		{
-			Pixel pix = LoadPixel(elem, pixelsize);
+			Pixel pix = LoadPixel(newelem, pixelsize);
 
 			if(pix.GetAddress() < parentcell->GetNumPixels())
 				pix.SetAddress(parentcell->GetNumPixels());
@@ -1415,7 +1486,7 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 		}
 		else if(name.compare("ROC") == 0)
 		{
-			ReadoutCell roc = LoadROC(elem, pixelsize, "c" + parentcell->GetAddressName());
+			ReadoutCell roc = LoadROC(newelem, pixelsize, "c" + parentcell->GetAddressName());
 
 			if(roc.GetAddress() < parentcell->GetNumROCs())
 				roc.SetAddress(parentcell->GetNumROCs());
@@ -1442,11 +1513,11 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 
 			//shifting for single instance:
 			if(numelements == 0)
-				LoadNPixels(parentcell, elem, pixelsize, thisshift + shift);
+				LoadNPixels(parentcell, newelem, pixelsize, thisshift + shift);
 
 			for(int i = 0; i < numelements; ++i)
 			{
-				LoadNPixels(parentcell, elem, pixelsize, thisshift);
+				LoadNPixels(parentcell, newelem, pixelsize, thisshift);
 				thisshift += shift;
 			}
 		}
@@ -1480,19 +1551,24 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
+
+		tinyxml2::XMLElement* newchild = child;
+		if(value.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(value.compare("Counter") == 0)
 		{
-			const char* nam = child->Attribute("name");
+			const char* nam = newchild->Attribute("name");
 			std::string countername = (nam != 0)?std::string(nam):"";
 			if(countername != "")
 			{
 				double cvalue;
-				error = child->QueryDoubleAttribute("value", &cvalue);
+				error = newchild->QueryDoubleAttribute("value", &cvalue);
 				det->AddCounter(countername, cvalue);
 			}
 		}
 		else if(value.compare("State") == 0)
-					det->AddState(LoadState(child));
+					det->AddState(LoadState(newchild));
 
 		if(child != statemachine->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1537,11 +1613,16 @@ StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
+
+		tinyxml2::XMLElement* newchild = child;
+		if(value.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(value.compare("Action") == 0)
-			state->AddRegisterChange(LoadRegisterChange(child));
+			state->AddRegisterChange(LoadRegisterChange(newchild));
 		else if(value.compare("StateTransition") == 0)
 		{
-			state->AddStateTransition(LoadStateTransition(child));
+			state->AddStateTransition(LoadStateTransition(newchild));
 		}
 
 		if(child != stateelement->LastChildElement())
@@ -1607,10 +1688,15 @@ StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
+
+		tinyxml2::XMLElement* newchild = child;
+		if(value.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(value.compare("Action") == 0)
-			trans->AddRegisterChange(LoadRegisterChange(child));
+			trans->AddRegisterChange(LoadRegisterChange(newchild));
 		else if(value.compare("Condition") == 0)
-			trans->SetComparison(LoadComparison(child));
+			trans->SetComparison(LoadComparison(newchild));
 
 		if(child != transition->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1660,14 +1746,21 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 	while(child != 0)
 	{
 		std::string value = std::string(child->Value());
+
+		tinyxml2::XMLElement* newchild = child;
+		if(value.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(value.compare("Lvalue") == 0)
 		{
 			double lval;
-			if(child->QueryDoubleAttribute("value", &lval) == tinyxml2::XML_NO_ERROR)
+			if(newchild->QueryDoubleAttribute("value", &lval) == tinyxml2::XML_NO_ERROR)
 				comp->SetFirstValue(lval);
 			else
 			{
-				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
+				tinyxml2::XMLElement* grandchild = newchild->FirstChildElement();
+				if(std::string(grandchild->Value()).compare("Scan") == 0)
+					grandchild = ScanNode(grandchild);
 				if(grandchild != 0)
 				{
 					std::string val = std::string(grandchild->Value());
@@ -1688,6 +1781,8 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 			else
 			{
 				tinyxml2::XMLElement* grandchild = child->FirstChildElement();
+				if(std::string(grandchild->Value()).compare("Scan") == 0)
+					grandchild = ScanNode(grandchild);
 				if(grandchild != 0)
 				{
 					std::string val = std::string(grandchild->Value());
@@ -1712,6 +1807,119 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		std::cout << "comparisonLoader:" << std::endl << comp->PrintComparison(" ");
 
 	return comp;
+}
+
+tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
+{
+	if(element == 0)
+		return 0;
+
+	int scanid = 0;
+	if(element->QueryIntAttribute("scanid", &scanid) != tinyxml2::XML_NO_ERROR)
+	{
+		std::cout << "Error: missing Scan parameter ID! Aborting." << std::endl;
+		return 0;
+	}
+
+	//count the values for this parameter (`for(i=0;i<=maxindex;++i)`):
+	tinyxml2::XMLElement* child = element->FirstChildElement();
+	tinyxml2::XMLElement* object = 0;
+	int maxindex = 0;
+	while(child != 0)
+	{
+		std::string name = std::string(child->Value());
+
+		if(name.compare("Value") == 0)
+			++maxindex;
+		else if(name.compare("Object") == 0)
+			object = child->FirstChildElement();
+		
+		if(child != element->LastChildElement())
+			child = child->NextSiblingElement();
+		else
+			child = 0;
+	}
+	--maxindex;	//comparison is smaller-equal
+
+	if(object == 0)
+	{
+		std::cout << "Error: missing object to modify for scan ID " << scanid << std::endl;
+		return 0;
+	}
+
+	//check whether the scan ID is already in use:
+	auto found = scanindexmaxima.find(scanid);
+	if(found == scanindexmaxima.end())	//not found
+	{
+		//add a new scan index:
+		scanindices.insert(std::make_pair(scanid, 0));
+		scanindexmaxima.insert(std::make_pair(scanid,maxindex));
+	}
+	else if(found->second != maxindex)	//found, but wrong number of parameters:
+	{
+		std::cout << "Error: wrong number of parameters for scan ID " << scanid << std::endl;
+		return 0;
+	}
+
+	//find the parameter and its value to replace:
+	int index = 1;
+	std::stringstream s("");
+	s << "parameter" << index;
+	char parnam[13];
+	std::strcpy(parnam, s.str().c_str());
+
+	while(element->Attribute(parnam) != 0)
+	{
+		std::string parameter = "";
+		std::string parvalue = "";
+		const char* nam = element->Attribute(parnam);
+		parameter = ((nam != 0)?std::string(nam):"");
+		
+		int numvalue = 0;	//the number of the next value node
+		child = element->FirstChildElement();
+		while(child != 0)
+		{
+			if(std::string(child->Value()).compare("Value") == 0)
+			{
+				if(numvalue == scanindices.find(scanid)->second)
+				{
+					std::stringstream s2("");
+					s2 << "val" << index;
+					char valnam[7];
+					std::strcpy(valnam, s2.str().c_str());
+					nam = child->Attribute(valnam);
+					parvalue = ((nam != 0)?std::string(nam):"");
+					if(parvalue == "")
+					{
+						std::cout << "Missing parameter value for scan ID " << scanid << std::endl;
+						return 0;
+					}
+					else
+						break;
+				}
+				else
+					++numvalue;
+			}
+
+			if(child != element->LastChildElement())
+				child = child->NextSiblingElement();
+			else
+				child = 0;
+		}
+
+		//change the desired parameter to the new value:
+		object->SetAttribute(parameter.c_str(), parvalue.c_str());
+
+		++index;
+		s.str("");
+		s << "parameter" << index;
+		std::strcpy(parnam, s.str().c_str());
+	}
+
+	if(std::string(object->Value()).compare("Scan") == 0)
+		return ScanNode(object);
+	else
+		return object;
 }
 
 std::string Simulator::TimesToInterval(TimePoint start, TimePoint end)

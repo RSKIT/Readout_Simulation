@@ -283,6 +283,30 @@ public:
      */
     std::string PrintDetectors();
 
+    /**
+     * @brief changes one parameter of the simulation and returns whether another simulation is
+     *             necessary
+     * @details
+     * @return               - true if a parameter change was successful (and another simulation is
+     *                            necessary), false if no further parameter set is available (the
+     *                            simulation is done)
+     */
+    bool GoToNextParameterSetting(int scanid = -1);
+    /**
+     * @brief provides the number of parameter sets in this simulation (i.e. the number of sub-
+     *             simulations)
+     * @details
+     * @return               - the number of parameter sets in this simulation
+     */
+    int GetNumParameterSettings();
+    /**
+     * @brief removes all scan parameters from the simulation object. When executed during the scan
+     *             of the parameter sets and LoadInputFile() is exexuted, the first parameter set
+     *             is executed again
+     * @details
+     */
+    void ClearScanParameters();
+
 private:
 	//=== Detector Geometry and Event Generator Loading ==
 	/**
@@ -425,6 +449,17 @@ private:
 	Comparison*			LoadComparison(tinyxml2::XMLElement* comparison);
 
 	/**
+	 * @brief inserts a scanning parameter into the simulation and processes its contents with the
+	 *             currently set index for this scan. This scan only takes place in the node
+	 *             directly below this structure
+	 * @details
+	 * 
+	 * @param element        - the XML element "<Scan/>" to evaluate
+	 * @return               - the underlying element with the changes applied
+	 */
+	tinyxml2::XMLElement* ScanNode(tinyxml2::XMLElement* element);
+
+	/**
 	 * @brief converts time differences measured in microseconds to test strings showing the
 	 *             time ina humen readable format
 	 * @details
@@ -474,6 +509,9 @@ private:
     int outputlevel;
     int tsprintpitch;
 
+    std::map<int, int> scanindices;		//scan ID and current setting
+    std::map<int, int> scanindexmaxima;	//maximum per scan ID (correlation via position
+    									// in the vector)
 };
 
 

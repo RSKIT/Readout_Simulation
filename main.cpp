@@ -43,104 +43,97 @@ std::string GetDateTime()
     return std::string(buffer);
 }
 
+bool WriteToLog(std::string text, bool close = true)
+{
+    std::cout << text;
+    
+    std::fstream fgenerallog;
+
+    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
+
+    if(fgenerallog.is_open())
+    {
+        fgenerallog << text;
+        if(close)
+            fgenerallog.close();
+        return true;
+    }
+    else
+        return false;
+}
+
 
 int main(int argc, char** argv)
 {
-    std::fstream fgenerallog;
-    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
+    //Data Container for the file names:
+    std::vector<std::string> files;
 
-    bool writelog = fgenerallog.is_open();
-
-    if(writelog)
-        fgenerallog << "Call at: " << GetDateTime() << " with ";
+    //starting output preparation:
+    std::stringstream s("");
+    s << "Call at: " << GetDateTime() << " with ";
 
     //Load Data from command line arguments:
     if(argc > 1)
     {
-        fgenerallog << (argc-1) << " arguments" << std::endl;
         for(int i = 1; i < argc; ++i)
-        {
-            std::string now = GetDateTime();
-            if(writelog)
-            {
-                if(!fgenerallog.is_open())
-                    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
-
-                fgenerallog << "[" << now << "] Starting Simulation " 
-                            << i << "/" << (argc-1) << ": \"" << argv[i] << "\"" << std::endl;
-
-                fgenerallog.close();
-            }
-            std::cout << "[" << now << "] Loading from file \"" << argv[i] 
-                        << "\" ..." << std::endl;
-
-            Simulator sim(argv[i]);
-            sim.LoadInputFile();
-
-            sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
-
-            sim.Cleanup();
-        }
+            files.push_back(argv[i]);
     }
     //try loading filenames from pipelined data:
     else
     {
         std::string file = "";
-        std::vector<std::string> files;
-
         while(std::cin >> file)
             files.push_back(file);
+    }
 
-        fgenerallog << files.size() << " arguments" << std::endl;
+    //write out starting output:
+    s << files.size() << " arguments" << std::endl;
+    WriteToLog(s.str());
 
-        int i = 1;  //index for the simulation files
-        for(auto& it : files)
-        {
-            std::string now = GetDateTime();
-            if(writelog)
-            {
-                if(!fgenerallog.is_open())
-                    fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
-                
-                fgenerallog << "[" << now << "] Starting Simulation " 
-                            << i << "/" << files.size() << ": \"" << it << "\"" << std::endl;
 
-                fgenerallog.close();
-            }
-            std::cout << "[" << now << "] Loading from file \"" << it 
-                        << "\" ..." << std::endl;
+    //=== Run the simulations ===
 
-            Simulator sim(it);
+    int i = 1;  //index for the simulation files
+    for(auto& it : files)
+    {
+        std::string now = GetDateTime();
+        std::stringstream s("");
+        s << "[" << now << "] Starting Simulation " << i << "/" << files.size() 
+                << ": \"" << it << "\"" << std::endl;
+        WriteToLog(s.str());
+
+        Simulator sim(it);
+        
+        int subsimulation = 0;
+        do{
             sim.LoadInputFile();
+
+            now = GetDateTime();
+            std::stringstream s("");
+            s << "[" << now << "]   Starting sub-simulation " << ++subsimulation
+                        << "/" << sim.GetNumParameterSettings() << std::endl;
+            WriteToLog(s.str());
 
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
 
             sim.Cleanup();
+        }while(sim.GoToNextParameterSetting());
 
-            ++i;
-        }
+        sim.ClearScanParameters();
 
-        //state that no file was provided - if this statement is true:
-        if(files.size() == 0)
-        {
-            if(writelog)
-                fgenerallog << "No Parameters passed! Nothing to do here ..." << std::endl;
-            std::cout << "No Parameters passed! Nothing to do here ..." << std::endl;
-        }
+        ++i;
     }
+
+    //state that no file was provided - if this statement is true:
+    if(files.size() == 0)
+        WriteToLog("No Parameters passed! Nothing to do here ...\n");
+
+
 
     std::string now = GetDateTime();
-    if(writelog)
-    {
-        if(!fgenerallog.is_open())
-            fgenerallog.open("ROMEprogress.log", std::ios::out | std::ios::app);
-
-        fgenerallog << "[" << now << "] Simulation(s) finished" << std::endl;
-
-        fgenerallog.close();
-    }
-
-    std::cout << "[" << now << "] Simulation(s) finished" << std::endl;
+    std::stringstream s2("");
+    s2 << "[" << now << "] Simulation(s) finished" << std::endl;
+    WriteToLog(s2.str());
 
     return 0;
 }
