@@ -488,7 +488,8 @@ void Simulator::SimulateUntil(int stoptime, int delaystop)
 
 	//turn off the trigger if no trigger signals are prepared but they are foreseen 
 	// (probability < 1):
-	if(eventgenerator.GetTriggerProbability() < 1 && eventgenerator.GetNumOnTimeStamps() == 0)
+	if(eventgenerator.GetTriggerProbability() > 0 && eventgenerator.GetTriggerProbability() < 1
+			&& eventgenerator.GetNumOnTimeStamps() == 0)
 		eventgenerator.SetTriggerOffTime(timestamp);
 
 	while(timestamp <= stoptime || (stoptime == -1 && stopdelay >= 0))
