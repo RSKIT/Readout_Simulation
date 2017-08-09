@@ -84,50 +84,58 @@ void Simulator::LoadInputFile(std::string filename)
 	{
 		std::string elementname = std::string(elem->Name());
 
+		tinyxml2::XMLElement* newelem = elem;
+		if(elementname.compare("Scan") == 0)
+		{
+			newelem = ScanNode(elem);
+			elementname = std::string(newelem->Name());
+		}
+
 		if(outputlevel & loadsimulation)
 			std::cout << "Element: " << elementname << std::endl;
 
 		if(elementname.compare("Detector") == 0)
-			LoadDetector(elem, standardpixel);
+			LoadDetector(newelem, standardpixel);
 		else if(elementname.compare("Standardpixel") == 0)
-			standardpixel = LoadTCoord(elem);
+			standardpixel = LoadTCoord(newelem);
 		else if(elementname.compare("EventGenerator") == 0)
-			LoadEventGenerator(elem);
+			LoadEventGenerator(newelem);
 		else if(elementname.compare("SortTriggerTimeStamps") == 0)
 		{
-			if(elem->QueryBoolAttribute("sort", &triggersorting) != tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("sort", &triggersorting) != tinyxml2::XML_NO_ERROR)
 				triggersorting = false;
 		}
 		else if(elementname.compare("SimulationEnd") == 0)
 		{
 			//load end time:
-			tinyxml2::XMLError error = elem->QueryIntAttribute("t", &stoptime);
+			tinyxml2::XMLError error = newelem->QueryIntAttribute("t", &stoptime);
 			if(error != tinyxml2::XML_NO_ERROR)
 				stoptime = -1;
 			//load delay for stopping:
-			error = elem->QueryIntAttribute("stopdelay", &stopdelay);
+			error = newelem->QueryIntAttribute("stopdelay", &stopdelay);
 			if(error != tinyxml2::XML_NO_ERROR)
 				stopdelay = 0;
 		}
 		else if(elementname.compare("Logging") == 0)
 		{
-			const char* nam = elem->Attribute("filename");
+			const char* nam = newelem->Attribute("filename");
 			logfile = (nam != 0)?std::string(nam):"";
 			printdetector = false;
-			if(elem->QueryBoolAttribute("printdetectors", &printdetector) != tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("printdetectors", &printdetector) 
+					!= tinyxml2::XML_NO_ERROR)
 				printdetector = false;
 		}
 		else if(elementname.compare("Archive") == 0)
 		{
-			const char* nam = elem->Attribute("filename");
+			const char* nam = newelem->Attribute("filename");
 			archivename = (nam != 0)?std::string(nam):"";
-			if(elem->QueryBoolAttribute("archiveonly", &archiveonly) != tinyxml2::XML_NO_ERROR
+			if(newelem->QueryBoolAttribute("archiveonly", &archiveonly) != tinyxml2::XML_NO_ERROR
 				|| archivename == "")
 				archiveonly = false;
 		}
 		else if(elementname.compare("CheckAddresses") == 0)
 		{
-			if(elem->QueryBoolAttribute("check", &checkaddresses) != tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("check", &checkaddresses) != tinyxml2::XML_NO_ERROR)
 				checkaddresses = false;
 		}
 		else if(elementname.compare("Output") == 0)
@@ -136,23 +144,19 @@ void Simulator::LoadInputFile(std::string filename)
 			tsprintpitch = 10;
 
 			bool test = false;
-			if(elem->QueryBoolAttribute("loadsimulation", &test) == tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("loadsimulation", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?loadsimulation:0);
-			if(elem->QueryBoolAttribute("eventgeneration", &test) == tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("eventgeneration", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?eventgeneration:0);
-			if(elem->QueryBoolAttribute("statemachineoutput", &test) == tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("statemachineoutput", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?statemachineoutput:0);
-			if(elem->QueryBoolAttribute("timestampoutput", &test) == tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("timestampoutput", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?timestampoutput:0);
-			if(elem->QueryBoolAttribute("eventinsertion", &test) == tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryBoolAttribute("eventinsertion", &test) == tinyxml2::XML_NO_ERROR)
 				outputlevel |= ((test)?eventinsertion:0);
 
-			if(elem->QueryIntAttribute("outputpitch", &tsprintpitch) != tinyxml2::XML_NO_ERROR)
+			if(newelem->QueryIntAttribute("outputpitch", &tsprintpitch) != tinyxml2::XML_NO_ERROR)
 				tsprintpitch = 10;
-		}
-		else if(elementname.compare("Scan") == 0)
-		{
-			ScanNode(elem);
 		}
 
 		if(elem != simulation->LastChildElement())
@@ -899,7 +903,10 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 
 		tinyxml2::XMLElement* newelement = element;
 		if(name.compare("Scan") == 0)
+		{
 			newelement = ScanNode(element);
+			name = std::string(newelement->Value());
+		}
 
 		if(name.compare("Seed") == 0)
 		{
@@ -1275,7 +1282,10 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 
 		tinyxml2::XMLElement* newchild = child;
 		if(childname.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			childname = std::string(newchild->Value());
+		}
 
 		if(childname.compare("ROC") == 0)
 			roc.AddROC(LoadROC(newchild, pixelsize, childaddressname));
@@ -1334,7 +1344,10 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 
 		tinyxml2::XMLElement* newproperties = properties;
 		if(name.compare("Scan") == 0)
+		{
 			newproperties = ScanNode(properties);
+			name = std::string(newproperties->Value());
+		}
 
 		if(name.compare("Position") == 0)
 			position = LoadTCoord(newproperties);
@@ -1407,11 +1420,14 @@ PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
 	{
-		std::string name = child->Value();
+		std::string name = std::string(child->Value());
 
 		tinyxml2::XMLElement* newchild = child;
 		if(name.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			name = std::string(newchild->Value());
+		}
 
 		if(name.compare("Pixel") == 0)
 		{
@@ -1468,7 +1484,10 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 
 		tinyxml2::XMLElement* newelem = elem;
 		if(name.compare("Scan") == 0)
+		{
 			newelem = ScanNode(elem);
+			name = std::string(newelem->Value());
+		}
 
 		if(name.compare("Pixel") == 0)
 		{
@@ -1561,7 +1580,10 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 
 		tinyxml2::XMLElement* newchild = child;
 		if(value.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			value = std::string(newchild->Value());
+		}
 
 		if(value.compare("Counter") == 0)
 		{
@@ -1623,7 +1645,10 @@ StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 
 		tinyxml2::XMLElement* newchild = child;
 		if(value.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			value = std::string(newchild->Value());
+		}
 
 		if(value.compare("Action") == 0)
 			state->AddRegisterChange(LoadRegisterChange(newchild));
@@ -1698,7 +1723,10 @@ StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition
 
 		tinyxml2::XMLElement* newchild = child;
 		if(value.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			value = std::string(newchild->Value());
+		}
 
 		if(value.compare("Action") == 0)
 			trans->AddRegisterChange(LoadRegisterChange(newchild));
@@ -1756,7 +1784,10 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 
 		tinyxml2::XMLElement* newchild = child;
 		if(value.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			value = std::string(newchild->Value());
+		}
 
 		if(value.compare("Lvalue") == 0)
 		{
