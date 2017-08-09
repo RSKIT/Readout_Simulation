@@ -897,25 +897,29 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 	{
 		std::string name = std::string(element->Value());
 
+		tinyxml2::XMLElement* newelement = element;
+		if(name.compare("Scan") == 0)
+			newelement = ScanNode(element);
+
 		if(name.compare("Seed") == 0)
 		{
 			int seed;
-			eventgenerator.SetSeed((element->QueryIntAttribute("x0",&seed)
+			eventgenerator.SetSeed((newelement->QueryIntAttribute("x0",&seed)
 										== tinyxml2::XML_NO_ERROR)?seed:0);
 		}
 		else if(name.compare("Output") == 0)
 		{
-			const char* nam = element->Attribute("filename");
+			const char* nam = newelement->Attribute("filename");
 			if(nam != 0)
 				eventgenerator.SetOutputFileName(std::string(nam));
 		}
 		else if(name.compare("EventRate") == 0)
 		{
 			double rate;
-			if(element->QueryDoubleAttribute("f",&rate) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryDoubleAttribute("f",&rate) != tinyxml2::XML_NO_ERROR)
 				rate = 0;
 			bool totalrate;
-			if(element->QueryBoolAttribute("absolute", &totalrate) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryBoolAttribute("absolute", &totalrate) != tinyxml2::XML_NO_ERROR)
 				totalrate = true;
 			eventgenerator.SetEventRate(rate, totalrate);
 
@@ -923,31 +927,32 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("ClusterSize") == 0)
 		{
 			double size;
-			eventgenerator.SetClusterSize((element->QueryDoubleAttribute("sigma",&size)
+			eventgenerator.SetClusterSize((newelement->QueryDoubleAttribute("sigma",&size)
 											== tinyxml2::XML_NO_ERROR)?size:0);
 		}
 		else if(name.compare("CutOffFactor") == 0)
 		{
 			int cutoff;
-			eventgenerator.SetCutOffFactor((element->QueryIntAttribute("numsigmas",&cutoff)
+			eventgenerator.SetCutOffFactor((newelement->QueryIntAttribute("numsigmas",&cutoff)
 											== tinyxml2::XML_NO_ERROR)?cutoff:0);			
 		}
 		else if(name.compare("InclinationSigma") == 0)
 		{
 			double inclsigma;
-			eventgenerator.SetInclinationSigma((element->QueryDoubleAttribute("sigma",&inclsigma)
+			eventgenerator.SetInclinationSigma(
+				(newelement->QueryDoubleAttribute("sigma", &inclsigma)
 												== tinyxml2::XML_NO_ERROR)?inclsigma:3);
 		}
 		else if(name.compare("ChargeScale") == 0)
 		{
 			double scale;
-			eventgenerator.SetChargeScaling((element->QueryDoubleAttribute("scale", &scale)
+			eventgenerator.SetChargeScaling((newelement->QueryDoubleAttribute("scale", &scale)
 											== tinyxml2::XML_NO_ERROR)?scale:1);
 		}
 		else if(name.compare("MinSize") == 0)
 		{
 			double minsize;
-			eventgenerator.SetMinSize((element->QueryDoubleAttribute("diagonal", &minsize)
+			eventgenerator.SetMinSize((newelement->QueryDoubleAttribute("diagonal", &minsize)
 										== tinyxml2::XML_NO_ERROR)?minsize:1);
 		}
 		else if(name.compare("NumEvents") == 0)
@@ -955,9 +960,9 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			eventdata newevents;
 			newevents.datatype = Simulator::GenerateNewEvents;
 
-			if(element->QueryIntAttribute("n", &newevents.numevents) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryIntAttribute("n", &newevents.numevents) != tinyxml2::XML_NO_ERROR)
 				newevents.numevents = 0;
-			if(element->QueryDoubleAttribute("start", &newevents.starttime) 
+			if(newelement->QueryDoubleAttribute("start", &newevents.starttime) 
 					!= tinyxml2::XML_NO_ERROR)
 				newevents.starttime = 0;
 
@@ -968,12 +973,12 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			eventdata newevents;
 			newevents.datatype = Simulator::PixelHitFile;
 
-			if(element->QueryBoolAttribute("sort", &newevents.sort) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryBoolAttribute("sort", &newevents.sort) != tinyxml2::XML_NO_ERROR)
 				newevents.sort = true;
-			if(element->QueryDoubleAttribute("timeshift", &newevents.starttime) 
+			if(newelement->QueryDoubleAttribute("timeshift", &newevents.starttime) 
 					!= tinyxml2::XML_NO_ERROR)
 				newevents.starttime = 0.;
-			const char* nam = element->Attribute("filename");
+			const char* nam = newelement->Attribute("filename");
 			if(nam != 0)
 				newevents.source = std::string(nam);
 
@@ -984,23 +989,24 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			eventdata neweventgroup;
 			neweventgroup.datatype = datatypes::ITkFile;
 
-			const char* nam = element->Attribute("filename");
+			const char* nam = newelement->Attribute("filename");
 			if(nam != 0)
 				neweventgroup.source = std::string(nam);
-			if(element->QueryIntAttribute("firstelement", &neweventgroup.firstevent) 
+			if(newelement->QueryIntAttribute("firstelement", &neweventgroup.firstevent) 
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.firstevent = 0;
-			if(element->QueryIntAttribute("numelements", &neweventgroup.numevents)
+			if(newelement->QueryIntAttribute("numelements", &neweventgroup.numevents)
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.numevents = -1;
-			if(element->QueryIntAttribute("eta", &neweventgroup.eta) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryIntAttribute("eta", &neweventgroup.eta) != tinyxml2::XML_NO_ERROR)
 				neweventgroup.eta = 0;
-			if(element->QueryDoubleAttribute("starttime", &neweventgroup.starttime)
+			if(newelement->QueryDoubleAttribute("starttime", &neweventgroup.starttime)
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.starttime = 0;
-			if(element->QueryBoolAttribute("sort", &neweventgroup.sort) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryBoolAttribute("sort", &neweventgroup.sort) 
+						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.sort = false;
-			if(element->QueryDoubleAttribute("regroup", &neweventgroup.distance) 
+			if(newelement->QueryDoubleAttribute("regroup", &neweventgroup.distance) 
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.distance = 0;
 
@@ -1008,13 +1014,13 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		}
 		//else if(name.compare("EventStart") == 0)
 		//{
-		//	if(element->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
+		//	if(newelement->QueryDoubleAttribute("t", &starttime) != tinyxml2::XML_NO_ERROR)
 		//		starttime = 0;	
 		//}
 		else if(name.compare("TriggerProbability") == 0)
 		{
 			double probability = 0;
-			if(element->QueryDoubleAttribute("p", &probability) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryDoubleAttribute("p", &probability) != tinyxml2::XML_NO_ERROR)
 				eventgenerator.SetTriggerProbability(0);
 			else
 				eventgenerator.SetTriggerProbability(probability);
@@ -1022,7 +1028,7 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("TriggerDelay") == 0)
 		{
 			int delay = 0;
-			if(element->QueryIntAttribute("delay", &delay) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryIntAttribute("delay", &delay) != tinyxml2::XML_NO_ERROR)
 				eventgenerator.SetTriggerDelay(0);
 			else
 				eventgenerator.SetTriggerDelay(delay);
@@ -1030,7 +1036,7 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("TriggerLength") == 0)
 		{
 			int length = 0;
-			if(element->QueryIntAttribute("length", &length) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryIntAttribute("length", &length) != tinyxml2::XML_NO_ERROR)
 				eventgenerator.SetTriggerLength(0);
 			else
 				eventgenerator.SetTriggerLength(length);
@@ -1038,14 +1044,14 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		else if(name.compare("Threads") == 0)
 		{
 			int maxthreads = 0;
-			if(element->QueryIntAttribute("n",&maxthreads) != tinyxml2::XML_NO_ERROR)
+			if(newelement->QueryIntAttribute("n",&maxthreads) != tinyxml2::XML_NO_ERROR)
 				eventgenerator.SetThreads(0);
 			else
 				eventgenerator.SetThreads(maxthreads);
 		}
 		else if(name.compare("DeadTimeCurve") == 0 || name.compare("TimeWalkCurve") == 0)
 		{
-			LoadSpline(&eventgenerator, element);
+			LoadSpline(&eventgenerator, newelement);
 		}
 
 		if(element != eventgen->LastChildElement())
