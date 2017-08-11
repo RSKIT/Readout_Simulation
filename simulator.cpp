@@ -1869,7 +1869,10 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 
 		tinyxml2::XMLElement* newchild = child;
 		if(name.compare("Scan") == 0)
+		{
 			newchild = ScanNode(child);
+			name = std::string(newchild->Value());
+		}
 
 		if(name.compare("Value") == 0)
 			++maxindex;
