@@ -1867,10 +1867,14 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 	{
 		std::string name = std::string(child->Value());
 
+		tinyxml2::XMLElement* newchild = child;
+		if(name.compare("Scan") == 0)
+			newchild = ScanNode(child);
+
 		if(name.compare("Value") == 0)
 			++maxindex;
 		else if(name.compare("Object") == 0)
-			object = child->FirstChildElement();
+			object = newchild->FirstChildElement();
 		
 		if(child != element->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1917,7 +1921,11 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 		child = element->FirstChildElement();
 		while(child != 0)
 		{
-			if(std::string(child->Value()).compare("Value") == 0)
+			tinyxml2::XMLElement* newchild = child;
+			if(std::string(child->Value()).compare("Scan") == 0)
+				newchild = ScanNode(child);
+
+			if(std::string(newchild->Value()).compare("Value") == 0)
 			{
 				if(numvalue == scanindices.find(scanid)->second)
 				{
@@ -1925,7 +1933,7 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 					s2 << "val" << index;
 					char valnam[7];
 					std::strcpy(valnam, s2.str().c_str());
-					nam = child->Attribute(valnam);
+					nam = newchild->Attribute(valnam);
 					parvalue = ((nam != 0)?std::string(nam):"");
 					if(parvalue == "")
 					{
