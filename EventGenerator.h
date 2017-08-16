@@ -309,6 +309,15 @@ public:
 	 * @return               - the trigger signal (active true)
 	 */
 	bool 	GetTriggerState(int timestamp, bool print = false);
+	/**
+	 * @brief provides the setting about trigger generation: Either the trigger signals are
+	 *             generated per cluster or per time stamp
+	 * @details
+	 * @return               - true if triggers are generated per cluster, false if they are
+	 *                            generated per time stamp
+	 */
+	bool 	GetTriggerOnClusters();
+	void  	SetTriggerOnClusters(bool triggerpercluster);
 
 	/**
 	 * @brief generates the passed number of events
@@ -725,6 +734,8 @@ private:
 	int lasteventtimestamp;
 
 	//trigger signal generation:
+	bool triggeronclusters;		//determines whether trigger signals are generated on clusters
+								//  (true) or on time stamps (false)
 	double triggerprobability;	//generation probability for a trigger to an event
 	int triggerdelay;			//delay of the trigger signal after the hit implantation
 	int triggerlength;			//length of the trigger signal in timestamps

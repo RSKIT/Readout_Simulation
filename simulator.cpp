@@ -1031,6 +1031,13 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 				eventgenerator.SetTriggerProbability(0);
 			else
 				eventgenerator.SetTriggerProbability(probability);
+
+			bool triggeronclusters = true;
+			if(newelement->QueryBoolAttribute("triggeronclusters", &triggeronclusters) 
+					!= tinyxml2::XML_NO_ERROR)
+				eventgenerator.SetTriggerOnClusters(true);
+			else
+				eventgenerator.SetTriggerOnClusters(triggeronclusters);
 		}
 		else if(name.compare("TriggerDelay") == 0)
 		{

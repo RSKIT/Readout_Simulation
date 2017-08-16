@@ -25,7 +25,7 @@
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
 		seed(0), threads(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
-		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), triggeronclusters(true), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
@@ -42,7 +42,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
 		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
 		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1), 
-		genoutput(std::string("")), lasteventtimestamp(-1)
+		genoutput(std::string("")), lasteventtimestamp(-1), triggeronclusters(true)
 {
 	detectors.push_back(detector);
 
@@ -52,7 +52,7 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
 		eventindex(0), chargescale(1), threads(0), inclinationsigma(0.3), 
 		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
-		triggerlength(0), triggerstate(true), triggerturnofftime(-1), 
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), triggeronclusters(true),
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
 		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
 		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
@@ -329,6 +329,16 @@ bool EventGenerator::GetTriggerState(int timestamp, bool print)
 	return triggerstate;
 }
 
+bool EventGenerator::GetTriggerOnClusters()
+{
+	return triggeronclusters;
+}
+
+void EventGenerator::SetTriggerOnClusters(bool triggerpercluster)
+{
+	triggeronclusters = triggerpercluster;
+}
+
 void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthreads, bool writeout,
 									bool printtoterminal, int updatepitch)
 {
@@ -403,7 +413,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 		track.time = time;
 
 		//generate the trigger for this event:
-		if(generator()/double(generator.max()) < triggerprobability)
+		if(triggeronclusters && generator()/double(generator.max()) < triggerprobability)
 		{
 			track.trigger = true;
 			//if the trigger arrives slightly after the clock transition it will be recognised
@@ -423,6 +433,23 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 		}
 	}
 	startpoints.push_back(particles.end());
+
+	//generate trigger signals per time stamp:
+	if(!triggeronclusters)
+	{
+		double invrate = triggerprobability * triggerlength;	//inverse trigger rate
+		int triggertime = firsttime;
+
+		while(triggertime < time)	//before the last event
+		{
+			//next time with a trigger for constant trigger probability over time:
+			triggertime -= floor(log(generator() / generator.max()) * invrate
+								* invrate / (invrate + 0.5));
+			//by calculating the time differences, the number of random numbers is reduced
+
+			AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
+		}
+	}
 
 	if(printtoterminal)
 	{
@@ -475,6 +502,21 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 			genoutput += outputs[i];
 
 			delete workers[i];
+		}
+	}
+
+	//write out trigger signals if generated for time stamps:
+	if(!triggeronclusters)
+	{
+		for(auto& it : triggerturnontimes)
+		{
+			std::stringstream s("");
+			s << "# Trigger " << it << " - " << it + triggerlength << std::endl;
+			std::string trigstring = s.str();
+
+			if(fout.is_open())
+				fout << trigstring;
+			genoutput += trigstring;
 		}
 	}
 
@@ -1335,7 +1377,7 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 	double detectorarea = (detectorend[0] - detectorstart[0]) 
 							* (detectorend[1] - detectorstart[1]);
-
+	
 	std::map<unsigned int, double> clustertimes;	//start times for the events
 	std::map<unsigned int, bool> triggeredevents;	//connects the eventIDs with trigger information
 
@@ -1351,7 +1393,7 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 		clustertimes.insert(std::make_pair(it.first, time));
 
-		if(generator()/double(generator.max()) < triggerprobability)
+		if(triggeronclusters && generator()/double(generator.max()) < triggerprobability)
 		{
 			//if the trigger arrives slightly after the clock transition it will be recognised
 			//  one timestamp later -> +0.9 timestamps
@@ -1360,6 +1402,23 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		}
 		else
 			triggeredevents.insert(std::make_pair(it.first, false));
+	}
+
+	//generate trigger signals per time stamp:
+	if(!triggeronclusters)
+	{
+		double invrate = triggerprobability * triggerlength;	//inverse trigger rate
+		int triggertime = firsttime;
+
+		while(triggertime < time)	//before the last event
+		{
+			//next time with a trigger for constant trigger probability over time:
+			triggertime -= floor(log(generator() / generator.max()) * invrate
+								* invrate / (invrate + 0.5));
+			//by calculating the time differences, the number of random numbers is reduced
+
+			AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
+		}
 	}
 
 	//=== start parallel evaluation of the clusters ===
@@ -1438,9 +1497,23 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 				fout.flush();
 			}
 			genoutput += outputs[i];
-			//genoutput.flush();
 
 			delete workers[i];
+		}
+	}
+
+	//write out trigger signals if generated for time stamps:
+	if(!triggeronclusters)
+	{
+		for(auto& it : triggerturnontimes)
+		{
+			std::stringstream s("");
+			s << "# Trigger " << it << " - " << it + triggerlength << std::endl;
+			std::string trigstring = s.str();
+
+			if(fout.is_open())
+				fout << trigstring;
+			genoutput += trigstring;
 		}
 	}
 
