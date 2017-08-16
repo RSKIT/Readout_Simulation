@@ -425,6 +425,8 @@ TCanvas* Evaluation::AddPlot(TCanvas* canvas, TGraph* graph, std::string options
     if(canvas == 0 || graph == 0)
         return canvas;
 
+    canvas->cd();
+
     if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
         options = options + "same";
 
@@ -446,6 +448,8 @@ TCanvas* Evaluation::AddPlot(TCanvas* canvas, TH1* histogram, std::string option
 {
     if(canvas == 0 || histogram == 0)
         return canvas;
+
+    canvas->cd();
 
     if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
         options = options + "same";
@@ -469,6 +473,8 @@ TCanvas* Evaluation::AddPlot(TCanvas* canvas, TH2* histogram, std::string option
     if(canvas == 0 || histogram == 0)
         return canvas;
 
+    canvas->cd();
+
     if(options.find("same") == std::string::npos && options.find("SAME") == std::string::npos)
         options = options + "same";
 
@@ -486,6 +492,8 @@ TCanvas* Evaluation::AddLegend(TCanvas* canvas, TLegend* legend)
 {
     if(canvas == 0 || legend == 0)
         return canvas;
+
+    canvas->cd();
 
     legend->Draw();
 

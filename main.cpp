@@ -73,18 +73,12 @@ int main(int argc, char** argv)
     s << "Call at: " << GetDateTime() << " with ";
 
     //Load Data from command line arguments:
-    if(argc > 1)
-    {
-        for(int i = 1; i < argc; ++i)
-            files.push_back(argv[i]);
-    }
+    for(int i = 1; i < argc; ++i)
+        files.push_back(argv[i]);
     //try loading filenames from pipelined data:
-    else
-    {
-        std::string file = "";
-        while(std::cin >> file)
-            files.push_back(file);
-    }
+    std::string file = "";
+    while(std::cin >> file)
+        files.push_back(file);
 
     //write out starting output:
     s << files.size() << " arguments" << std::endl;
