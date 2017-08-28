@@ -65,20 +65,34 @@ bool WriteToLog(std::string text, bool close = true)
 
 int main(int argc, char** argv)
 {
+    std::cout << std::endl
+              << "    *****************************************\n"
+              << "    *                                       *\n"
+              << "    *      ROME Simulation Framework        *\n"
+              << "    *        developed at KIT-ADL           *\n"
+              << "    * by Rudolf Schimassek and Felix Ehrler *\n"
+              << "    *                                       *\n"
+              << "    *    Version: 0.9-beta (28.08.2017)     *\n"
+              << "    *                                       *\n"
+              << "    *****************************************\n" 
+              << std::endl;
+
     //Data Container for the file names:
     std::vector<std::string> files;
 
     //starting output preparation:
     std::stringstream s("");
-    s << "Call at: " << GetDateTime() << " with ";
+    s << "[" << GetDateTime() << "] Called with ";
 
     //Load Data from command line arguments:
     for(int i = 1; i < argc; ++i)
         files.push_back(argv[i]);
+
     //try loading filenames from pipelined data:
     std::string file = "";
-    while(std::cin >> file)
-        files.push_back(file);
+    if(!std::cin.good())    //check if any arguments are passed
+        while(std::cin >> file)
+            files.push_back(file);
 
     //write out starting output:
     s << files.size() << " arguments" << std::endl;
@@ -120,7 +134,8 @@ int main(int argc, char** argv)
 
     //state that no file was provided - if this statement is true:
     if(files.size() == 0)
-        WriteToLog("No Parameters passed! Nothing to do here ...\n");
+        WriteToLog(std::string("[") + GetDateTime() 
+                        + "] No Parameters passed! Nothing to do here ...\n");
 
 
 
