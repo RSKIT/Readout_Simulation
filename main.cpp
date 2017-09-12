@@ -25,6 +25,7 @@
 #include <string>
 #include <chrono>
 #include <ctime>
+#include <fstream>
 
 #include "hit.h"
 #include "TCoord.h"
@@ -84,15 +85,46 @@ int main(int argc, char** argv)
     std::stringstream s("");
     s << "[" << GetDateTime() << "] Called with ";
 
+    std::string file = "";
+
     //Load Data from command line arguments:
     for(int i = 1; i < argc; ++i)
-        files.push_back(argv[i]);
+    {
+        file = argv[i];
+        std::fstream f;
+        f.open(file.c_str(), std::ios::in);
+        if(f.is_open())
+        {
+            files.push_back(file);
+            f.close();
+        }
+        else
+            std::cout << "Could not open file \"" << file << "\"." << std::endl;
+    }
 
     //try loading filenames from pipelined data:
-    std::string file = "";
-    if(!std::cin.good())    //check if any arguments are passed
+    
+    if(argc == 1)    //only accept piped arguments if no parameters are passed
+    {
         while(std::cin >> file)
-            files.push_back(file);
+        {
+            if(file != "")
+            {
+                std::fstream f;
+                f.open(file.c_str(), std::ios::in);
+                if(f.is_open())
+                {
+                    files.push_back(file);
+                    f.close();
+                }
+                else
+                    std::cout << "Could not open file \"" << file << "\"." << std::endl;
+
+            }
+            else
+                break;
+        }
+    }
 
     //write out starting output:
     s << files.size() << " arguments" << std::endl;
