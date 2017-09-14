@@ -259,7 +259,7 @@ void Hit::AddReadoutTime(std::string name, int timestamp)
 	#endif
 }
 
-int Hit::GetReadoutTime(std::string name)
+int Hit::GetReadoutTime(const std::string name)
 {
 	#ifndef PREFERWRITE
 		std::map<std::string, int>::iterator it = readouttimestamps.find(name);

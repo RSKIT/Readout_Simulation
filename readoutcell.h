@@ -123,6 +123,15 @@ public:
 	void 		SetReadoutDelay(int delay);
 
 	/**
+	 * @brief provides the time stamp field name of the reference of the readout delay
+	 * @details
+	 * @return               - "" if the reference if the input time, or a string containing the
+	 *                            name of the time stamp field to use as a reference
+	 */
+	std::string	GetReadoutDelayReference();
+	void 		SetReadoutDelayReference(std::string tsname);
+
+	/**
 	 * @brief provides information whether the readout cell is zero suppressed or not
 	 * @details 
 	 * @return               - true for a zerosuppressed cell, false for a not suppressed cell
@@ -446,6 +455,7 @@ private:
 
 	int 			readoutdelay;
 	bool 			triggered;
+	std::string 	delayreference;
 
 	int 			configuration;	//to save the readout settings according to the config enum
 

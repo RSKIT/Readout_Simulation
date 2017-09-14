@@ -385,6 +385,7 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	if(numthreads == 0)
 		numthreads = std::thread::hardware_concurrency();
 	std::vector<std::vector<particletrack>::iterator> startpoints;
+	static const double genmax = double(generator.max());
 	for (int i = 0; i < numevents; ++i)
 	{
 		//get a new random particle track:
@@ -395,25 +396,25 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 		double theta = distribution(generator);
 		if(theta < 0)
 			theta = -theta;
-		double phi = 2* 3.14159265 * (generator() / double(generator.max()));
+		double phi = 2* 3.14159265 * (generator() / genmax);
 		track.direction[0] = cos(phi)*sin(theta);
 		track.direction[1] = sin(phi)*sin(theta);
 		track.direction[2] = cos(theta);
 
 		for(int i = 0; i < 3; ++i)
-			track.setpoint[i] = generator() / double(generator.max()) 
+			track.setpoint[i] = generator() / genmax 
 									* (detectorend[i] - detectorstart[i]) + detectorstart[i];
 
 		//generate the next time stamp:
 		if(totalrate)
-			time += -log(generator()/double(generator.max())) / eventrate;
+			time += -log(generator()/genmax) / eventrate;
 		else
-			time += -log(generator()/double(generator.max())) / eventrate / detectorarea;
+			time += -log(generator()/genmax) / eventrate / detectorarea;
 
 		track.time = time;
 
 		//generate the trigger for this event:
-		if(triggeronclusters && generator()/double(generator.max()) < triggerprobability)
+		if(triggeronclusters && generator()/genmax < triggerprobability)
 		{
 			track.trigger = true;
 			//if the trigger arrives slightly after the clock transition it will be recognised
@@ -437,18 +438,37 @@ void EventGenerator::GenerateEvents(double firsttime, int numevents, int numthre
 	//generate trigger signals per time stamp:
 	if(!triggeronclusters)
 	{
+		int triggertime = firsttime;
+
+		static const double genmax = double(generator.max());
+
+
+		while(triggertime < time)
+		{
+			double rand = generator() / genmax;
+
+			if(rand < triggerprobability)
+				AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
+
+			triggertime += triggerlength;
+		}
+
+		/*
 		double invrate = triggerprobability * triggerlength;	//inverse trigger rate
 		int triggertime = firsttime;
+
+		static const double genmax = double(generator.max());
 
 		while(triggertime < time)	//before the last event
 		{
 			//next time with a trigger for constant trigger probability over time:
-			triggertime -= floor(log(generator() / generator.max()) * invrate
+			triggertime -= floor(log(generator() / genmax) * invrate
 								* invrate / (invrate + 0.5));
 			//by calculating the time differences, the number of random numbers is reduced
 
 			AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
 		}
+		*/
 	}
 
 	if(printtoterminal)
@@ -1048,13 +1068,15 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		}
 
 		//scan pixels:
+		static const double genmax = double(generator.max());
+
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double charge = GetCharge(setpoint, direction, it->GetPosition(), it->GetSize(), 
                                         minsize, clustersize, numsigmas, print);
 
 			if(charge > it->GetThreshold() 
-					&& generator()/double(generator.max()) <= it->GetEfficiency())
+					&& generator() / genmax <= it->GetEfficiency())
 			{
 				if(print)
 					std::cout << "Threshold: " << it->GetThreshold() << " < Charge: " 
@@ -1383,17 +1405,18 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 	double time = firsttime;
 	//for(auto it : clusters)
+	static const double genmax = double(generator.max());
 	for(auto it : reclusters)
 	{
 		//generate the next time stamp:
 		if(totalrate)
-			time += -log(generator()/double(generator.max())) / eventrate;
+			time += -log(generator()/genmax) / eventrate;
 		else
-			time += -log(generator()/double(generator.max())) / eventrate / detectorarea;
+			time += -log(generator()/genmax) / eventrate / detectorarea;
 
 		clustertimes.insert(std::make_pair(it.first, time));
 
-		if(triggeronclusters && generator()/double(generator.max()) < triggerprobability)
+		if(triggeronclusters && generator()/genmax < triggerprobability)
 		{
 			//if the trigger arrives slightly after the clock transition it will be recognised
 			//  one timestamp later -> +0.9 timestamps
@@ -1407,18 +1430,35 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 	//generate trigger signals per time stamp:
 	if(!triggeronclusters)
 	{
-		double invrate = triggerprobability * triggerlength;	//inverse trigger rate
 		int triggertime = firsttime;
+
+		static const double genmax = double(generator.max());
+
+
+		while(triggertime < time)
+		{
+			double rand = generator() / genmax;
+
+			if(rand < triggerprobability)
+				AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
+
+			triggertime += triggerlength;
+		}
+
+		/*
+		double invrate = triggerprobability * triggerlength;	//inverse trigger rate
+		double triggertime = firsttime;
 
 		while(triggertime < time)	//before the last event
 		{
 			//next time with a trigger for constant trigger probability over time:
-			triggertime -= floor(log(generator() / generator.max()) * invrate
-								* invrate / (invrate + 0.5));
+			triggertime -= floor(log(generator() / genmax) * invrate
+								* invrate / (invrate + 0.5) / triggerprobability);	//+ 0.5));
 			//by calculating the time differences, the number of random numbers is reduced
 
 			AddOnTimeStamp(int(triggertime + triggerdelay + 0.9));
 		}
+		*/
 	}
 
 	//=== start parallel evaluation of the clusters ===
@@ -1560,6 +1600,8 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 			globalhits.insert(globalhits.end(), localhits.begin(), localhits.end());
 		}
 
+		static const double genmax = double(generator.max());
+
 		//scan pixels:
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
@@ -1567,7 +1609,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 											detectorsize, print);
 
 			if(pixelcharge > it->GetThreshold() && 
-				(it->GetEfficiency() == 1 || generator()/double(generator.max()) 
+				(it->GetEfficiency() == 1 || generator()/genmax 
 													<= it->GetEfficiency()))
 			{
 				if(print)

@@ -27,7 +27,7 @@ ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
     rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false), 
-    position(TCoord<double>::Null), size(TCoord<double>::Null)
+    position(TCoord<double>::Null), size(TCoord<double>::Null), delayreference("")
 {
 	buf          = new FIFOBuffer(this);
     rocreadout   = new NoFullReadReadout(this);
@@ -40,7 +40,8 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
                             int configuration) : hitqueue(std::vector<Hit>()),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
         buf(0), rocreadout(0), pixelreadout(0), zerosuppression(true), readoutdelay(0), 
-        triggered(false), position(TCoord<double>::Null), size(TCoord<double>::Null)
+        triggered(false), position(TCoord<double>::Null), size(TCoord<double>::Null),
+        delayreference("")
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -54,7 +55,7 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()), buf(0), 
         rocreadout(0), pixelreadout(0), zerosuppression(roc.zerosuppression), 
         readoutdelay(roc.readoutdelay), triggered(roc.triggered), 
-        position(roc.position), size(roc.size)
+        position(roc.position), size(roc.size), delayreference(roc.delayreference)
 {
     SetConfiguration(roc.configuration);
 
@@ -184,6 +185,16 @@ int ReadoutCell::GetReadoutDelay()
 void ReadoutCell::SetReadoutDelay(int delay)
 {
     readoutdelay = delay;
+}
+
+std::string ReadoutCell::GetReadoutDelayReference()
+{
+    return delayreference;
+}
+
+void ReadoutCell::SetReadoutDelayReference(std::string tsname)
+{
+    delayreference = tsname;
 }
 
 bool ReadoutCell::GetZeroSuppression()

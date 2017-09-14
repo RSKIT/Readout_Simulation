@@ -160,7 +160,7 @@ public:
 	 * @param name - address part identifier
 	 * @return     - the readout time stamp or "-1" on an invalid address part identifier
 	 */
-	int 	GetReadoutTime(std::string name);
+	int 	GetReadoutTime(const std::string name);
 	/**
 	 * @brief tries to find the passed name part in a Readout Time Stamp and returns the full 
 	 *             readout time name

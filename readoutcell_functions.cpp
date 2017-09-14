@@ -294,7 +294,11 @@ bool NoFullReadReadout::Read(int timestamp, std::string* out)
 			if(it->GetTriggered())
 				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
-			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
 			bool result = cell->buf->InsertHit(h);
 
 			//return on a writing error in own buffer:
@@ -343,7 +347,11 @@ bool NoOverWriteReadout::Read(int timestamp, std::string* out)
 			if(it->GetTriggered())
 				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
-			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
 			{
 				//log the loss of the hit:
@@ -386,7 +394,11 @@ bool OverWriteReadout::Read(int timestamp, std::string* out)
 			if(it->GetTriggered())
 				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 			h.AddReadoutTime(cell->addressname, timestamp);
-			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
 			if(!cell->buf->InsertHit(h))
 			{
 				//replace the "oldest" hit:
@@ -447,7 +459,12 @@ bool OneByOneReadout::Read(int timestamp, std::string* out)
 				cell->hitqueue[i].AddReadoutTime(child->GetAddressName() + "_Trigger",
 													cell->hitqueue[i].GetAvailableTime());
 			cell->hitqueue[i].AddReadoutTime(cell->GetAddressName(), timestamp);
-			cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				cell->hitqueue[i].SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				cell->hitqueue[i].SetAvailableTime(
+					cell->hitqueue[i].GetReadoutTime(cell->GetReadoutDelayReference()) 
+							+ cell->GetReadoutDelay());
 			hitfound = true;
 		}
 		//output from when the hit will be readable:
@@ -494,7 +511,11 @@ bool TokenReadout::Read(int timestamp, std::string* out)
 
 			//add the readout timestamp of this ROC:
 			h.AddReadoutTime(cell->addressname, timestamp);
-			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
 			bool result = cell->buf->InsertHit(h);
 
 			//return on a writing error in own buffer:
@@ -587,7 +608,11 @@ bool SortedROCReadout::Read(int timestamp, std::string* out)
 				h.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
 
 			h.AddReadoutTime(cell->addressname, timestamp);
-			h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
 			bool result = cell->buf->InsertHit(h);
 
 			//return on a writing error in own buffer:
@@ -663,7 +688,12 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 		if(ph.is_valid())
 		{
 			ph.AddReadoutTime(cell->addressname, timestamp);
-			ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			if(cell->GetReadoutDelayReference() == "")
+				ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
+
 
 			if(!h.is_valid())
 				h = ph;
@@ -921,7 +951,11 @@ Hit PixelLogic::ReadHit(ReadoutCell* cell, int timestamp, std::string* out)
 				}
 
 				h.AddReadoutTime(cell->GetAddressName(), timestamp);
-				h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+				if(cell->GetReadoutDelayReference() == "")
+					h.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+				else
+					h.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+											+ cell->GetReadoutDelay());
 
 			}
 		}

@@ -1272,6 +1272,12 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(parent->QueryBoolAttribute("Triggered", & triggeredroc) != tinyxml2::XML_NO_ERROR)
 		triggeredroc = false;
 
+	//Readout Delay Reference (only makes sense for triggered signals):
+	std::string delayreference = "";
+	nam = parent->Attribute("DelayReference");
+	if(nam != 0)
+		delayreference = std::string(nam);
+
 	//Address checking:
 	bool checkaddresses = false;
 	if(parent->QueryBoolAttribute("CheckAfterBuild", &checkaddresses) != tinyxml2::XML_NO_ERROR)
@@ -1281,6 +1287,7 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 
 	roc.SetReadoutDelay(readoutdelay);
 	roc.SetTriggered(triggeredroc);
+	roc.SetReadoutDelayReference(delayreference);
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
