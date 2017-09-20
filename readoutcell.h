@@ -48,19 +48,21 @@ class ReadoutCell
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
+	friend class PPtBReadoutOrBeforeEdge;
 	friend class ComplexReadout;
 
 public:
-	enum config {PPTB 				=   1,
-				 ZEROSUPPRESSION	=   2,
-				 FIFOBUFFER 		=   4,
-				 PRIOBUFFER     	=   8,
-				 NOREADONFULL 		=  16,
-				 NOOVERWRITE 		=  32,
-				 OVERWRITEONFULL 	=  64,
-				 ONEBYONEREADOUT 	= 128,
-				 TOKENREADOUT 		= 256,
-				 SORTEDROCREADOUT 	= 512};
+	enum config {PPTB 				=    1,
+				 PPTBORBEFOREEDGE   =    2,
+				 ZEROSUPPRESSION	=    4,
+				 FIFOBUFFER 		=    8,
+				 PRIOBUFFER     	=   16,
+				 NOREADONFULL 		=   32,
+				 NOOVERWRITE 		=   64,
+				 OVERWRITEONFULL 	=  128,
+				 ONEBYONEREADOUT 	=  256,
+				 TOKENREADOUT 		=  512,
+				 SORTEDROCREADOUT 	= 1024};
 
 	/**
 	 * @brief constructor with basic configuration of the readout cell

@@ -687,16 +687,16 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 
 		if(ph.is_valid())
 		{
-			ph.AddReadoutTime(cell->addressname, timestamp);
-			if(cell->GetReadoutDelayReference() == "")
-				ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
-			else
-				ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
-										+ cell->GetReadoutDelay());
-
-
 			if(!h.is_valid())
+			{
+				ph.AddReadoutTime(cell->addressname, timestamp);
+				if(cell->GetReadoutDelayReference() == "")
+					ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+				else
+					ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
+											+ cell->GetReadoutDelay());
 				h = ph;
+			}
 			else
 			{
 				h.SetAddress(it->GetAddressName(),
@@ -746,6 +746,83 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 	else
 		return false;
 }
+
+PPtBReadoutOrBeforeEdge::PPtBReadoutOrBeforeEdge(ReadoutCell* roc) : PixelReadout(roc)
+{
+
+}
+
+bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
+{
+	Hit h;
+
+	bool alreadyhigh = false;
+
+	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+		if(!it->IsEmpty(timestamp) && !it->HitIsValid())
+			alreadyhigh = true;
+
+	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+	{
+		Hit ph = it->LoadHit(timestamp, out);
+
+		if(alreadyhigh)
+		{
+			if(ph.is_valid())
+			{
+				ph.AddReadoutTime("GroupDead", timestamp);
+				if(out != 0)
+					*out += ph.GenerateString() + "\n";
+			}
+		}
+		else
+		{
+			if(!h.is_valid())
+			{
+				if(cell->GetReadoutDelayReference() == "")
+					ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+				else
+					ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference())
+											+ cell->GetReadoutDelay());
+				ph.AddReadoutTime(cell->addressname, timestamp);
+				
+				h = ph;
+			}
+			else
+			{
+				h.SetAddress(it->GetAddressName(),
+								h.GetAddress(it->GetAddressName()) | it->GetAddress());
+				h.SetCharge(h.GetCharge() + ph.GetCharge());
+			}
+
+			if(cell->GetNumPixels() > 1)
+			{
+				ph.AddReadoutTime("merged", timestamp);	
+				if(out != 0)
+					*out += ph.GenerateString() + "\n";
+			}
+		}
+	}
+
+	if(h.is_valid() || !cell->zerosuppression)
+	{
+		if(cell->buf->InsertHit(h))
+			return true;
+		else if(h.is_valid())
+		{
+			h.AddReadoutTime("BufferFull", timestamp);
+			if(out != NULL)
+				*out += h.GenerateString() + "\n";
+
+			return false;
+		}
+		else
+			return false;
+	}
+	else
+		return false;
+}
+
 
 PixelLogic::PixelLogic(int relation)
 {
@@ -1019,7 +1096,8 @@ void PixelLogic::ClearHit(ReadoutCell* cell, bool resetcharge)
 	}
 }
 
-ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0)
+ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0), edgedetect(false),
+		lastevaluation(false)
 {
 
 }
@@ -1036,8 +1114,12 @@ bool ComplexReadout::Read(int timestamp, std::string* out)
 		std::cout << "Error: The Readout Logic is not set up" << std::endl;
 		return false;
 	}
-	if(logic->Evaluate(cell, timestamp))
+
+	bool evaluationresult = logic->Evaluate(cell, timestamp);
+
+	if(evaluationresult && (!edgedetect || !lastevaluation))
 	{
+		lastevaluation = true;
 		Hit h = logic->ReadHit(cell, timestamp, out);
 		if(h.is_valid() || !cell->zerosuppression)
 		{
@@ -1057,6 +1139,7 @@ bool ComplexReadout::Read(int timestamp, std::string* out)
 	}
 	else
 	{
+		lastevaluation = evaluationresult;
 		//write rejected hits to the lost hit file:
 		Hit h = logic->ReadHit(cell, timestamp, out);
 		if(h.is_valid())
@@ -1097,4 +1180,14 @@ void ComplexReadout::SetReadoutCell(ReadoutCell* roc)
 bool ComplexReadout::NeedsROCReset()
 {
 	return true;
+}
+
+bool ComplexReadout::GetEdgeDetect()
+{
+	return edgedetect;
+}
+
+void ComplexReadout::SetEdgeDetect(bool edgedet)
+{
+	edgedetect = edgedet;
 }

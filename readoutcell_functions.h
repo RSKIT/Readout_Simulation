@@ -328,6 +328,19 @@ public:
 };
 
 /**
+ * @brief Implementation of the PixelReadout class. The addresses or the pixels are or-chained and
+ *                 are read when the result of the OR shows a rising edge. If the OR-result already
+ *                 was high, the new hits are "lost"
+ */
+class PPtBReadoutOrBeforeEdge : public PixelReadout
+{
+public:
+	PPtBReadoutOrBeforeEdge(ReadoutCell* roc);
+
+	bool Read(int timestamp, std::string* out = 0);
+};
+
+/**
  * @brief implementation of a runtime depiction of combinatory logic between pixel hits. It
  *                 provides information whether a hit occured and the address resulting from the
  *                 hite
@@ -534,8 +547,14 @@ public:
 	 * @return               - true, as this ComplexReadout class needs special treatment
 	 */
 	bool NeedsROCReset();
+
+	bool GetEdgeDetect();
+	void SetEdgeDetect(bool edgedet);
 private:
 	PixelLogic* logic;
+
+	bool edgedetect;
+	bool lastevaluation;
 };
 //---- End Pixel Readout Classes ----
 

@@ -1224,11 +1224,12 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	
 	//PPtB Readout (without alternative at the moment):
 	bool pptb = true;
-	error = parent->QueryBoolAttribute("pptb", &pptb);
-	if(error != tinyxml2::XML_NO_ERROR)
-		pptb = true;
-	if(pptb)
+	nam = parent->Attribute("pixelreadout");
+	std::string pptbro = (nam != 0)?std::string(nam):"";
+	if(pptbro.compare("pptb") == 0)
 		configuration |= ReadoutCell::PPTB;
+	else if(pptbro.compare("pptborbeforeedge") == 0)
+		configuration |= ReadoutCell::PPTBORBEFOREEDGE;
 	
 	//zero suppression:
 	bool zerosuppr = true;
@@ -1311,6 +1312,8 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		{
 			PixelLogic* logic = LoadPixelLogic(newchild);
 			ComplexReadout* cro = new ComplexReadout(&roc);
+			if(configuration & ReadoutCell::PPTBORBEFOREEDGE)
+				cro->SetEdgeDetect(true);
 			cro->SetPixelLogic(logic);
 			roc.SetComplexPPtBReadout(cro);
 		}
