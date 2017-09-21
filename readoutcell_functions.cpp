@@ -1096,8 +1096,8 @@ void PixelLogic::ClearHit(ReadoutCell* cell, bool resetcharge)
 	}
 }
 
-ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0), edgedetect(false),
-		lastevaluation(false)
+ComplexReadout::ComplexReadout(ReadoutCell* roc) : PixelReadout(roc), logic(0), edgedetect(0),
+		lastevaluation(false), lastevaluationts(-1)
 {
 
 }
@@ -1115,9 +1115,25 @@ bool ComplexReadout::Read(int timestamp, std::string* out)
 		return false;
 	}
 
+	//check the time since the last checking of the result for a timestamp with result 0:
+	bool waszero = !lastevaluation;	//start from the last evaluation
+	if(edgedetect == 2 && !waszero)		//no need for further checking if the last evaluation was 0
+	{
+		bool test;
+		for(lastevaluationts; lastevaluationts < timestamp; ++lastevaluationts)
+		{
+			test = logic->Evaluate(cell, lastevaluationts);
+			if(!test)
+			{
+				waszero = true;
+				break;
+			}
+		}
+	}
+	//current evaluation result:
 	bool evaluationresult = logic->Evaluate(cell, timestamp);
 
-	if(evaluationresult && (!edgedetect || !lastevaluation))
+	if(evaluationresult && (edgedetect != 0 || waszero))
 	{
 		lastevaluation = true;
 		Hit h = logic->ReadHit(cell, timestamp, out);
@@ -1125,7 +1141,7 @@ bool ComplexReadout::Read(int timestamp, std::string* out)
 		{
 			if(cell->buf->InsertHit(h))
 				return true;
-			else if(h.is_valid())	//already tested in surrounding if()
+			else if(h.is_valid())
 			{
 				h.AddReadoutTime("BufferFull", timestamp);
 				if(out != NULL)
@@ -1182,12 +1198,12 @@ bool ComplexReadout::NeedsROCReset()
 	return true;
 }
 
-bool ComplexReadout::GetEdgeDetect()
+int ComplexReadout::GetEdgeDetect()
 {
 	return edgedetect;
 }
 
-void ComplexReadout::SetEdgeDetect(bool edgedet)
+void ComplexReadout::SetEdgeDetect(int edgedet)
 {
 	edgedetect = edgedet;
 }

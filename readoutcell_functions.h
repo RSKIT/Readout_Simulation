@@ -548,13 +548,24 @@ public:
 	 */
 	bool NeedsROCReset();
 
-	bool GetEdgeDetect();
-	void SetEdgeDetect(bool edgedet);
+	/**
+	 * @brief provides the edge detection setting for this complex readout. Possible options are:
+	 *             0 - no edge detection. If a new hit occurs, a hit is generated.
+	 *             1 - use the result of the last evaluation as a reference for the edge detection
+	 *                   i.e. only if the last evaluation resulted in zero, a new hit can be detected
+	 *             2 - check all time stamps since the last evaluation for a zero result and if it
+	 *                   occured in any of those time stamps, a new hit can be generated.
+	 * @details
+	 * @return               - the setting for the edge detection
+	 */
+	int GetEdgeDetect();
+	void SetEdgeDetect(int edgedet);
 private:
 	PixelLogic* logic;
 
-	bool edgedetect;
+	int edgedetect;
 	bool lastevaluation;
+	int lastevaluationts;
 };
 //---- End Pixel Readout Classes ----
 

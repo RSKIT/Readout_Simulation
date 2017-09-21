@@ -1312,8 +1312,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		{
 			PixelLogic* logic = LoadPixelLogic(newchild);
 			ComplexReadout* cro = new ComplexReadout(&roc);
-			if(configuration & ReadoutCell::PPTBORBEFOREEDGE)
-				cro->SetEdgeDetect(true);
+			
+			//set the edge detection level of the readout:
+			int edgedetlevel = 0;
+			if(newchild->QueryIntAttribute("edgedetlevel", &edgedetlevel) != tinyxml2::XML_NO_ERROR)
+				edgedetlevel = (configuration & ReadoutCell::PPTBORBEFOREEDGE)?1:0;
+			cro->SetEdgeDetect(edgedetlevel);
+			
 			cro->SetPixelLogic(logic);
 			roc.SetComplexPPtBReadout(cro);
 		}

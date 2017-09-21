@@ -186,9 +186,9 @@ bool Pixel::CreateHit(Hit hit)
 
 void Pixel::ClearHit(bool resetcharge)
 {
-	hit.SetTimeStamp(-1);
+	//hit.SetTimeStamp(-1);	//used for checking evaluation with edge detect therefore commented out
 	hit.SetEventIndex(-1);
-	hit.SetDeadTimeEnd(-1);
+	//hit.SetDeadTimeEnd(-1);	//same reason as time stamp
 	if(resetcharge)
 		hit.SetCharge(-1);
 	hit.ClearAddress();
@@ -204,5 +204,5 @@ Hit Pixel::LoadHit(int timestamp, std::string* sbadout)
 
 bool Pixel::IsEmpty(int timestamp)
 {
-	return (timestamp >= hit.GetDeadTimeEnd());
+	return (timestamp >= hit.GetDeadTimeEnd() || timestamp < hit.GetTimeStamp());
 }
