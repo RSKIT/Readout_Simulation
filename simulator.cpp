@@ -431,6 +431,13 @@ void Simulator::GenerateEvents(int events, double starttime)
 			    								it.distance, it.sort, 
 			    								(outputlevel & eventgeneration), tsprintpitch);
 			    break;
+		    case(ProcessedITkFile):
+		    	eventgenerator.LoadProcessedITkEvents(it.source, it.firstevent, it.numevents,
+		    								it.starttime, it.numgenevents, it.freqscaling, it.eta,
+		    								it.phi, TCoord<double>::Null, -1, !archiveonly,
+		    								(outputlevel & eventgeneration), it.sort,
+		    								tsprintpitch);
+		    	break;
 			default:
 				std::cout << "Unknown Data Type for source \"" << it.source << "\"" << std::endl;
 				break;
@@ -1016,6 +1023,35 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			if(newelement->QueryDoubleAttribute("regroup", &neweventgroup.distance) 
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.distance = 0;
+
+			eventstoload.push_back(neweventgroup);
+		}
+		else if(name.compare("ProcessedITkEvents") == 0)
+		{
+			eventdata neweventgroup;
+			neweventgroup.datatype = datatypes::ProcessedITkFile;
+			const char* nam = newelement->Attribute("filename");
+			if(nam != 0)
+				neweventgroup.source = std::string(nam);
+			if(newelement->QueryIntAttribute("firstelement", &neweventgroup.firstevent)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.firstevent = 0;
+			if(newelement->QueryIntAttribute("numelements", &neweventgroup.numevents)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.numevents = -1;
+			if(newelement->QueryIntAttribute("numeventstogenerate", &neweventgroup.numgenevents)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.numgenevents = -1;	//as many events as entries in the ROOT file
+			if(newelement->QueryDoubleAttribute("freqscaling", &neweventgroup.freqscaling)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.freqscaling = 1;
+			if(newelement->QueryIntAttribute("eta", &neweventgroup.eta) != tinyxml2::XML_NO_ERROR)
+				neweventgroup.eta = 0;
+			if(newelement->QueryIntAttribute("phi", &neweventgroup.phi) != tinyxml2::XML_NO_ERROR)
+				neweventgroup.phi = -1;
+			if(newelement->QueryBoolAttribute("sort", &neweventgroup.sort) 
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.sort = false;
 
 			eventstoload.push_back(neweventgroup);
 		}

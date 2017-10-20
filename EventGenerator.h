@@ -70,6 +70,27 @@ public:
 		float charge;
 	};
 
+	//structures for processed ITk events (including pile-up):
+	struct Event {unsigned int bcid;
+				  int etamodule;
+				  int phimodule;
+				  bool trigger;
+				  bool operator==(const Event& second) const
+				  {
+				  	  return (etamodule == second.etamodule) && (phimodule == second.phimodule)
+				  	  				&& (bcid == second.bcid);
+				  }
+				  bool operator<(const Event& second) const
+				  {
+				  	  return (bcid < second.bcid);
+				  }
+				};
+	struct ChargeDistrModule {
+		unsigned int etaindex;
+		unsigned int phiindex;
+		float charge;
+	};
+
 	EventGenerator();
 	EventGenerator(DetectorBase* detector);
 	EventGenerator(int seed, double clustersize = 0, double rate = 0);
@@ -467,6 +488,24 @@ public:
 						TCoord<double> size, TCoord<double> granularity, 
 						TCoord<double> detectorsize, bool print = false);
 
+	/**
+	 * @brief calculates the charge inside a (pixel) volume from a charge distribution without
+	 *             folding back of the quad/double module to the detector size
+	 * @details
+	 * 
+	 * @param charge         - the charge distribution as charges in (smaller) volumes
+	 * @param position       - origin of the (pixel) volume to evaluate
+	 * @param size           - size of the (pixel) volume to evaluate
+	 * @param granularity    - the size of a single volume in the charge distribution
+	 * @param print          - turns on some debug output
+	 * 
+	 * @return               - the charge inside the (pixel) volume as charge in the union of
+	 *                            pixel and charge distribution volumes
+	 */
+	double GetCharge(std::vector<ChargeDistrModule>& charge, TCoord<double> position, 
+						TCoord<double> size, TCoord<double> granularity, 
+						bool print = false);
+
 	// ===  Spline functions for deadtime and timewalk calculations ===
 
 	/**
@@ -572,6 +611,46 @@ public:
 						TCoord<double> granularity = TCoord<double>::Null,
 						int numthreads = -1, bool writeout = true, double regroup = 0,
 						bool sort = true, bool print = false, int updatepitch = 10);
+
+	/**
+	 * @brief loads hit events from a ROOT file and generates Hit objects out of the data
+	 * @details
+	 *  
+	 * @param filename      - file name of the ROOT file
+	 * @param firstline     - the first entry to consider when loading the ROOT file
+	 * @param numlines      - the number of entries to read from the ROOT file. To read all data,
+	 *                            this parameter is set to "-1". If this number exceeds the number
+	 *                            of data sets in the file, the readout is stopped at the end of
+	 *                            the file.
+	 * @param firsttime     - time of the first event in units of simulation time stamps
+	 * @param numeventstogenerate 
+	 *  					 - the number of event to draw from the data loaded
+	 * @param freqscaling   - the factor to get from simulation time stamps to bc time stamps.
+	 *  						  For a simulation timestamp equalling to 6.25 ns and a BC time of
+	 *  						  25 ns, this parameter is 4.
+	 * @param eta           - the module ring in the barrel to use. Set to 0 to use all rings.
+	 *                            Possible values run from 1 to 8 for quad modules and from 9 to 21
+	 *                            for double modules.
+	 * @param phi           - the index of the module in a ring to use. Set to "-1" to use all
+	 *                            modules in the ring. Possible values are 0 to 53
+	 * @param granularity   - the lengths of the voxels in the data (active volume)
+	 * @param numthreads    - the number of threads to use for the computation, use 0 to use 
+	 *                            all cores
+	 * @param writeout      - if true, the log of the generated events is written to a file,
+	 *                            or not if false
+	 * @param print         - turn on or off output to terminal
+	 * @param sort          - sort the resulting hits if true
+	 * @param updatepitch   - the number of events to process before printing updated progress
+	 *                            information
+	 *  
+	 * @return              - the number of events extracted from the data
+	 */
+	int LoadProcessedITkEvents(std::string filename, int firstline = 0, int numlines = -1,
+						double firsttime = 0, int numeventstogenerate = -1, double freqscaling = 1,
+						int eta = 0, int phi = -1, 
+						TCoord<double> granularity = TCoord<double>::Null, int numthreads = -1, 
+						bool writeout = true, bool print = false, bool sort = false,
+						int updatepitch = 10);
 private:
 	/**
 	 * @brief scans the detector for a given particle track for the charge generated in the
@@ -700,6 +779,56 @@ private:
 						std::map<unsigned int, std::vector<ChargeDistr> >::iterator end,
 						TCoord<double> granularity, double maxdistance,
 						int id, int numclusters, bool print = false, int updatepitch = 10);
+
+	/**
+	 * @brief method to be called by threads for the evaluation of charge distributions. It
+	 *             provides hit objects and logging output via parameters for processed event
+	 *             data (including pile-up)
+	 * @details
+	 * 
+	 * @param itself         - the event generator to work on (necessary as the thread can not
+	 *                            operate on an object)
+	 * @param events		 - the events (BCID, eta and phi indices of the modules) to use for
+	 *                            the hit generation
+	 * @param data           - all charge distributions with corresponding event identifyer
+	 * @param granularity    - size of a single volume in the charge distributions
+	 * @param pixelhits      - output vector of the hits generated by the charge distributions
+	 *                            referred to by the entries in `events`
+	 * @param output         - logging output of the generated hit data
+	 * @param firsteventid   - the event id of the first generated event
+	 * @param firsttime      - time in simulation time steps for the first event
+	 * @param freqscaling    - scaling from the BC time steps to the simulation time steps. For
+	 *                            example for a 6.25 ns simulation time step and a 25 ns BC time
+	 *                            step, this parameter is 4
+	 * @param id             - id for output to the terminal to identify the thread
+	 * @param print          - turns on or off output
+	 * @param updatepitch    - sets the pitch of output to reduce the amount of data written to
+	 *                            the terminal
+	 */
+	static void GenerateHitsFromProcessedChargeDistributions(EventGenerator* itself, 
+						std::vector<Event>* events, 
+						std::map<Event, std::vector<ChargeDistrModule> >* data, 
+						TCoord<double> granularity, 
+						std::vector<Hit>* pixelhits, std::string* output, int firsteventid, 
+						double firsttime = 0, double freqscaling = 1, int id = -1, 
+						bool print = false, int updatepitch = 10);
+
+	/**
+	 * @brief scans the passed readout cell for hits of the charge distribution with the readout
+	 *             cell's contents
+	 * @details
+	 * 
+	 * @param hit            - template hit for filling with the address of the pixels
+	 * @param cell           - the readout cell to scan
+	 * @param granularity    - size of a single volume in the charge distribution
+	 * @param print          - turns on (or off) debug output
+	 * @return               - a vector of hit objects representing the hit pixels in the readout
+	 *                            cell for the passed charge distribution
+	 */
+	std::vector<Hit> ScanReadoutCell(Hit hit, ReadoutCell* cell, 
+						std::vector<ChargeDistrModule>& charge, TCoord<double> chargestart, 
+						TCoord<double> chargeend, TCoord<double> granularity, bool print = false);
+
 
 	std::vector<DetectorBase*> detectors;
 

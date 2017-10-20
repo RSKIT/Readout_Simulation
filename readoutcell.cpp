@@ -136,10 +136,11 @@ void ReadoutCell::SetConfiguration(int newconfig)
     if(pixelreadout != 0)
         delete pixelreadout;
 
-    if(newconfig & PPTB)
-        pixelreadout = new PPtBReadout(this);
-    else if(newconfig & PPTBORBEFOREEDGE)
+    if(newconfig & PPTBORBEFOREEDGE)
         pixelreadout = new PPtBReadoutOrBeforeEdge(this);
+    //else if(newconfig & PPTB)
+    else
+        pixelreadout = new PPtBReadout(this);
     
     if(buf != 0)
         delete buf;
