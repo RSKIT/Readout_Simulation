@@ -1149,9 +1149,15 @@ void Simulator::LoadSpline(EventGenerator* eventgen, tinyxml2::XMLElement* eleme
 	if(filename != "")
 	{
 		if(deadtime)
+		{
+			eventgen->SetupDeadTimeSpline();
 			eventgen->SaveDeadTimeSpline(filename, resolution);
+		}
 		else
+		{
+			eventgen->SetupTimeWalkSpline();
 			eventgen->SaveTimeWalkSpline(filename, resolution);
+		}
 	}
 }
 
