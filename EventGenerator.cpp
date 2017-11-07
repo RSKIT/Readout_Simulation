@@ -1739,6 +1739,9 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 			randomevent.phimodule = generator() % 54;	//54 modules form a ring
 		randomevent.bcid      = (generator() % bcidrange) + minbcid;
 
+		if(triggerprobability > 0)
+			randomevent.trigger = (generator() / genmax < triggerprobability);
+
 		if(i/eventsperthread < numthreads)
 			events[i/eventsperthread].push_back(randomevent);
 		else
@@ -1816,16 +1819,31 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	double eventtime = firsttime;
 	for(int i = 0; i < numthreads; ++i)
 	{
-		for(auto& it : events[i])
+		//overwrite trigger information if provided:
+		if(triggerprobability > 0)
 		{
-			auto evnt = clusters.find(it);
-			if(evnt != clusters.end())
+			for(auto& it : events[i])
 			{
-				if(evnt->first.trigger)
+				if(it.trigger)
 					AddOnTimeStamp(ceil(eventtime + triggerdelay));
-			}
 
-			eventtime += freqscaling;
+				eventtime += freqscaling;
+			}
+		}
+		//keep data trigger information:
+		else
+		{
+			for(auto& it : events[i])
+			{
+				auto evnt = clusters.find(it);
+				if(evnt != clusters.end())
+				{
+					if(evnt->first.trigger)
+						AddOnTimeStamp(ceil(eventtime + triggerdelay));
+				}
+
+				eventtime += freqscaling;
+			}
 		}
 	}
 
@@ -2265,7 +2283,7 @@ void EventGenerator::GenerateHitsFromProcessedChargeDistributions(EventGenerator
 		std::stringstream s("");
 		s << "# Event " << hittemplate.GetEventIndex() << std::endl  //it->first << std::endl
 		  << "# Time " << hittemplate.GetTimeStamp() << std::endl;
-		if(chargedist->first.trigger)
+		if(chargedist->first.trigger || it.trigger)
 		{
 			int triggerstart = int(hittemplate.GetTimeStamp() + itself->triggerdelay);
 			s << "# Trigger " << triggerstart << " - " 
