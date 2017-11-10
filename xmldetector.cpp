@@ -561,27 +561,35 @@ std::vector<StateTransition*>::iterator StateMachineState::GetStateTransitionsEn
  *************************/
 
 XMLDetector::XMLDetector(std::string addressname, int address)
-		: DetectorBase(addressname, address), currentstate(0), nextstate(-1),
+		: DetectorBase(addressname, address), currentstate(std::vector<int>()), 
+		nextstate(std::vector<int>()), startstate(std::vector<int>()),
 		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
-	counters.insert(std::make_pair("delay", 0));
+
 }
 
-XMLDetector::XMLDetector() : DetectorBase(), currentstate(0), nextstate(-1),
+XMLDetector::XMLDetector() : DetectorBase(), currentstate(std::vector<int>()), 
+		nextstate(std::vector<int>()), startstate(std::vector<int>()),
 		states(std::vector<StateMachineState*>()), counters(std::map<std::string, double>())
 {
-	counters.insert(std::make_pair("delay", 0));
+
 }
 
 XMLDetector::XMLDetector(const XMLDetector& templ) : DetectorBase(templ), 
-		currentstate(templ.currentstate), nextstate(templ.nextstate), counters(templ.counters)
+		currentstate(std::vector<int>()), nextstate(std::vector<int>()), 
+		startstate(std::vector<int>()), states(std::vector<StateMachineState*>()), 
+		counters(templ.counters)
 {
+	currentstate.insert(currentstate.end(), templ.currentstate.begin(), templ.currentstate.end());
+	nextstate.insert(nextstate.end(),templ.nextstate.begin(), templ.nextstate.end());
+	startstate.insert(startstate.end(), templ.startstate.begin(), templ.startstate.end());
 	for(auto& it : templ.states)
 		states.push_back(new StateMachineState(*it));
 }
 
-XMLDetector::XMLDetector(const DetectorBase* templ) : DetectorBase(templ), currentstate(0),
-		nextstate(-1), states(std::vector<StateMachineState*>()), 
+XMLDetector::XMLDetector(const DetectorBase* templ) : DetectorBase(templ), 
+		currentstate(std::vector<int>()), nextstate(std::vector<int>()), 
+		startstate(std::vector<int>()), states(std::vector<StateMachineState*>()), 
 		counters(std::map<std::string, double>())
 {
 
@@ -612,73 +620,78 @@ void XMLDetector::Cleanup()
 
 bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
-	//check for valid state:
-	if(currentstate >= states.size() || currentstate < 0)
+	for(int i = 0; i < currentstate.size(); ++i)
 	{
-		std::cout << "State Machine Error" << std::endl;
-		return false;
-	}
-
-    //do not execute anything when a delay is active:
-    if(GetCounter("delay") > 0)
-    {
-    	if(print)
-    		std::cout << "Delay: " << GetCounter("delay") << std::endl;
-    	DecrementCounter("delay");
-    	return true;
-    }
-
-	StateMachineState* state = states[currentstate];
-
-
-	if(print)
-		std::cout << "State: " << state->GetStateName() << std::endl;
-
-	//change Registers, LoadPixels, LoadROCs,...:
-	auto itend = state->GetRegisterChangesEnd();
-	for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
-		ExecuteRegisterChanges(*it, timestamp, print);
-
-	// nextstate reset (to -1) is done by ClockDown()
-
-	auto endtransitions = state->GetStateTransitionsEnd();
-	for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
-	{
-		FillComparison((*it)->GetComparison());
-
-		if((*it)->Evaluate())
+		//check for valid state:
+		if(currentstate[i] >= states.size() || currentstate[i] < 0)
 		{
-			SetCounter("delay", (*it)->GetDelay());
-
-			auto itend = (*it)->GetRegisterChangesEnd();
-			for(auto regit = (*it)->GetRegisterChangesBegin(); regit != itend; ++regit)
-				ExecuteRegisterChanges(*regit, timestamp, print);
-
-			//find the next state:
-			int index = 0;
-			for(auto stateit = states.begin(); stateit != states.end(); ++stateit)
-			{
-				if((*stateit)->GetStateName().compare((*it)->GetNextState()) == 0)
-				{
-					nextstate = index;
-					break;
-				}
-				++index;
-			}
-
-			break;
+			std::cout << "State Machine Error" << std::endl;
+			return false;
 		}
-	}
 
-	if(nextstate == -1)
-	{
-		std::cout << "Debug Output for all Transitions:" << std::endl;
+    	//do not execute anything when a delay is active:
+		std::stringstream delay("");
+		delay << "delay" << i;
+	    if(GetCounter(delay.str()) > 0)
+	    {
+	    	if(print)
+	    		std::cout << "Delay: " << GetCounter(delay.str()) << std::endl;
+	    	DecrementCounter(delay.str());
+	    	return true;
+	    }
+
+		StateMachineState* state = states[currentstate[i]];
+
+
+		if(print)
+			std::cout << "State: " << state->GetStateName() << std::endl;
+
+		//change Registers, LoadPixels, LoadROCs,...:
+		auto itend = state->GetRegisterChangesEnd();
+		for(auto it = state->GetRegisterChangesBegin(); it != itend; ++it)
+			ExecuteRegisterChanges(*it, timestamp, print);
+
+		// nextstate reset (to -1) is done by ClockDown()
+
+		auto endtransitions = state->GetStateTransitionsEnd();
 		for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
 		{
-			std::cout << "Transition to: " << (*it)->GetNextState() << std::endl;
-			std::cout << (*it)->GetComparison()->PrintComparison("  ");
+			FillComparison((*it)->GetComparison());
+
+			if((*it)->Evaluate())
+			{
+				SetCounter(delay.str(), (*it)->GetDelay());
+
+				auto itend = (*it)->GetRegisterChangesEnd();
+				for(auto regit = (*it)->GetRegisterChangesBegin(); regit != itend; ++regit)
+					ExecuteRegisterChanges(*regit, timestamp, print);
+
+				//find the next state:
+				int index = 0;
+				for(auto stateit = states.begin(); stateit != states.end(); ++stateit)
+				{
+					if((*stateit)->GetStateName().compare((*it)->GetNextState()) == 0)
+					{
+						nextstate[i] = index;
+						break;
+					}
+					++index;
+				}
+
+				break;
+			}
 		}
 
+		if(nextstate[i] == -1)
+		{
+			std::cout << "Debug Output for all Transitions:" << std::endl;
+			for(auto it = state->GetStateTransitionsBegin(); it != endtransitions; ++it)
+			{
+				std::cout << "Transition to: " << (*it)->GetNextState() << std::endl;
+				std::cout << (*it)->GetComparison()->PrintComparison("  ");
+			}
+
+		}
 	}
 
 	return true;
@@ -705,40 +718,55 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, in
 	}
 
 	//execute a state transition for the "normal" state machine part:
-	//do not execute a state change on a delay:
-    if(GetCounter("delay") > 0)
-    	return true;
+    for(int i = 0; i < currentstate.size(); ++i)
+    {
+		//do not execute a state change on a delay:
+	    std::stringstream delay("");
+	    delay << "delay" << i;
+	    if(GetCounter(delay.str()) > 0)
+	    	continue;
 
-    currentstate = nextstate;
-    nextstate = -1;
+    	currentstate[i] = nextstate[i];
+    	nextstate[i] = -1;
+    }
     if(print)
     	std::cout << "-- State Transition --" << std::endl;
 
     return true;
 }
 
-int XMLDetector::GetState()
+int XMLDetector::GetStateIndex(int index)
 {
-	return currentstate;
+	if(index >= 0 && index < currentstate.size())
+		return currentstate[index];
+	else
+		return -1;
 }
 
-void XMLDetector::SetState(int index)
+void XMLDetector::SetState(int statemachineindex, int index)
 {
-	if(index >= 0 && index < states.size())
-		currentstate = index;
+	if(statemachineindex >= 0 && statemachineindex < currentstate.size())
+	{
+		if(index >= 0 && index < states.size())
+			currentstate[statemachineindex] = index;
+	}
 }
 
-int XMLDetector::GetNextState()
+int XMLDetector::GetNextState(int index)
 {
-	return nextstate;
+	if(index >= 0 && index < currentstate.size())
+		return nextstate[index];
+	else
+		return -1;
 }
 
-std::string XMLDetector::GetCurrentStateName()
+std::string XMLDetector::GetCurrentStateName(int index)
 {
-	if(currentstate < 0 || currentstate >= states.size())
+	if(index < 0 || index >= currentstate.size() 
+		|| currentstate[index] < 0 || currentstate[index] >= states.size())
 		return "";
 	else
-		return states[currentstate]->GetStateName();
+		return states[currentstate[index]]->GetStateName();
 }
 
 DetectorBase* XMLDetector::Clone()
@@ -749,6 +777,38 @@ DetectorBase* XMLDetector::Clone()
 void XMLDetector::AddCounter(std::string name, double value)
 {
 	SetCounter(name, value);
+}
+
+bool XMLDetector::SetStartState(int statemachineindex, int index)
+{
+	if(statemachineindex < 0 || statemachineindex >= currentstate.size())
+		return false;
+
+	if(index < 0 || index >= states.size())
+		return false;
+
+	startstate[statemachineindex] = index;
+
+	return true;
+}
+
+int XMLDetector::AddStateMachine(int startstateindex)
+{
+	if(startstateindex < 0 || startstateindex >= states.size())
+		return -1;
+
+	startstate.push_back(startstateindex);
+	currentstate.push_back(startstateindex);
+	nextstate.push_back(-1);
+
+	return currentstate.size();
+}
+
+void XMLDetector::RemoveAllStateMachines()
+{
+	startstate.clear();
+	currentstate.clear();
+	nextstate.clear();
 }
 
 void XMLDetector::AddState(const StateMachineState& state)

@@ -1635,6 +1635,7 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 	//transform the detector to an XMLDetector:
 	XMLDetector* det = new XMLDetector(detector);
 	
+	int statesbeforethismachine = det->GetNumStates();
 
 	tinyxml2::XMLElement* child = statemachine->FirstChildElement();
 
@@ -1661,7 +1662,7 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 			}
 		}
 		else if(value.compare("State") == 0)
-					det->AddState(LoadState(newchild));
+			det->AddState(LoadState(newchild));
 
 		if(child != statemachine->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1669,9 +1670,40 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 			child = 0;
 	}
 
-	while(det->GetState(det->GetState())->GetStateName().compare("synchronisation") == 0 
-		&& det->GetState() < det->GetNumStates())
-		det->SetState(det->GetState()+1);
+	//add the new state machine to the detector and get its index:
+	int smindex = det->AddStateMachine(statesbeforethismachine);
+	--smindex;
+
+	//check whether the starting state is supplied:
+	const char* nam = statemachine->Attribute("startstate");
+	std::string startstatename = (nam != 0)?std::string(nam):"";
+	if(startstatename == "")
+	{
+		//search the states for the starting state:
+		while(smindex >= 0 && det->GetState(det->GetStateIndex(smindex))->GetStateName()
+										.compare("synchronisation") == 0 
+			&& det->GetStateIndex(smindex) < det->GetNumStates())
+			det->SetState(smindex, det->GetStateIndex(smindex)+1);
+	}
+	else
+	{
+		int stateindex = det->GetNumStates() - 1;
+		while(stateindex >= 0 
+			&& det->GetState(stateindex)->GetStateName().compare(startstatename) != 0)
+			--stateindex;
+
+		if(stateindex >= det->GetNumStates())
+		{
+			std::cerr << "StateMachine Error: Start State does not exist!" << std::endl;
+			exit(-1);
+		}
+		else
+			det->SetState(smindex, stateindex);
+	}
+
+
+	//save the starting state of this state machine instance:
+	det->SetStartState(smindex, det->GetStateIndex(smindex));
 
 	return det;
 }

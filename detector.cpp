@@ -48,7 +48,7 @@ Detector::~Detector()
 bool Detector::StateMachineCkUp(int timestamp, bool trigger, bool print, int updatepitch)
 {
     if(print)
-        std::cout << "State: " << GetCurrentStateName() << std::endl;
+        std::cout << "State: " << GetCurrentStateName(0) << std::endl;
 
     //to pause the state machine in any state:
     if(delay > 0)
@@ -219,23 +219,23 @@ bool Detector::StateMachineCkDown(int timestamp, bool trigger, bool print, int u
     return true;
 }
 
-int Detector::GetState()
+int Detector::GetStateIndex(int index)
 {
     return currentstate;
 }
 
-void Detector::SetState(int index)
+void Detector::SetState(int statemachineindex, int index)
 {
     if(index >= 0 && index < 4)
         currentstate = index;
 }
 
-int Detector::GetNextState()
+int Detector::GetNextState(int index)
 {
     return nextstate;
 }
 
-std::string Detector::GetCurrentStateName()
+std::string Detector::GetCurrentStateName(int index)
 {
     switch(currentstate)
     {

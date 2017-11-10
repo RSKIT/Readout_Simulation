@@ -84,30 +84,38 @@ public:
     /**
      * @brief the index of the current state of the state machine.
      * @details
+     * 
+     * @param index          - index of the state machine instance (not implemented here)
      * @return               - the index of the current state machine state
      */
-    int 	GetState();
+    int 	GetStateIndex(int index);
     /**
      * @brief changes the current state to the index provided after checking the validity of
      *             the index
      * @details
      * 
+     * @param statemachineindex
+     *                       - index of the state machine instance (not implemented here)
      * @param index          - new index of the current state
      */
-    void    SetState(int index);
+    void    SetState(int statemacheineindex, int index);
     /**
      * @brief the index of the next state.
      * @details
+     * 
+     * @param index          - index of the state machine instance (not implemented here)
      * @return               - the index of the next state if it is set, or -1 in case of an error
      *                            or an unset index
      */
-    int 	GetNextState();
+    int 	GetNextState(int index);
     /**
      * @brief the text name of the current state
      * @details
+     * 
+     * @param index          - index of the state machine instance (not implemented here)
      * @return               - the name of the current state as a string
      */
-    std::string GetCurrentStateName();
+    std::string GetCurrentStateName(int index);
 
     /**
      * @brief creates and returns a copy of itself to avoid double usage of the same pointers

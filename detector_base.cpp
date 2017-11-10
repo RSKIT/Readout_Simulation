@@ -526,22 +526,22 @@ std::string DetectorBase::PrintDetector()
 	return s.str();
 }
 
-int DetectorBase::GetState()
+int DetectorBase::GetStateIndex(int index)
 {
     return -1;
 }
 
-void DetectorBase::SetState(int index)
+void DetectorBase::SetState(int statemachineindex, int index)
 {
 
 }
 
-int DetectorBase::GetNextState()
+int DetectorBase::GetNextState(int index)
 {
     return -1;
 }
 
-std::string DetectorBase::GetCurrentStateName()
+std::string DetectorBase::GetCurrentStateName(int index)
 {
     return "";
 }

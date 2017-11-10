@@ -455,30 +455,38 @@ public:
     /**
      * @brief the index of the current state of the state machine.
      * @details
+     * 
+     * @param index          - index of the state machine in which the state is to be returned
      * @return               - the index of the current state machine state
      */
-    int 	GetState();
+    int 	GetStateIndex(int index);
     /**
      * @brief changes the current state to the index provided after checking the validity of
      *             the index
      * @details
      * 
+     * @param statemachineindex
+     * 						 - index of the state machine to set the state
      * @param index          - new index of the current state
      */
-    void 	SetState(int index);
+    void 	SetState(int statemachineindex, int index);
     /**
      * @brief the index of the next state.
      * @details
+     * 
+     * @param index          - index of the state machine to get the next state for
      * @return               - the index of the next state if it is set, or -1 in case of an error
      *                            or an unset index
      */
-    int 	GetNextState();
+    int 	GetNextState(int index);
     /**
      * @brief the text name of the current state
      * @details
+     * 
+     * @param index          - index of the state machine to get the state name for
      * @return               - the name of the current state as a string
      */
-    std::string GetCurrentStateName();
+    std::string GetCurrentStateName(int index);
 
     /**
      * @brief creates and returns a copy of itself to avoid double usage of the same pointers
@@ -496,6 +504,30 @@ public:
      */
     void AddCounter(std::string name, double value);
 
+    /**
+     * @brief sets the starting state index of the chosen state machine
+     * @details
+     * 
+     * @param statemachineindex
+     *                       - index of the state machine
+     * @param index          - index of the state to be used as starting state
+     * @return               - true if the index was set, false if not
+     */
+    bool SetStartState(int statemachineindex, int index);
+    /**
+     * @brief adds another instance of a state machine to the detector
+     * @details
+     * 
+     * @param startstateindex
+     * 						 - index of the starting state of this state machine
+     * @return               - the number of state machine instances including the new one
+     */
+    int AddStateMachine(int startstateindex);
+    /**
+     * @brief removes all state machine instances from the detector
+     * @details
+     */
+    void RemoveAllStateMachines();
     /**
      * @brief adds a copy of the passed state to the state machine
      * @details
@@ -541,8 +573,9 @@ public:
      */
     void ClearStates();
 private:
-	int currentstate;
-	int nextstate;
+	std::vector<int> currentstate;
+	std::vector<int> nextstate;
+	std::vector<int> startstate;
 	std::vector<StateMachineState*> states;
 	std::map<std::string, double>  counters;
 

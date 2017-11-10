@@ -335,31 +335,39 @@ public:
      * @brief the index of the current state of the state machine. This function is to be
      *             implemented in the inheriting classes.
      * @details
+     * 
+     * @param index          - index of the state machine instance
      * @return               - the index of the current state machine state. Here, the state
      *                            machine is not implemented and the return value is an invalid
      *                            state: -1
      */
-    virtual int 	GetState();
+    virtual int 	GetStateIndex(int index);
     /**
      * @brief changes the current state to the index provided. In this base class, this method does
      *             nothing
      * @details
      * 
+     * @param statemachineindex
+     * 						 - index of the state machine instance to set the state
      * @param index          - index of the new current state
      */
-    virtual void 	SetState(int index);
+    virtual void 	SetState(int statemachineindex, int index);
     /**
      * @brief the index of the next state to go to. If not set, the value is invalid (-1).
      * @details
+     *
+     * @param index          - index of the state machine instance
      * @return               - index of the next state, or -1 on an error
      */
-    virtual int 	GetNextState();
+    virtual int 	GetNextState(int index);
     /**
      * @brief provides the name of the current state
      * @details
+     * 
+     * @param index			 - index of the state machine instance
      * @return               - text string containing the name of the current state
      */
-    virtual std::string GetCurrentStateName();
+    virtual std::string GetCurrentStateName(int index);
 
     /**
      * @brief creates and returns a copy of itself to avoid double usage of the same pointers
