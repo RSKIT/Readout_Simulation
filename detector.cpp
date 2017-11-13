@@ -261,5 +261,5 @@ DetectorBase* Detector::Clone()
 
 int Detector::GetNumStates()
 {
-    return 4;
+    return 0;
 }

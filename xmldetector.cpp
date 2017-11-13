@@ -468,6 +468,14 @@ StateMachineState::StateMachineState() : name(""), registerchanges(std::vector<R
 
 }
 
+StateMachineState::StateMachineState(const StateMachineState& templ) : name(templ.name)
+{
+	registerchanges.insert(registerchanges.end(), templ.registerchanges.begin(),
+								templ.registerchanges.end());
+	for(auto& it : templ.transitions)
+		transitions.push_back(new StateTransition(*it));
+}
+
 StateMachineState::~StateMachineState()
 {
 	Cleanup();
@@ -625,7 +633,7 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger, bool print, int 
 		//check for valid state:
 		if(currentstate[i] >= states.size() || currentstate[i] < 0)
 		{
-			std::cout << "State Machine Error" << std::endl;
+			std::cout << i << ": State Machine Error in state " << currentstate[i] << std::endl;
 			return false;
 		}
 
@@ -635,16 +643,16 @@ bool XMLDetector::StateMachineCkUp(int timestamp, bool trigger, bool print, int 
 	    if(GetCounter(delay.str()) > 0)
 	    {
 	    	if(print)
-	    		std::cout << "Delay: " << GetCounter(delay.str()) << std::endl;
+	    		std::cout << i << ": Delay: " << GetCounter(delay.str()) << std::endl;
 	    	DecrementCounter(delay.str());
-	    	return true;
+	    	continue; //return true;
 	    }
 
 		StateMachineState* state = states[currentstate[i]];
 
 
 		if(print)
-			std::cout << "State: " << state->GetStateName() << std::endl;
+			std::cout << i << ": State: " << state->GetStateName() << std::endl;
 
 		//change Registers, LoadPixels, LoadROCs,...:
 		auto itend = state->GetRegisterChangesEnd();
@@ -717,6 +725,8 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, in
 			ExecuteRegisterChanges(*it, timestamp, print);
 	}
 
+    if(print)
+    	std::cout << "--   State Transitions   --" << std::endl;
 	//execute a state transition for the "normal" state machine part:
     for(int i = 0; i < currentstate.size(); ++i)
     {
@@ -726,11 +736,15 @@ bool XMLDetector::StateMachineCkDown(int timestamp, bool trigger, bool print, in
 	    if(GetCounter(delay.str()) > 0)
 	    	continue;
 
+	    if(print)
+	    	std::cout << "  " << i << ": " << GetState(currentstate[i])->GetStateName()
+	    			  << " -> " << GetState(nextstate[i])->GetStateName() << std::endl;
+
     	currentstate[i] = nextstate[i];
     	nextstate[i] = -1;
     }
     if(print)
-    	std::cout << "-- State Transition --" << std::endl;
+    	std::cout << "-- End State Transitions --" << std::endl;
 
     return true;
 }

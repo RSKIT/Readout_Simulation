@@ -316,6 +316,7 @@ class StateMachineState
 {
 public:
 	StateMachineState();
+	StateMachineState(const StateMachineState& templ);
 	~StateMachineState();
 
 	void Cleanup();

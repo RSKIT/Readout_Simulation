@@ -1633,7 +1633,12 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 	tinyxml2::XMLError error;
 
 	//transform the detector to an XMLDetector:
-	XMLDetector* det = new XMLDetector(detector);
+	XMLDetector* det = dynamic_cast<XMLDetector*>(detector);
+	if(det == 0)
+		det = new XMLDetector(detector);
+	else
+		det = new XMLDetector(*(static_cast<XMLDetector*>(detector)));
+
 	
 	int statesbeforethismachine = det->GetNumStates();
 
