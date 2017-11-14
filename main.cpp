@@ -73,7 +73,7 @@ int main(int argc, char** argv)
               << "    *        developed at KIT-ADL           *\n"
               << "    * by Rudolf Schimassek and Felix Ehrler *\n"
               << "    *                                       *\n"
-              << "    *  Version: 0.9.6.1-beta (13.11.2017)   *\n"
+              << "    *   Version: 0.9.7-beta (14.11.2017)    *\n"
               << "    *                                       *\n"
               << "    *****************************************\n" 
               << std::endl;
@@ -147,6 +147,11 @@ int main(int argc, char** argv)
         int subsimulation = 0;
         do{
             sim.LoadInputFile();
+            while(subsimulation < sim.GetFirstSubSimIndex())
+            {
+                ++subsimulation;
+                sim.GoToNextParameterSetting();
+            }
 
             now = GetDateTime();
             std::stringstream s("");
@@ -157,7 +162,7 @@ int main(int argc, char** argv)
             sim.SimulateUntil(sim.GetStopTime(), sim.GetStopDelay());
 
             sim.Cleanup();
-        }while(sim.GoToNextParameterSetting());
+        }while(sim.GoToNextParameterSetting() && subsimulation <= sim.GetLastSubSimIndex());
 
         sim.ClearScanParameters();
 

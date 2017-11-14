@@ -310,6 +310,19 @@ public:
      */
     void ClearScanParameters();
 
+    /**
+     * @brief provides the first sub-simulation index to actually execute
+     * @details
+     * @return               - the index of the first sub-simulation to execute
+     */
+    int GetFirstSubSimIndex();
+    /**
+     * @brief provides the index of the last sub-simulation to execute
+     * @details
+     * @return               - the last sub-simulation to execute
+     */
+    int GetLastSubSimIndex();
+
 private:
 	//=== Detector Geometry and Event Generator Loading ==
 	/**
@@ -515,6 +528,9 @@ private:
     std::map<int, int> scanindices;		//scan ID and current setting
     std::map<int, int> scanindexmaxima;	//maximum per scan ID (correlation via position
     									// in the vector)
+
+    int firstsubsim;
+    int lastsubsim;
 };
 
 

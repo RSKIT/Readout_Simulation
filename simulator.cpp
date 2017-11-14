@@ -26,7 +26,7 @@ Simulator::Simulator() : detectors(std::vector<DetectorBase*>()), eventgenerator
 		events(0), starttime(0), stoptime(-1), stopdelay(0), inputfile(""), logfile(""),
 		logcontent(std::string("")), archivename(""), archiveonly(false), 
 		inputfilecontent(std::string("")), outputlevel(23), tsprintpitch(10), 
-		triggersorting(false)
+		triggersorting(false), firstsubsim(-1), lastsubsim(-1)
 {
 
 }
@@ -35,7 +35,7 @@ Simulator::Simulator(std::string filename) : detectors(std::vector<DetectorBase*
 		eventgenerator(EventGenerator()), events(0), starttime(0), stoptime(-1), stopdelay(0),
 		inputfile(filename), logfile(""), logcontent(std::string("")), archivename(""), 
 		archiveonly(false), inputfilecontent(std::string("")), 
-		outputlevel(23), tsprintpitch(10), triggersorting(false)
+		outputlevel(23), tsprintpitch(10), triggersorting(false), firstsubsim(-1), lastsubsim(-1)
 {
 
 }
@@ -158,6 +158,14 @@ void Simulator::LoadInputFile(std::string filename)
 			if(newelem->QueryIntAttribute("outputpitch", &tsprintpitch) != tinyxml2::XML_NO_ERROR)
 				tsprintpitch = 10;
 		}
+		else if(elementname.compare("SubSimulations") == 0)
+		{
+			if(newelem->QueryIntAttribute("firstsimulation", &firstsubsim) != tinyxml2::XML_NO_ERROR)
+				firstsubsim = -1;
+			if(newelem->QueryIntAttribute("lastsimulation", &lastsubsim) != tinyxml2::XML_NO_ERROR)
+				lastsubsim = -1;
+		}
+
 
 		if(elem != simulation->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -1220,6 +1228,8 @@ void Simulator::ClearScanParameters()
 {
 	scanindices.clear();
 	scanindexmaxima.clear();
+	firstsubsim = -1;
+	lastsubsim = -1;
 }
 
 ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixelsize,
@@ -2122,4 +2132,20 @@ std::string Simulator::TimesToInterval(TimePoint start, TimePoint end)
 		return "0 milliseconds";
 
 	return timetext.str();
+}
+
+int Simulator::GetFirstSubSimIndex()
+{
+	if(firstsubsim < 0)
+		return 0;
+	else
+		return firstsubsim;
+}
+
+int Simulator::GetLastSubSimIndex()
+{
+	if(lastsubsim < 0 || lastsubsim > GetNumParameterSettings())
+		return GetNumParameterSettings();
+	else
+		return lastsubsim;
 }

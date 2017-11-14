@@ -687,6 +687,15 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 
 		if(ph.is_valid())
 		{
+			//write out the merging of this hit to the lost hit file before decorating it:
+			if(cell->GetNumPixels() > 1)
+			{
+				ph.AddReadoutTime("merged", timestamp);	
+				if(out != 0)
+					*out += ph.GenerateString() + "\n";
+			}
+
+			//use this hit as group hit if it is the first hit pixel in the group:
 			if(!h.is_valid())
 			{
 				ph.AddReadoutTime(cell->addressname, timestamp);
@@ -697,18 +706,12 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 											+ cell->GetReadoutDelay());
 				h = ph;
 			}
+			//add the pixel address if it is not the first hit pixel in the group:
 			else
 			{
 				h.SetAddress(it->GetAddressName(),
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());
 				h.SetCharge(h.GetCharge() + ph.GetCharge());
-			}
-
-			if(cell->GetNumPixels() > 1)
-			{
-				ph.AddReadoutTime("merged", timestamp);	
-				if(out != 0)
-					*out += ph.GenerateString() + "\n";
 			}
 		}
 		else if(!it->IsEmpty(timestamp) && h.is_valid())
@@ -777,6 +780,15 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 		}
 		else
 		{
+			//log the merging of the hit if it is valid:
+			if(cell->GetNumPixels() > 1 && ph.is_valid())
+			{
+				ph.AddReadoutTime("merged", timestamp);	
+				if(out != 0)
+					*out += ph.GenerateString() + "\n";
+			}
+
+			//use the first hit pixel in the group for the further way:
 			if(!h.is_valid())
 			{
 				if(cell->GetReadoutDelayReference() == "")
@@ -788,18 +800,12 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 				
 				h = ph;
 			}
+			//add the pixel's address if it is not the first hit pixel in the group:
 			else
 			{
 				h.SetAddress(it->GetAddressName(),
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());
 				h.SetCharge(h.GetCharge() + ph.GetCharge());
-			}
-
-			if(cell->GetNumPixels() > 1)
-			{
-				ph.AddReadoutTime("merged", timestamp);	
-				if(out != 0)
-					*out += ph.GenerateString() + "\n";
 			}
 		}
 	}
