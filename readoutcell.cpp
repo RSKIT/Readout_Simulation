@@ -59,6 +59,11 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
 {
     SetConfiguration(roc.configuration);
 
+    //use the same merging address name as before in case of MergingReadout scheme:
+    if(roc.configuration & MERGINGREADOUT)
+        static_cast<MergingReadout*>(rocreadout)->SetMergingAddressName(
+                    static_cast<MergingReadout*>(roc.rocreadout)->GetMergingAddressName());
+
     if(roc.pixelreadout->NeedsROCReset())
     {
         ComplexReadout* ro = new ComplexReadout(this);

@@ -718,6 +718,11 @@ bool MergingReadout::ClearChild()
 	return false;
 }
 
+std::string MergingReadout::GetMergingAddressName()
+{
+	return mergingaddress;
+}
+
 void MergingReadout::SetMergingAddressName(std::string addressname)
 {
 	mergingaddress = addressname;

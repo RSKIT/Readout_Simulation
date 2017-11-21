@@ -290,6 +290,7 @@ public:
 	bool Read(int timestamp, std::string* out = 0);
 	bool ClearChild();
 
+	std::string GetMergingAddressName();
 	void SetMergingAddressName(std::string addressname);
 private:
 	std::string mergingaddress;
