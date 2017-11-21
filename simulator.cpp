@@ -1870,23 +1870,24 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 
 	const char* nam = comparison->Attribute("relation");
 	std::string rel = (nam != 0)?std::string(nam):"";
-	if(rel.compare("Smaller") == 0)
+	std::transform(rel.begin(), rel.end(), rel.begin(), ::tolower);
+	if(rel.compare("smaller") == 0)
 		comp->SetRelation(Comparison::Smaller);
-	else if(rel.compare("SmallerEqual") == 0)
+	else if(rel.compare("smallerequal") == 0)
 		comp->SetRelation(Comparison::SmallerEqual);
-	else if(rel.compare("Larger") == 0)
+	else if(rel.compare("larger") == 0)
 		comp->SetRelation(Comparison::Larger);
-	else if(rel.compare("LargerEqual") == 0)
+	else if(rel.compare("largerequal") == 0)
 		comp->SetRelation(Comparison::LargerEqual);
-	else if(rel.compare("Equal") == 0)
+	else if(rel.compare("equal") == 0)
 		comp->SetRelation(Comparison::Equal);
-	else if(rel.compare("NotEqual") == 0)
+	else if(rel.compare("notequal") == 0)
 		comp->SetRelation(Comparison::NotEqual);
-	else if(rel.compare("Or") == 0)
+	else if(rel.compare("or") == 0)
 		comp->SetRelation(Comparison::Or);
-	else if(rel.compare("And") == 0)
+	else if(rel.compare("and") == 0)
 		comp->SetRelation(Comparison::And);
-	else if(rel.compare("Xor") == 0)
+	else if(rel.compare("xor") == 0)
 		comp->SetRelation(Comparison::Xor);
 	else
 	{

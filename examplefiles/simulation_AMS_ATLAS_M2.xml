@@ -258,9 +258,10 @@
 		<InclinationSigma sigma="0.15"/>
 		<ChargeScale scale="1."/>
 		<MinSize diagonal="2."/>
-		<NumEvents n="5000" start="0."/>
+		<NumEvents n="100" start="0."/>
 		<TriggerProbability p="1."/>
 		<TriggerDelay delay="15"/>
 		<TriggerLength length="10"/>
 	</EventGenerator>
 </Simulation>
+
