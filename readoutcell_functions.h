@@ -280,6 +280,20 @@ private:
 	int pattern;
 
 };
+
+class MergingReadout : public ROCReadout
+{
+public:
+	MergingReadout(ReadoutCell* roc);
+	~MergingReadout();
+
+	bool Read(int timestamp, std::string* out = 0);
+	bool ClearChild();
+
+	void SetMergingAddressName(std::string addressname);
+private:
+	std::string mergingaddress;
+};
 //---- End ROC Readout Classes ----
 
 //---- Pixel Readout Classes ----

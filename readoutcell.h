@@ -45,6 +45,7 @@ class ReadoutCell
 	friend class OneByOneReadout;
 	friend class TokenReadout;
 	friend class SortedROCReadout;
+	friend class MergingReadout;
 
 	friend class PixelReadout;
 	friend class PPtBReadout;
@@ -62,7 +63,8 @@ public:
 				 OVERWRITEONFULL 	=  128,
 				 ONEBYONEREADOUT 	=  256,
 				 TOKENREADOUT 		=  512,
-				 SORTEDROCREADOUT 	= 1024};
+				 SORTEDROCREADOUT 	= 1024,
+				 MERGINGREADOUT     = 2048};
 
 	/**
 	 * @brief constructor with basic configuration of the readout cell
@@ -437,6 +439,15 @@ public:
      * @return               - the number of hits removed from the structure
      */
     int         RemoveAndSaveAllHits(int timestamp, std::string* sbadout = 0);
+
+    /**
+     * @brief changes the address field to use for address merging of hits between ROCs.
+     *             only used by MergingReadout ROCReadout scheme.
+     * @details 
+     * 
+     * @param addressname    - the address name to merge between hits
+     */
+    void        SetMergingAddressName(std::string addressname);
 	
 private:
 	std::string 				addressname;

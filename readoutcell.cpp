@@ -169,6 +169,8 @@ void ReadoutCell::SetConfiguration(int newconfig)
         rocreadout = new TokenReadout(this);
     else if(newconfig & SORTEDROCREADOUT)
         rocreadout = new SortedROCReadout(this);
+    else if(newconfig & MERGINGREADOUT)
+        rocreadout = new MergingReadout(this);
     else
         rocreadout = new NoFullReadReadout(this);    
 }
@@ -543,19 +545,19 @@ Hit ReadoutCell::ReadCell(int timestamp, bool remove)
     return buf->GetHit(timestamp, remove);
 }
 
-int ReadoutCell::HitsAvailable(std::string addressname)
+int ReadoutCell::HitsAvailable(std::string testaddressname)
 {
     int result = 0;
 
     for(auto it = rocvector.begin(); it != rocvector.end(); ++it)
-        result += it->HitsAvailable(addressname);
+        result += it->HitsAvailable(testaddressname);
 
-    if(addressname.compare(this->addressname) == 0)
+    if(testaddressname.compare(this->addressname) == 0)
         result += buf->GetNumHitsEnqueued();
     //to count all hits in the detector:
     //  take into account that for e.g. OneByOneReadout hits can be counted 2 times
-    //    (ClearChild()== true):
-    else if(addressname.compare("") == 0 && !rocreadout->ClearChild())
+    //    (ClearChild() == true):
+    else if(testaddressname.compare("") == 0 && !rocreadout->ClearChild())
         result += buf->GetNumHitsEnqueued();
     
     return result;
@@ -690,4 +692,14 @@ int ReadoutCell::RemoveAndSaveAllHits(int timestamp, std::string* sbadout)
     }
 
     return hitcounter;
+}
+
+void ReadoutCell::SetMergingAddressName(std::string addressname)
+{
+    MergingReadout* ro = 0;
+
+    ro = dynamic_cast<MergingReadout*>(rocreadout);
+
+    if(ro != 0)
+        ro->SetMergingAddressName(addressname);
 }

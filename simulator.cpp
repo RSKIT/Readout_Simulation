@@ -1312,6 +1312,8 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		configuration |= ReadoutCell::TOKENREADOUT;
 	else if(readouttype.compare("Sorted") == 0)
 		configuration |= ReadoutCell::SORTEDROCREADOUT;
+	else if(readouttype.compare("Merging") == 0)
+		configuration |= ReadoutCell::MERGINGREADOUT;
 	else //if(readouttype.compare("NoReadOnFull") == 0)
 		configuration |= ReadoutCell::NOREADONFULL;
 
@@ -1341,6 +1343,10 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	roc.SetReadoutDelay(readoutdelay);
 	roc.SetTriggered(triggeredroc);
 	roc.SetReadoutDelayReference(delayreference);
+
+	//set the address name to merge for MergingReadout:
+	nam = parent->Attribute("MergingAddressName");
+	roc.SetMergingAddressName((nam != 0)?std::string(nam):"");
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)

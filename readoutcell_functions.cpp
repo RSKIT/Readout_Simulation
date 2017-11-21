@@ -651,6 +651,79 @@ void SortedROCReadout::SetTriggerPattern(int clearpattern)
 	pattern = clearpattern;
 }
 
+MergingReadout::MergingReadout(ReadoutCell* roc) : ROCReadout(roc), mergingaddress("")
+{
+
+}
+
+MergingReadout::~MergingReadout()
+{
+
+}
+
+bool MergingReadout::Read(int timestamp, std::string* out)
+{
+	if(mergingaddress.compare("") == 0)
+	{
+		std::cerr << "Error: Merging Address Missing" << std::endl;
+		return false;
+	}
+
+	Hit h;
+	for(auto it = cell->rocvector.begin(); it != cell->rocvector.end(); ++it)
+	{
+		Hit bhit = it->buf->GetHit(timestamp);
+		if(bhit.is_valid() && bhit.is_available(timestamp))
+		{
+			if(it->GetTriggered())
+				bhit.AddReadoutTime(it->GetAddressName() + "_Trigger", h.GetAvailableTime());
+			bhit.AddReadoutTime(cell->addressname, timestamp);
+			if(cell->GetReadoutDelayReference() == "")
+				bhit.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+			else
+				bhit.SetAvailableTime(h.GetReadoutTime(cell->GetReadoutDelayReference()) 
+										+ cell->GetReadoutDelay());
+
+			if(!h.is_valid())
+				h = bhit;
+			else
+			{
+				h.SetAddress(mergingaddress, 
+								h.GetAddress(mergingaddress) | bhit.GetAddress(mergingaddress));
+				h.SetCharge(h.GetCharge() + bhit.GetCharge());
+			}
+
+			bhit.AddReadoutTime("ROCMerge", timestamp);
+			*out += bhit.GenerateString() + "\n";
+		}
+	}
+
+	bool hitfound = false;
+	if(h.is_valid())
+	{
+		if(!cell->buf->InsertHit(h))
+		{
+			h.AddReadoutTime("noSpace", timestamp);
+			*out += h.GenerateString() + "\n";
+		}
+		else
+			hitfound = true;
+	}
+
+	return hitfound;
+}
+
+bool MergingReadout::ClearChild()
+{
+	return false;
+}
+
+void MergingReadout::SetMergingAddressName(std::string addressname)
+{
+	mergingaddress = addressname;
+}
+
+
 PixelReadout::PixelReadout(ReadoutCell* roc) : cell(roc)
 {
 
