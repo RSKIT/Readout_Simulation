@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <iomanip>
 
 #ifndef PREFERWRITE
 	#include <map>

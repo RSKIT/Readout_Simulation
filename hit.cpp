@@ -379,11 +379,14 @@ std::string Hit::GenerateString(bool compact)
 {
 	std::stringstream s("");
 
+	static std::streamsize defaultprecision = s.precision();
+
 	if(!compact)
 	{
-		s << "Event " << eventindex << " Timestamp " << timestamp
-		  << " DeadTimeEnd " << deadtimeend << " Charge " << charge
-		  << " ; Address:";
+		s << "Event " << eventindex << " Timestamp " << std::setprecision(3) << std::fixed 
+		  << timestamp << " DeadTimeEnd " << std::setprecision(3) << std::fixed << deadtimeend;
+		s.unsetf(std::ios_base::fixed);
+		s << " Charge " << std::setprecision(defaultprecision) << charge << " ; Address:";
 
 		#ifndef PREFERWRITE
 			for(std::map<std::string, int>::iterator it = address.begin(); 
