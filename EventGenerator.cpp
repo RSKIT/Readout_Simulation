@@ -1392,9 +1392,9 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 		clusters.clear();
 		for(int i = 0; i < rgthreads; ++i)
 		{
-			reclusters.insert(reclusters.end(), threadclusters[i].begin(), 
-													threadclusters[i].end());
-				//no need to change the event IDs as they are not used any more
+			int uniquifier = reclusters.size();
+			for(auto& it : threadclusters[i])
+				reclusters.push_back(std::make_pair(it.first + uniquifier, it.second));
 		}
 
 		if(print)
@@ -2184,7 +2184,7 @@ void EventGenerator::SeparateClusters(
 			}
 		}
 
-		unsigned int oldeventid = itc->first;
+		unsigned int oldeventid = 0; //itc->first;	//changed to consecutive IDs (04.12.17)
 		for(auto& it : newclusters)
 		{
 			std::vector<ChargeDistr> onecluster;
@@ -2192,7 +2192,8 @@ void EventGenerator::SeparateClusters(
 			onecluster.insert(onecluster.end(), it.begin(), it.end());
 
 			while(resultclusters->find(oldeventid) != resultclusters->end())
-				oldeventid += 128; // += 1 << 7;	//BC part of the event ID
+				oldeventid += 1; //128; // += 1 << 7;	//BC part of the event ID	
+						//changed 04.12.17
 
 
 			resultclusters->insert(std::make_pair(oldeventid, onecluster));
