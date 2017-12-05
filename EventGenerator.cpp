@@ -2024,8 +2024,13 @@ void EventGenerator::GenerateHitsFromChargeDistributions(EventGenerator* itself,
 
 		//log the event header:
 		std::stringstream s("");
+		static std::streamsize defaultprecision = s.precision();
+		
 		s << "# Event " << eventid << std::endl  //it->first << std::endl
-		  << "# Time " << (*times)[it->first] << std::endl;
+		  << "# Time " << std::setprecision(3) << std::fixed << (*times)[it->first] 
+		  << std::setprecision(defaultprecision) << std::endl;
+		  s.unsetf(std::ios_base::fixed);
+		
 		if((*triginfos)[it->first])
 		{
 			int triggerstart = int((*times)[it->first] + itself->triggerdelay + 0.9);
