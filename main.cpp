@@ -73,7 +73,7 @@ int main(int argc, char** argv)
               << "    *        developed at KIT-ADL           *\n"
               << "    * by Rudolf Schimassek and Felix Ehrler *\n"
               << "    *                                       *\n"
-              << "    *  Version: 0.9.9.1-beta (05.12.2017)   *\n"
+              << "    *  Version: 0.9.9.2-beta (13.12.2017)   *\n"
               << "    *                                       *\n"
               << "    *****************************************\n" 
               << std::endl;
@@ -144,14 +144,15 @@ int main(int argc, char** argv)
 
         Simulator sim(it);
         
+        sim.LoadInputFile();
         int subsimulation = 0;
         do{
-            sim.LoadInputFile();
             while(subsimulation < sim.GetFirstSubSimIndex())
             {
                 ++subsimulation;
                 sim.GoToNextParameterSetting();
             }
+            sim.LoadInputFile();
 
             now = GetDateTime();
             std::stringstream s("");
