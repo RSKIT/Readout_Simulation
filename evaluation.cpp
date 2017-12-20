@@ -390,6 +390,9 @@ TCanvas* Evaluation::Plot(TH2* histogram, std::string xtitle, std::string ytitle
     histogram->GetYaxis()->SetLabelSize(0.05);
     histogram->GetZaxis()->SetTitleSize(0.05);
     histogram->GetZaxis()->SetLabelSize(0.05);
+    histogram->GetXaxis()->SetTitle(xtitle.c_str());
+    histogram->GetYaxis()->SetTitle(ytitle.c_str());
+    histogram->GetZaxis()->SetTitle(ztitle.c_str());
     
     histogram->GetYaxis()->SetTitleOffset(1.1);
 
