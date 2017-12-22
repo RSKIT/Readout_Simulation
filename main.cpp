@@ -145,7 +145,6 @@ int main(int argc, char** argv)
         Simulator sim(it);
         
         sim.LoadInputFile();
-        sim.Cleanup();  //remove the hits from the initial call
         int subsimulation = 0;
         do{
             while(subsimulation < sim.GetFirstSubSimIndex())
@@ -153,6 +152,7 @@ int main(int argc, char** argv)
                 ++subsimulation;
                 sim.GoToNextParameterSetting();
             }
+            sim.Cleanup();  //remove the hits from the initial call
             sim.LoadInputFile();
 
             now = GetDateTime();

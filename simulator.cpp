@@ -51,6 +51,8 @@ void Simulator::Cleanup()
 	detectors.clear();
 
 	eventgenerator.ClearDetectors();
+
+	eventstoload.clear();
 }
 
 std::string Simulator::GetLoadFileName()
