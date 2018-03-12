@@ -220,6 +220,53 @@ public:
                                     double start, double end, double binwidth, int input = Pass);
 
     /**
+     * @brief Generates a histogram correlating two entries of the hits
+     * @details 
+     * 
+     * @param firstval       - descriptor of the value for the x axis (see description of 
+     *                            GetDoubleValue() for options)
+     * @param secondval      - descriptor of the value for the y axis (see description of
+     *                            GetDoubleValue() for options)
+     * @param startfirst     - lower edge of the first bin on x axis
+     * @param endfirst       - upper edge of the last bin on x axis
+     * @param binwidthfirst  - width of a single bin on x axis
+     * @param startsecond    - lower edge of the first bin on y axis
+     * @param endsecond      - upper edge of the last bin on y axis
+     * @param binwidthsecond - width of a single bin on y axis
+     * @param input          - category of data to use (Pass, Fail, Input)
+     * @return               - the unformatted correlation histogram
+     */
+    TH2*    GenerateCorrelationHistogram(std::string firstval, std::string secondval,
+                                    double startfirst, double endfirst, double binwidthfirst,
+                                    double startsecond, double endsecond, double binwidthsecond,
+                                    int input = Pass);
+
+    /**
+     * @brief Generates a histogram correlating two entries of the hits
+     * @details 
+     * 
+     * @param xval           - descriptor of the value for the x axis (see description of 
+     *                            GetDoubleValue() for options)
+     * @param firsttime      - earlier value for the time difference on y axis (see description of
+     *                            GetDoubleValue() for options)
+     * @param secondtime     - later value for the time difference on y axis (see description of
+     *                            GetDoubleValue() for options)
+     * @param startfirst     - lower edge of the first bin on x axis
+     * @param endfirst       - upper edge of the last bin on x axis
+     * @param binwidthfirst  - width of a single bin on x axis
+     * @param startsecond    - lower edge of the first bin on y axis
+     * @param endsecond      - upper edge of the last bin on y axis
+     * @param binwidthsecond - width of a single bin on y axis
+     * @param input          - category of data to use (Pass, Fail, Input)
+     * @return               - the unformatted correlation histogram
+     */
+    TH2*    GenerateDelayCorrelationHistogram(std::string xval, std::string firsttime,
+                                    std::string secondtime,
+                                    double startfirst, double endfirst, double binwidthfirst,
+                                    double startsecond, double endsecond, double binwidthsecond,
+                                    int input = Pass);
+
+    /**
      * @brief calculates the integral of the histogram and normalises the result to be 1 for the
      *             integral over the whole histogram
      * @details

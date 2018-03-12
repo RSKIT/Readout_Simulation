@@ -234,6 +234,63 @@ TH1* Evaluation::GenerateDelayHistogram(std::string firsttime, std::string secon
     return hist;
 }
 
+TH2* Evaluation::GenerateCorrelationHistogram(std::string firstval, std::string secondval,
+                                    double startfirst, double endfirst, double binwidthfirst,
+                                    double startsecond, double endsecond, double binwidthsecond,
+                                    int input)
+{
+    std::vector<Hit>* vec = GetVectorPointer(input);
+
+    std::stringstream s("");
+    static int index = 0;
+    s << "CorrelationHistogram_" << ++index;
+    TH2* hist = new TH2I(s.str().c_str(),"Correlation Histogram", 
+                            (endfirst - startfirst) / binwidthfirst, startfirst, endfirst,
+                            (endsecond - startsecond) / binwidthsecond, startsecond, endsecond);
+
+    double val1;
+    double val2;
+    for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
+    {
+        val1 = GetDoubleValue(*it, firstval);
+        val2 = GetDoubleValue(*it, secondval);
+
+        hist->Fill(val1, val2);
+    }
+
+    return hist;
+}
+
+TH2* Evaluation::GenerateDelayCorrelationHistogram(std::string xval, std::string firsttime,
+                                    std::string secondtime,
+                                    double startfirst, double endfirst, double binwidthfirst,
+                                    double startsecond, double endsecond, double binwidthsecond,
+                                    int input)
+{
+    std::vector<Hit>* vec = GetVectorPointer(input);
+
+    std::stringstream s("");
+    static int index = 0;
+    s << "CorrelationHistogram_" << ++index;
+    TH2* hist = new TH2I(s.str().c_str(),"Correlation Histogram", 
+                            (endfirst - startfirst) / binwidthfirst, startfirst, endfirst,
+                            (endsecond - startsecond) / binwidthsecond, startsecond, endsecond);
+
+    double valx;
+    double valt1;
+    double valt2;
+    for(std::vector<Hit>::iterator it = vec->begin(); it != vec->end(); ++it)
+    {
+        valx  = GetDoubleValue(*it, xval);
+        valt1 = GetDoubleValue(*it, firsttime);
+        valt2 = GetDoubleValue(*it, secondtime);
+
+        hist->Fill(valx, valt2 - valt1);
+    }
+
+    return hist;
+}
+
 TGraph* Evaluation::GenerateIntegrationCurve(TH1* histogram, double normalise)
 {
     TGraph* graph = new TGraph(0);
