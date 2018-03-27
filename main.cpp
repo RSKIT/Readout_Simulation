@@ -73,7 +73,7 @@ int main(int argc, char** argv)
               << "    *        developed at KIT-ADL           *\n"
               << "    * by Rudolf Schimassek and Felix Ehrler *\n"
               << "    *                                       *\n"
-              << "    *  Version: 0.9.9.3-beta (22.12.2017)   *\n"
+              << "    *  Version: 0.9.9.4-beta (27.03.2018)   *\n"
               << "    *                                       *\n"
               << "    *****************************************\n" 
               << std::endl;

@@ -167,6 +167,12 @@ void Simulator::LoadInputFile(std::string filename)
 			if(newelem->QueryIntAttribute("lastsimulation", &lastsubsim) != tinyxml2::XML_NO_ERROR)
 				lastsubsim = -1;
 		}
+		else
+		{
+			std::cerr << "Unknown Element: \"" << elementname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + elementname
+							+ "\" detected.\n";
+		}
 
 
 		if(elem != simulation->LastChildElement())
@@ -210,7 +216,7 @@ void Simulator::LoadInputFile(std::string filename)
 	}
 
 	if(logfile != "")
-		logcontent += "Loading data from \"" + filename + "\" ...\n";
+		logcontent += std::string("Loading data from \"") + filename + "\" ...\n";
 
 	if(archivename != "")
 	{
@@ -859,6 +865,13 @@ void Simulator::LoadDetector(tinyxml2::XMLElement* parent, TCoord<double> pixels
 			det = detst;
 			detst = 0;
 		}
+		else
+		{
+			std::cerr << "Unknown Element: \"" << childname << "\" in Element \""
+						<< parent->Value() << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + childname 
+							+ "\" in Element \"" + std::string(parent->Value()) + "\".\n";
+		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1113,6 +1126,14 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 		{
 			LoadSpline(&eventgenerator, newelement);
 		}
+		else
+		{
+			std::cerr << "Unknown Element: \"" << name << "\" in Element \""
+						<< std::string(eventgen->Value()) << "\"" << std::endl;
+
+			logcontent += std::string("Loading Error: Unknown Element \"") + name 
+							+ "\" found in Element \"" + std::string(eventgen->Value()) + "\n";
+		}
 
 		if(element != eventgen->LastChildElement())
 			element = element->NextSiblingElement();
@@ -1141,6 +1162,16 @@ void Simulator::LoadSpline(EventGenerator* eventgen, tinyxml2::XMLElement* eleme
 				else
 					eventgen->AddTimeWalkPoint(x, y);
 			}
+		}
+		else
+		{
+			std::cerr << "Unknown Element: \"" << std::string(child->Value()) 
+						<< "\" in Element \"" << std::string(element->Value()) << "\"" 
+						<< std::endl;
+
+			logcontent += std::string("Loading Error: Unknown Element \"")
+						 + std::string(child->Value()) + "\" found in Element \"" 
+						 + std::string(element->Value()) + "\n";
 		}
 
 		if(child != element->LastChildElement())
@@ -1284,6 +1315,15 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		configuration |= ReadoutCell::PPTB;
 	else if(pptbro.compare("pptborbeforeedge") == 0)
 		configuration |= ReadoutCell::PPTBORBEFOREEDGE;
+	else
+	{
+		configuration |= ReadoutCell::PPTB;
+
+		std::cerr << "Unknown Pixel Readout Scheme \"" << pptbro << "\" in ROC \"" 
+					<< addressname << "\"" << std::endl;
+		logcontent += std::string("Loading Error: Unknown Pixel Readout Scheme \"") + pptbro
+						+ "\" in ROC \"" + addressname + "\"\n";
+	}
 	
 	//zero suppression:
 	bool zerosuppr = true;
@@ -1299,7 +1339,17 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	if(buffertype.compare("PrioBuffer") == 0)
 		configuration |= ReadoutCell::PRIOBUFFER;
 	else //if(buffertype.compare("FIFOBuffer") == 0)
+	{
 		configuration |= ReadoutCell::FIFOBUFFER;
+
+		if(buffertype.compare("FIFOBuffer") != 0)
+		{
+			std::cerr << "Unknown Buffer Type \"" << buffertype << "\" in ROC \"" 
+						<< addressname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Buffer Type \"") + buffertype 
+							+ "\" in ROC \"" + addressname + "\"\n";			
+		}
+	}
 
 	//readout mechanism:
 	nam = parent->Attribute("readoutmechanism");
@@ -1317,7 +1367,17 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	else if(readouttype.compare("Merging") == 0)
 		configuration |= ReadoutCell::MERGINGREADOUT;
 	else //if(readouttype.compare("NoReadOnFull") == 0)
+	{
 		configuration |= ReadoutCell::NOREADONFULL;
+
+		if(readouttype.compare("NoReadOnFull") != 0)
+		{
+			std::cerr << "Unknown Readout Mechanism \"" << readouttype << "\" in ROC \"" 
+						<< addressname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Readout Mechanism \"") + readouttype
+							+ "\" in ROC \"" + addressname + "\"\n";			
+		}
+	}
 
 	//Readout Delay:
 	int readoutdelay = 0;
@@ -1381,6 +1441,14 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 			
 			cro->SetPixelLogic(logic);
 			roc.SetComplexPPtBReadout(cro);
+		}
+		else
+		{
+			std::cerr << "Unknown Element \"" << childname << "\" in ROC \"" 
+					<< addressname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + childname 
+							+ "\" in ROC \"" + addressname + "\"\n";
+
 		}
 
 		if(child != parent->LastChildElement())
@@ -1454,6 +1522,13 @@ Pixel Simulator::LoadPixel(tinyxml2::XMLElement* parent, TCoord<double> pixelsiz
 			if(error != tinyxml2::XML_NO_ERROR)
 				deadtimescaling = 1.;
 		}
+		else
+		{
+			std::cerr << "Unknown Element \"" << name << "\" in Pixel \"" 
+						<< addrname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + name 
+							+ "\" in Pixel \"" + addrname + "\"\n";
+		}
 
 		if(properties != parent->LastChildElement())
 			properties = properties->NextSiblingElement();
@@ -1496,8 +1571,15 @@ PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
 		logic->SetRelation(PixelLogic::Xnor);
 	else if(operation.compare("Not") == 0)
 		logic->SetRelation(PixelLogic::Not);
-	//else	//with this line a missing operation results in an error, without it an OR is assumed
-	//	return 0;
+	else	
+	{
+		//with this line a missing operation results in an error, without it an OR is assumed
+		//	return 0;
+
+		std::cerr << "Wrong Pixel Logic operation: \"" << operation << "\"" << std::endl;
+		logcontent += std::string("Loading Error: Wrong Pixel Logic operation: \"") 
+						+ operation + "\"\n";
+	}
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
@@ -1524,6 +1606,12 @@ PixelLogic* Simulator::LoadPixelLogic(tinyxml2::XMLElement* parent)
 		}
 		else if(name.compare("PixelLogic") == 0)
 			logic->AddPixelLogic(LoadPixelLogic(newchild));
+		else
+		{
+			std::cerr << "Unknown Element \"" << name << "\" in PixelLogic" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + name 
+							+ "\" in PixelLogic\n";
+		}
 
 		if(child != parent->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1629,6 +1717,12 @@ void Simulator::LoadNPixels(ReadoutCell* parentcell, tinyxml2::XMLElement* paren
 				thisshift += shift;
 			}
 		}
+		else
+		{
+			std::cerr << "Unknown Element \"" << name << "\" in NTimes Node" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + name
+							+ "\" in NTimes Node\n";
+		}
 
 		if(elem != parentnode->LastChildElement())
 			elem = elem->NextSiblingElement();
@@ -1686,6 +1780,12 @@ XMLDetector* Simulator::LoadStateMachine(DetectorBase* detector,
 		}
 		else if(value.compare("State") == 0)
 			det->AddState(LoadState(newchild));
+		else
+		{
+			std::cerr << "Unknown Element \"" << value << "\" in State Machine" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + value 
+							+ "\" in State Machine\n";
+		}
 
 		if(child != statemachine->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1775,6 +1875,13 @@ StateMachineState* Simulator::LoadState(tinyxml2::XMLElement* stateelement)
 		{
 			state->AddStateTransition(LoadStateTransition(newchild));
 		}
+		else
+		{
+			std::cerr << "Unknown Element \"" << value << "\" in StateMachineState \"" 
+						<< statename << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + value 
+							+ "\" in StateMachineState \"" + statename + "\"\n";
+		}
 
 		if(child != stateelement->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1851,6 +1958,13 @@ StateTransition* Simulator::LoadStateTransition(tinyxml2::XMLElement* transition
 			trans->AddRegisterChange(LoadRegisterChange(newchild));
 		else if(value.compare("Condition") == 0)
 			trans->SetComparison(LoadComparison(newchild));
+		else
+		{
+			std::cerr << "Unknown Element \"" << value << "\" in StateTransition to \""
+						<< trans->GetNextState() << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + value 
+							+ "\" in StateTransition to \"" + trans->GetNextState() + "\"\n";
+		}
 
 		if(child != transition->LastChildElement())
 			child = child->NextSiblingElement();
@@ -1893,7 +2007,9 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 		comp->SetRelation(Comparison::Xor);
 	else
 	{
-		std::cout << "Error: Missing relation" << std::endl;
+		std::cerr << "Unknown relation \"" << rel << "\" in Comparison" << std::endl;
+		logcontent += std::string("Loading Error: Unknown Relation \"") + rel 
+						+ "\" in Comparison found.\n";
 		comp->SetRelation(-1);
 	}
 
@@ -1953,6 +2069,12 @@ Comparison* Simulator::LoadComparison(tinyxml2::XMLElement* comparison)
 				}
 			}
 		}
+		else
+		{
+			std::cerr << "Unknown Element \"" << value << "\" found in Comparison" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + value
+							+ "\" found in Comparison\n";
+		}
 
 
 		if(child != comparison->LastChildElement())
@@ -1998,6 +2120,12 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 			++maxindex;
 		else if(name.compare("Object") == 0)
 			object = newchild->FirstChildElement();
+		else
+		{
+			std::cerr << "Unknown Element \"" << name << "\" found in Scan Node" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Element \"") + name
+							+ "\" found in Scan Node\n";
+		}
 		
 		if(child != element->LastChildElement())
 			child = child->NextSiblingElement();
@@ -2068,6 +2196,13 @@ tinyxml2::XMLElement* Simulator::ScanNode(tinyxml2::XMLElement* element)
 				}
 				else
 					++numvalue;
+			}
+			else
+			{
+				std::cerr << "Unknown Element \"" << std::string(newchild->Value()) 
+							<< "\"in Scan Node" << std::endl;
+				logcontent += std::string("Loading Error: Unknown Element \"") 
+								+ std::string(newchild->Value()) + "\" in Scan Node\n";
 			}
 
 			if(child != element->LastChildElement())
