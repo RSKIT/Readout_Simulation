@@ -1410,6 +1410,17 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	nam = parent->Attribute("MergingAddressName");
 	roc.SetMergingAddressName((nam != 0)?std::string(nam):"");
 
+	double sampledelay = 0;
+	if(parent->QueryDoubleAttribute("SampleDelay", &sampledelay) != tinyxml2::XML_NO_ERROR)
+		sampledelay = 0;
+	if(!roc.SetSampleDelay(sampledelay))
+	{
+		std::cerr << "Sample Delay was not accepted by ReadoutCell \"" << roc.GetAddressName()
+					<< "\"" << std::endl;
+		logcontent += std::string("Loading Error: Sample Delay was not accepted by ReadoutCell \"")
+						+ roc.GetAddressName() + "\"\n";
+	}
+
 	tinyxml2::XMLElement* child = parent->FirstChildElement();
 	while(child != 0)
 	{
