@@ -758,54 +758,72 @@ PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
 bool PPtBReadout::Read(int timestamp, std::string* out)
 {
 	Hit h;
+	double hitsampletime = -1e10; //time at which the pixel pattern is stored after a hit
 
+	//find the evaluation time for the group:
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
-		Hit ph = it->LoadHit(timestamp, out);
-
-		if(ph.is_valid())
+		Hit htest = it->GetHit(timestamp, out);
+		if(htest.is_valid())
 		{
-			//write out the merging of this hit to the lost hit file before decorating it:
-			if(cell->GetNumPixels() > 1)
-			{
-				ph.AddReadoutTime("merged", timestamp);	
-				if(out != 0)
-					*out += ph.GenerateString() + "\n";
-			}
+			if(hitsampletime == -1e10)
+				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+			else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
+				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+		}
+	}
 
-			//use this hit as group hit if it is the first hit pixel in the group:
-			if(!h.is_valid())
+	if(hitsampletime != -1e10)
+	{
+
+		for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+		{
+			Hit ph = it->LoadHit(hitsampletime, out);
+
+			if(ph.is_valid())
 			{
-				ph.AddReadoutTime(cell->addressname, timestamp);
-				if(cell->GetReadoutDelayReference() == "")
-					ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+				//write out the merging of this hit to the lost hit file before decorating it:
+				if(cell->GetNumPixels() > 1)
+				{
+					ph.AddReadoutTime("merged", timestamp);	
+					if(out != 0)
+						*out += ph.GenerateString() + "\n";
+				}
+
+				//use this hit as group hit if it is the first hit pixel in the group:
+				if(!h.is_valid())
+				{
+					ph.AddReadoutTime(cell->addressname, timestamp);
+					if(cell->GetReadoutDelayReference() == "")
+						ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+					else
+						ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
+												+ cell->GetReadoutDelay());
+					h = ph;
+				}
+				//add the pixel address if it is not the first hit pixel in the group:
 				else
-					ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
-											+ cell->GetReadoutDelay());
-				h = ph;
+				{
+					h.SetAddress(it->GetAddressName(),
+									h.GetAddress(it->GetAddressName()) | it->GetAddress());
+					h.SetCharge(h.GetCharge() + ph.GetCharge());
+				}
 			}
-			//add the pixel address if it is not the first hit pixel in the group:
-			else
+			else if(!it->IsEmpty(hitsampletime) && h.is_valid())
 			{
-				h.SetAddress(it->GetAddressName(),
+				if(out != NULL)
+				{
+					Hit sph = h;
+					sph.SetAddress(it->GetAddressName(), it->GetAddress());
+					sph.SetCharge(ph.GetCharge());
+					sph.AddReadoutTime("remerged", timestamp);
+					*out += sph.GenerateString() + "\n";
+				}
+
+				h.SetAddress(it->GetAddressName(), 
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());
 				h.SetCharge(h.GetCharge() + ph.GetCharge());
 			}
-		}
-		else if(!it->IsEmpty(timestamp) && h.is_valid())
-		{
-			if(out != NULL)
-			{
-				Hit sph = h;
-				sph.SetAddress(it->GetAddressName(), it->GetAddress());
-				sph.SetCharge(ph.GetCharge());
-				sph.AddReadoutTime("remerged", timestamp);
-				*out += sph.GenerateString() + "\n";
-			}
-
-			h.SetAddress(it->GetAddressName(), 
-							h.GetAddress(it->GetAddressName()) | it->GetAddress());
-			h.SetCharge(h.GetCharge() + ph.GetCharge());
 		}
 	}
 
@@ -836,16 +854,30 @@ PPtBReadoutOrBeforeEdge::PPtBReadoutOrBeforeEdge(ReadoutCell* roc) : PixelReadou
 bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 {
 	Hit h;
+	double hitsampletime = -1e10; //time at which the pixel pattern is stored after a hit
+
+	//find the evaluation time for the group:
+	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+	{
+		Hit htest = it->GetHit(timestamp, out);
+		if(htest.is_valid())
+		{
+			if(hitsampletime == -1e10)
+				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+			else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
+				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+		}
+	}	
 
 	bool alreadyhigh = false;
 
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
-		if(!it->IsEmpty(timestamp) && !it->HitIsValid())
+		if(!it->IsEmpty(hitsampletime) && !it->HitIsValid())
 			alreadyhigh = true;
 
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
-		Hit ph = it->LoadHit(timestamp, out);
+		Hit ph = it->LoadHit(hitsampletime, out);
 
 		if(alreadyhigh)
 		{
@@ -879,7 +911,7 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 				h = ph;
 			}
 			//add the pixel's address if it is not the first hit pixel in the group:
-			else
+			else if(ph.is_valid())
 			{
 				h.SetAddress(it->GetAddressName(),
 								h.GetAddress(it->GetAddressName()) | it->GetAddress());

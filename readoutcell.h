@@ -448,6 +448,24 @@ public:
      * @param addressname    - the address name to merge between hits
      */
     void        SetMergingAddressName(std::string addressname);
+
+    /**
+     * @brief returns the delay after which the states of the pixel comparators after a hit
+     *             has been detected by one pixel
+     * @details 
+     * @return               - the sampling delay in timestamps
+     */
+    double 		GetSampleDelay();
+    /**
+     * @brief sets the delay for getting the comparators' states after a hit has been detected
+     *             in one pixel
+     * @details
+     * 
+     * @param delay          - the delay in timestamps for the sampling of the pixel comparators,
+     *                            the value needs to be smaller than the readout delay
+     * @return               - true if the value has been accepted, false if not
+     */
+    bool 		SetSampleDelay(double delay);
 	
 private:
 	std::string 				addressname;
@@ -469,6 +487,8 @@ private:
 	int 			readoutdelay;
 	bool 			triggered;
 	std::string 	delayreference;
+
+	double 			sampledelay;	//delay of the sampling of the pixels after a hit
 
 	int 			configuration;	//to save the readout settings according to the config enum
 

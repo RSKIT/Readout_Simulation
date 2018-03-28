@@ -147,8 +147,9 @@ bool Pixel::HitIsValid()
 	return hit.is_valid();
 }
 
-Hit Pixel::GetHit(int timestamp, std::string* sbadout)
+Hit Pixel::GetHit(double timestamp, std::string* sbadout)
 {
+	//hit is already over:
 	if(timestamp != -1 && timestamp >= hit.GetDeadTimeEnd())
 	{
 		//remove hit if it was not read out:
@@ -162,6 +163,9 @@ Hit Pixel::GetHit(int timestamp, std::string* sbadout)
 			ClearHit();
 		}
 	}
+	//hit did not begin at passed time:
+	else if(timestamp != -1 && timestamp < hit.GetTimeStamp())
+		return Hit();
 
 	return hit;
 }
@@ -195,14 +199,15 @@ void Pixel::ClearHit(bool resetcharge)
 	hit.ClearReadoutTimes();
 }
 
-Hit Pixel::LoadHit(int timestamp, std::string* sbadout)
+Hit Pixel::LoadHit(double timestamp, std::string* sbadout)
 {
 	Hit h = GetHit(timestamp, sbadout);
-	ClearHit(false);
+	if(h.is_valid())
+		ClearHit(false);
 	return h;
 }
 
-bool Pixel::IsEmpty(int timestamp)
+bool Pixel::IsEmpty(double timestamp)
 {
 	return (timestamp >= hit.GetDeadTimeEnd() || timestamp < hit.GetTimeStamp());
 }

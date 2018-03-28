@@ -134,7 +134,7 @@ public:
 	 * @param sbadout        - output stringstream for logging lost hits
 	 * @return               - the hit object if it was valid and available or an empty hit object
 	 */
-	Hit 		GetHit(int timestamp = -1, std::string* sbadout = 0);
+	Hit 		GetHit(double timestamp = -1, std::string* sbadout = 0);
 	/**
 	 * @brief places a hit into the pixel after checking that it is not occupied
 	 * @details
@@ -161,7 +161,7 @@ public:
 	 * @return               - the hit object stored inside the pixel, or an empty/invalid hit
 	 *                            object if it was empty
 	 */	
-	Hit 		LoadHit(int timestamp, std::string* sbadout = 0);
+	Hit 		LoadHit(double timestamp, std::string* sbadout = 0);
 
 	/**
 	 * @brief provides information about the dead time.
@@ -171,7 +171,7 @@ public:
 	 * @return               - true if no hit is in the pixel and the dead time of the last hit
 	 *                            is over, false otherwise
 	 */
-	bool        IsEmpty(int timestamp);
+	bool        IsEmpty(double timestamp);
 
 private:
 	double3d 	position;

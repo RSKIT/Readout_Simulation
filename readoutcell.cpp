@@ -708,3 +708,20 @@ void ReadoutCell::SetMergingAddressName(std::string addressname)
     if(ro != 0)
         ro->SetMergingAddressName(addressname);
 }
+
+double ReadoutCell::GetSampleDelay()
+{
+    return sampledelay;
+}
+
+bool ReadoutCell::SetSampleDelay(double delay)
+{
+    if(delay < readoutdelay)
+    {
+        sampledelay = delay;
+        return true;
+    }
+    else
+        return false;
+}
+
