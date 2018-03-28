@@ -21,6 +21,7 @@
 */
 
 #include <iostream>
+#include <sys/select.h>
 #include <fstream>
 #include <string>
 #include <chrono>
@@ -64,6 +65,22 @@ bool WriteToLog(std::string text, bool close = true)
 }
 
 
+std::string GetTextFromInput(const int timeout_ms = 100)
+{
+    fd_set readSet;
+    FD_ZERO(&readSet);
+    FD_SET(STDIN_FILENO, &readSet);
+    struct timeval tv = {0, timeout_ms};
+    if(select(STDIN_FILENO+1, &readSet, NULL, NULL, &tv) < 0)
+        perror("select");
+
+    std::string text = "";
+    if(FD_ISSET(STDIN_FILENO, &readSet))
+        std::cin >> text;
+
+    return text;
+}
+
 int main(int argc, char** argv)
 {
     std::cout << std::endl
@@ -73,7 +90,7 @@ int main(int argc, char** argv)
               << "    *        developed at KIT-ADL           *\n"
               << "    * by Rudolf Schimassek and Felix Ehrler *\n"
               << "    *                                       *\n"
-              << "    *   Version: 0.9.10-beta (28.03.2018)   *\n"
+              << "    *  Version: 0.9.10.1-beta (28.03.2018)  *\n"
               << "    *                                       *\n"
               << "    *****************************************\n" 
               << std::endl;
@@ -102,29 +119,26 @@ int main(int argc, char** argv)
             std::cout << "Could not open file \"" << file << "\"." << std::endl;
     }
 
-    //try loading filenames from pipelined data:
-    
-    if(argc == 1)    //only accept piped arguments if no parameters are passed
-    {
-        while(std::cin >> file)
-        {
-            if(file != "")
-            {
-                std::fstream f;
-                f.open(file.c_str(), std::ios::in);
-                if(f.is_open())
-                {
-                    files.push_back(file);
-                    f.close();
-                }
-                else
-                    std::cout << "Could not open file \"" << file << "\"." << std::endl;
+    //-- try loading filenames from pipelined data --
+    //get first filename:
+    file = GetTextFromInput();
 
-            }
-            else
-                break;
+    while(file != "")
+    {
+        std::fstream f;
+        f.open(file.c_str(), std::ios::in);
+        if(f.is_open())
+        {
+            files.push_back(file);
+            f.close();
         }
+        else
+            std::cout << "Could not open file \"" << file << "\"." << std::endl;
+
+        //get next filename:
+        file = GetTextFromInput();
     }
+    //-- end loading pipelined data --
 
     //write out starting output:
     s << files.size() << " arguments" << std::endl;
