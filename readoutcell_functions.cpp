@@ -867,7 +867,8 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 			else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
 				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
 		}
-	}	
+	}
+	hitsampletime += 1e-5;
 
 	bool alreadyhigh = false;
 
