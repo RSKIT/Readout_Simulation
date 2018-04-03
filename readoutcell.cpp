@@ -27,7 +27,7 @@ ReadoutCell::ReadoutCell() : addressname(""), address(0),
 	hitqueuelength(1), hitqueue(std::vector<Hit>()), pixelvector(std::vector<Pixel>()),
 	rocvector(std::vector<ReadoutCell>()), zerosuppression(true), buf(0),
     rocreadout(0), pixelreadout(0), readoutdelay(0), triggered(false), 
-    position(TCoord<double>::Null), size(TCoord<double>::Null), delayreference("")
+    position(TCoord<double>::Null), size(TCoord<double>::Null), delayreference(""), sampledelay(0)
 {
 	buf          = new FIFOBuffer(this);
     rocreadout   = new NoFullReadReadout(this);
@@ -41,7 +41,7 @@ ReadoutCell::ReadoutCell(std::string addressname, int address, int hitqueuelengt
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()),
         buf(0), rocreadout(0), pixelreadout(0), zerosuppression(true), readoutdelay(0), 
         triggered(false), position(TCoord<double>::Null), size(TCoord<double>::Null),
-        delayreference("")
+        delayreference(""), sampledelay(0)
 {
 	this->addressname = addressname;
 	this->address = address;
@@ -55,7 +55,8 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         pixelvector(std::vector<Pixel>()), rocvector(std::vector<ReadoutCell>()), buf(0), 
         rocreadout(0), pixelreadout(0), zerosuppression(roc.zerosuppression), 
         readoutdelay(roc.readoutdelay), triggered(roc.triggered), 
-        position(roc.position), size(roc.size), delayreference(roc.delayreference)
+        position(roc.position), size(roc.size), delayreference(roc.delayreference),
+        sampledelay(0)
 {
     SetConfiguration(roc.configuration);
 
