@@ -763,7 +763,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 	//find the evaluation time for the group:
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
-		Hit htest = it->GetHit(timestamp, out);
+		Hit htest = it->GetHit(timestamp, out, cell->sampledelay + 1);
 		if(htest.is_valid())
 		{
 			if(hitsampletime == -1e10)
@@ -772,6 +772,35 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
 		}
 	}
+	hitsampletime += 1e-5;
+
+	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+	{
+		//log the loss of pixel hits due to late sampling:
+		if(it->GetDeadTimeEnd() < hitsampletime)
+		{
+			Hit ph = it->LoadHit(-1, out); //get the hit in any case
+			ph.AddReadoutTime("SampleDelayLoss", timestamp);
+			if(out != 0)
+				*out += ph.GenerateString() + "\n";
+
+			//prepare and place a dummy hit to maintain the readout occupancy for a hit not read
+			//  in time:
+
+			ph.SetAddress(it->GetAddressName(), 0);
+			ph.SetTimeStamp(it->GetDeadTimeEnd()+1e-5);	
+				//without this, the hit will not be accepted
+			ph.SetDeadTimeEnd(hitsampletime+1e-5);
+			ph.SetCharge(0);
+
+			it->CreateHit(ph);
+		}
+	}
+
+	//enable sampledelay exceeding a timestamp value (e.g. hit TS = 3.9 with sampledelay = 0.3
+	//		for TS 4):
+	if(hitsampletime > timestamp)
+		return false;
 
 	if(hitsampletime != -1e10)
 	{
