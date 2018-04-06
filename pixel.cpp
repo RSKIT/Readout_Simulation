@@ -147,10 +147,10 @@ bool Pixel::HitIsValid()
 	return hit.is_valid();
 }
 
-Hit Pixel::GetHit(double timestamp, std::string* sbadout)
+Hit Pixel::GetHit(double timestamp, std::string* sbadout, double deletedelay)
 {
 	//hit is already over:
-	if(timestamp != -1 && timestamp >= hit.GetDeadTimeEnd())
+	if(timestamp != -1 && timestamp >= hit.GetDeadTimeEnd()+deletedelay)
 	{
 		//remove hit if it was not read out:
 		if(hit.is_valid())
@@ -172,13 +172,15 @@ Hit Pixel::GetHit(double timestamp, std::string* sbadout)
 
 bool Pixel::CreateHit(Hit hit)
 {
-	if(hit.GetTimeStamp() <= deadtimeend && deadtimeend != -1)
+	if(hit.GetTimeStamp() <= deadtimeend && deadtimeend != -1 
+		&& this->hit.GetAddress(addressname) == address)
 	{
 		if(deadtimeend < hit.GetDeadTimeEnd())
 			deadtimeend = hit.GetDeadTimeEnd();
 		return false;
 	}
-	else if(!HitIsValid() || this->hit.GetDeadTimeEnd() < hit.GetTimeStamp())
+	else if(!HitIsValid() || this->hit.GetDeadTimeEnd() < hit.GetTimeStamp()
+		|| this->hit.GetAddress(addressname) != address)
 	{
 		deadtimeend = hit.GetDeadTimeEnd();
 		this->hit = hit;

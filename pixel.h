@@ -132,9 +132,11 @@ public:
 	 * 
 	 * @param timestamp      - the current timestamp at which the readout happens
 	 * @param sbadout        - output stringstream for logging lost hits
+	 * @param deletedelay    - delay in timestamps after which the hit in the pixel is deleted
+	 *                            (this is to enable sampledelay functionality for PPtB)
 	 * @return               - the hit object if it was valid and available or an empty hit object
 	 */
-	Hit 		GetHit(double timestamp = -1, std::string* sbadout = 0);
+	Hit 		GetHit(double timestamp = -1, std::string* sbadout = 0, double deletedelay = 0);
 	/**
 	 * @brief places a hit into the pixel after checking that it is not occupied
 	 * @details
