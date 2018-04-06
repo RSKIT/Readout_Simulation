@@ -56,7 +56,7 @@ ReadoutCell::ReadoutCell(const ReadoutCell& roc) : addressname(roc.addressname),
         rocreadout(0), pixelreadout(0), zerosuppression(roc.zerosuppression), 
         readoutdelay(roc.readoutdelay), triggered(roc.triggered), 
         position(roc.position), size(roc.size), delayreference(roc.delayreference),
-        sampledelay(0)
+        sampledelay(roc.sampledelay)
 {
     SetConfiguration(roc.configuration);
 

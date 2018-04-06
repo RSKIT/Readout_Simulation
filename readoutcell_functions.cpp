@@ -777,7 +777,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
 		//log the loss of pixel hits due to late sampling:
-		if(it->GetDeadTimeEnd() < hitsampletime)
+		if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
 		{
 			Hit ph = it->LoadHit(-1, out); //get the hit in any case
 			ph.AddReadoutTime("SampleDelayLoss", timestamp);
@@ -906,7 +906,7 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 		if(!it->IsEmpty(hitsampletime) && !it->HitIsValid())
 			alreadyhigh = true;
 		//log the loss of pixel hits due to late sampling:
-		if(it->GetDeadTimeEnd() < hitsampletime)
+		if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
 		{
 			Hit ph = it->LoadHit(-1, out); //get the hit in any case
 			ph.AddReadoutTime("SampleDelayLoss", timestamp);
