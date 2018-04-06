@@ -788,8 +788,6 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 			//  in time:
 
 			ph.SetAddress(it->GetAddressName(), 0);
-			ph.SetTimeStamp(it->GetDeadTimeEnd()+1e-5);	
-				//without this, the hit will not be accepted
 			ph.SetDeadTimeEnd(hitsampletime+1e-5);
 			ph.SetCharge(0);
 
@@ -917,8 +915,6 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 			//  in time:
 
 			ph.SetAddress(it->GetAddressName(), 0);
-			ph.SetTimeStamp(it->GetDeadTimeEnd()+1e-5);	
-				//without this, the hit will not be accepted
 			ph.SetDeadTimeEnd(hitsampletime+1e-5);
 			ph.SetCharge(0);
 
