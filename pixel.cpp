@@ -156,7 +156,7 @@ Hit Pixel::GetHit(double timestamp, std::string* sbadout, double deletedelay)
 		if(hit.is_valid())
 		{
 			//write loss to lost hit file_
-			hit.AddReadoutTime("NotRead", timestamp);
+			hit.AddReadoutTime("NotRead", std::ceil(timestamp));
 			if(sbadout != 0)
 				*sbadout += hit.GenerateString() + "\n";
 			//remove the hit:
