@@ -759,128 +759,123 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 {
 	Hit h;
 	double hitsampletime = -1e10; //time at which the pixel pattern is stored after a hit
+	bool result = false;
 
-	//find the evaluation time for the group:
-	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
-	{
-		Hit htest = it->GetHit(timestamp, out, cell->sampledelay + 1);
-		if(htest.is_valid())
+	// allow several hits per timestamp if the delay between them is larger than the sampledelay:
+	do{			//...}while(hitsampletime != -1e10);
+
+		hitsampletime = -1e10;
+
+		//find the evaluation time for the group:
+		for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 		{
-			if(hitsampletime == -1e10)
-				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
-			else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
-				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+			Hit htest = it->GetHit(timestamp, out, cell->sampledelay + 1);
+			if(htest.is_valid())
+			{
+				if(hitsampletime == -1e10)
+					hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+				else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
+					hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+			}
 		}
-	}
-	hitsampletime += 1e-5;
-
-	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
-	{
-		//tag short hits properly if they are too short to be detected:
-		if(!it->IsEmpty(hitsampletime) && it->GetDeadTimeEnd() < timestamp + 1)
-		{
-			Hit ph = it->LoadHit(-1, out);
-			ph.AddReadoutTime("GroupDeadShort", timestamp);
-			if(out != 0)
-				*out += ph.GenerateString() + "\n";
-		}
-
-		//log the loss of pixel hits due to late sampling:
-		if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
-		{
-			Hit ph = it->LoadHit(-1, out); //get the hit in any case
-			ph.AddReadoutTime("SampleDelayLoss", timestamp);
-			if(out != 0)
-				*out += ph.GenerateString() + "\n";
-
-			//prepare and place a dummy hit to maintain the readout occupancy for a hit not read
-			//  in time:
-
-			ph.SetAddress(it->GetAddressName(), 0);
-			ph.SetDeadTimeEnd(hitsampletime+1e-5);
-			ph.SetCharge(0);
-			ph.ClearReadoutTimes();
-
-			it->CreateHit(ph);
-		}
-	}
-
-	//enable sampledelay exceeding a timestamp value (e.g. hit TS = 3.9 with sampledelay = 0.3
-	//		for TS 4):
-	if(hitsampletime > timestamp)
-		return false;
-
-	if(hitsampletime != -1e10)
-	{
+		hitsampletime += 1e-5;
 
 		for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 		{
-			Hit ph = it->LoadHit(hitsampletime, out);
-
-			if(ph.is_valid())
+			//log the loss of pixel hits due to late sampling:
+			if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
 			{
-				//write out the merging of this hit to the lost hit file before decorating it:
-				if(cell->GetNumPixels() > 1)
-				{
-					ph.AddReadoutTime("merged", timestamp);	
-					if(out != 0)
-						*out += ph.GenerateString() + "\n";
-				}
+				Hit ph = it->LoadHit(-1, out); //get the hit in any case
+				ph.AddReadoutTime("SampleDelayLoss", timestamp);
+				if(out != 0)
+					*out += ph.GenerateString() + "\n";
 
-				//use this hit as group hit if it is the first hit pixel in the group:
-				if(!h.is_valid())
+				//prepare and place a dummy hit to maintain the readout occupancy for a hit not read
+				//  in time:
+
+				ph.SetAddress(it->GetAddressName(), 0);
+				ph.SetDeadTimeEnd(hitsampletime+1e-5);
+				ph.SetCharge(0);
+				ph.ClearReadoutTimes();
+
+				it->CreateHit(ph);
+			}
+		}
+
+		//enable sampledelay exceeding a timestamp value (e.g. hit TS = 3.9 with sampledelay = 0.3
+		//		for TS 4):
+		if(hitsampletime > timestamp)
+			return result;
+
+		if(hitsampletime != -1e10)
+		{
+
+			for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
+			{
+				Hit ph = it->LoadHit(hitsampletime, out);
+
+				if(ph.is_valid())
 				{
-					ph.AddReadoutTime(cell->addressname, timestamp);
-					if(cell->GetReadoutDelayReference() == "")
-						ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+					//write out the merging of this hit to the lost hit file before decorating it:
+					if(cell->GetNumPixels() > 1)
+					{
+						ph.AddReadoutTime("merged", timestamp);	
+						if(out != 0)
+							*out += ph.GenerateString() + "\n";
+					}
+
+					//use this hit as group hit if it is the first hit pixel in the group:
+					if(!h.is_valid())
+					{
+						ph.AddReadoutTime(cell->addressname, timestamp);
+						if(cell->GetReadoutDelayReference() == "")
+							ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
+						else
+							ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
+													+ cell->GetReadoutDelay());
+						h = ph;
+					}
+					//add the pixel address if it is not the first hit pixel in the group:
 					else
-						ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
-												+ cell->GetReadoutDelay());
-					h = ph;
+					{
+						h.SetAddress(it->GetAddressName(),
+										h.GetAddress(it->GetAddressName()) | it->GetAddress());
+						h.SetCharge(h.GetCharge() + ph.GetCharge());
+					}
 				}
-				//add the pixel address if it is not the first hit pixel in the group:
-				else
+				else if(!it->IsEmpty(hitsampletime) && h.is_valid())
 				{
-					h.SetAddress(it->GetAddressName(),
+					if(out != NULL)
+					{
+						Hit sph = h;
+						sph.SetAddress(it->GetAddressName(), it->GetAddress());
+						sph.SetCharge(ph.GetCharge());
+						sph.AddReadoutTime("remerged", timestamp);
+						*out += sph.GenerateString() + "\n";
+					}
+
+					h.SetAddress(it->GetAddressName(), 
 									h.GetAddress(it->GetAddressName()) | it->GetAddress());
 					h.SetCharge(h.GetCharge() + ph.GetCharge());
 				}
 			}
-			else if(!it->IsEmpty(hitsampletime) && h.is_valid())
-			{
-				if(out != NULL)
-				{
-					Hit sph = h;
-					sph.SetAddress(it->GetAddressName(), it->GetAddress());
-					sph.SetCharge(ph.GetCharge());
-					sph.AddReadoutTime("remerged", timestamp);
-					*out += sph.GenerateString() + "\n";
-				}
+		}
 
-				h.SetAddress(it->GetAddressName(), 
-								h.GetAddress(it->GetAddressName()) | it->GetAddress());
-				h.SetCharge(h.GetCharge() + ph.GetCharge());
+		if(h.is_valid() || !cell->zerosuppression)
+		{
+			if(cell->buf->InsertHit(h))
+				result = true;
+			else if(h.is_valid())
+			{
+				h.AddReadoutTime("BufferFull", timestamp);
+				if(out != NULL)
+					*out += h.GenerateString() + "\n";
 			}
 		}
-	}
 
-	if(h.is_valid() || !cell->zerosuppression)
-	{
-		if(cell->buf->InsertHit(h))
-			return true;
-		else if(h.is_valid())
-		{
-			h.AddReadoutTime("BufferFull", timestamp);
-			if(out != NULL)
-				*out += h.GenerateString() + "\n";
+	}while(hitsampletime != -1e10);
 
-			return false;
-		}
-		else
-			return false;
-	}
-	else
-		return false;
+	return result;
 }
 
 PPtBReadoutOrBeforeEdge::PPtBReadoutOrBeforeEdge(ReadoutCell* roc) : PixelReadout(roc)
@@ -892,6 +887,7 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 {
 	Hit h;
 	double hitsampletime = -1e10; //time at which the pixel pattern is stored after a hit
+	double groupdeadtimeend = 1e10;	//time at which the comparator goes low again
 
 	//find the evaluation time for the group:
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
@@ -900,9 +896,15 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 		if(htest.is_valid())
 		{
 			if(hitsampletime == -1e10)
+			{
 				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+				groupdeadtimeend = htest.GetDeadTimeEnd();
+			}
 			else if(hitsampletime > htest.GetTimeStamp() + cell->sampledelay)
 				hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
+
+			if(groupdeadtimeend < htest.GetDeadTimeEnd())
+				groupdeadtimeend = htest.GetDeadTimeEnd();
 		}
 	}
 	hitsampletime += 1e-5;
@@ -914,8 +916,9 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 		if(!it->IsEmpty(hitsampletime) && !it->HitIsValid())
 			alreadyhigh = true;
 
-		//tag short hits properly if they are too short to be detected:
-		if(!it->IsEmpty(hitsampletime) && it->GetDeadTimeEnd() < timestamp + 1)
+		// tag hits with longer time walk and earlier dead time ending:
+		if(it->HitIsValid() && it->IsEmpty(hitsampletime) 
+				&& it->GetDeadTimeEnd() < groupdeadtimeend)
 		{
 			Hit ph = it->LoadHit(-1, out);
 			ph.AddReadoutTime("GroupDeadShort", timestamp);
