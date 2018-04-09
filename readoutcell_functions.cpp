@@ -790,6 +790,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 			ph.SetAddress(it->GetAddressName(), 0);
 			ph.SetDeadTimeEnd(hitsampletime+1e-5);
 			ph.SetCharge(0);
+			ph.ClearReadoutTimes();
 
 			it->CreateHit(ph);
 		}
@@ -917,6 +918,7 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 			ph.SetAddress(it->GetAddressName(), 0);
 			ph.SetDeadTimeEnd(hitsampletime+1e-5);
 			ph.SetCharge(0);
+			ph.ClearReadoutTimes();	//remove the "SampleDelayLoss" Tag from the hit
 
 			it->CreateHit(ph);
 		}
