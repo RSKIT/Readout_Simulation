@@ -776,6 +776,15 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 
 	for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 	{
+		//tag short hits properly if they are too short to be detected:
+		if(!it->IsEmpty(hitsampletime) && it->GetDeadTimeEnd() < timestamp + 1)
+		{
+			Hit ph = it->LoadHit(-1, out);
+			ph.AddReadoutTime("GroupDeadShort", timestamp);
+			if(out != 0)
+				*out += ph.GenerateString() + "\n";
+		}
+
 		//log the loss of pixel hits due to late sampling:
 		if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
 		{
@@ -904,6 +913,16 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 	{
 		if(!it->IsEmpty(hitsampletime) && !it->HitIsValid())
 			alreadyhigh = true;
+
+		//tag short hits properly if they are too short to be detected:
+		if(!it->IsEmpty(hitsampletime) && it->GetDeadTimeEnd() < timestamp + 1)
+		{
+			Hit ph = it->LoadHit(-1, out);
+			ph.AddReadoutTime("GroupDeadShort", timestamp);
+			if(out != 0)
+				*out += ph.GenerateString() + "\n";
+		}
+
 		//log the loss of pixel hits due to late sampling:
 		if(it->GetDeadTimeEnd() < hitsampletime && it->HitIsValid())
 		{
