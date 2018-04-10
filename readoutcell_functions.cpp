@@ -778,7 +778,8 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 					hitsampletime = htest.GetTimeStamp() + cell->sampledelay;
 			}
 		}
-		hitsampletime += 1e-5;
+		if(hitsampletime != -1e10)
+			hitsampletime += 1e-5;
 
 		for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 		{
