@@ -443,16 +443,16 @@ void Simulator::GenerateEvents(int events, double starttime)
 			    break;
 			case(ITkFile):
 			    eventgenerator.LoadITkEvents(it.source, it.firstevent, it.numevents, it.starttime,
-			    								it.eta, TCoord<double>::Null, -1, !archiveonly,
+			    								it.eta, it.granularity, -1, !archiveonly,
 			    								it.distance, it.sort, 
 			    								(outputlevel & eventgeneration), tsprintpitch);
 			    break;
 		    case(ProcessedITkFile):
 		    	eventgenerator.LoadProcessedITkEvents(it.source, it.firstevent, it.numevents,
 		    								it.starttime, it.numgenevents, it.freqscaling, it.eta,
-		    								it.phi, TCoord<double>::Null, -1, !archiveonly,
-		    								(outputlevel & eventgeneration), it.sort,
-		    								tsprintpitch);
+		    								it.noisescaling, it.xtalkscaling, it.granularity,
+		    								-1, !archiveonly, (outputlevel & eventgeneration), 
+		    								it.sort, tsprintpitch);
 		    	break;
 			default:
 				std::cout << "Unknown Data Type for source \"" << it.source << "\"" << std::endl;
@@ -1046,6 +1046,25 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 			if(newelement->QueryDoubleAttribute("regroup", &neweventgroup.distance) 
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.distance = 0;
+			if(newelement->FirstChildElement() != 0)
+			{ 
+				tinyxml2::XMLElement* child = newelement->FirstChildElement();
+				if(std::string(child->Value()).compare("Scan") == 0)
+					child = ScanNode(child);
+
+				if(std::string(child->Value()).compare("Granularity") == 0)
+					neweventgroup.granularity = LoadTCoord(child);
+				else
+				{
+					std::cerr << "Unknown Element: \"" << std::string(child->Value()) 
+								<< "\" in Element \"" << std::string(newelement->Value()) << "\""
+								<< std::endl;
+
+					logcontent += std::string("Loading Error: Unknown Element \"")
+								 + std::string(child->Value()) + "\" found in Element \"" 
+								 + std::string(newelement->Value()) + "\n";
+				}
+			}
 
 			eventstoload.push_back(neweventgroup);
 		}
@@ -1070,11 +1089,35 @@ void Simulator::LoadEventGenerator(tinyxml2::XMLElement* eventgen)
 				neweventgroup.freqscaling = 1;
 			if(newelement->QueryIntAttribute("eta", &neweventgroup.eta) != tinyxml2::XML_NO_ERROR)
 				neweventgroup.eta = 0;
-			if(newelement->QueryIntAttribute("phi", &neweventgroup.phi) != tinyxml2::XML_NO_ERROR)
-				neweventgroup.phi = -1;
+			if(newelement->QueryDoubleAttribute("noisescaling", &neweventgroup.noisescaling)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.noisescaling = 1;
+			if(newelement->QueryDoubleAttribute("xtalkscaling", &neweventgroup.xtalkscaling)
+						!= tinyxml2::XML_NO_ERROR)
+				neweventgroup.xtalkscaling = 1;
 			if(newelement->QueryBoolAttribute("sort", &neweventgroup.sort) 
 						!= tinyxml2::XML_NO_ERROR)
 				neweventgroup.sort = false;
+
+			if(newelement->FirstChildElement() != 0)
+			{ 
+				tinyxml2::XMLElement* child = newelement->FirstChildElement();
+				if(std::string(child->Value()).compare("Scan") == 0)
+					child = ScanNode(child);
+
+				if(std::string(child->Value()).compare("Granularity") == 0)
+					neweventgroup.granularity = LoadTCoord(child);
+				else
+				{
+					std::cerr << "Unknown Element: \"" << std::string(child->Value()) 
+								<< "\" in Element \"" << std::string(newelement->Value()) << "\""
+								<< std::endl;
+
+					logcontent += std::string("Loading Error: Unknown Element \"")
+								 + std::string(child->Value()) + "\" found in Element \"" 
+								 + std::string(newelement->Value()) + "\n";
+				}
+			}
 
 			eventstoload.push_back(neweventgroup);
 		}

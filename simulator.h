@@ -42,7 +42,8 @@ public:
 	enum datatypes {GenerateNewEvents=0, PixelHitFile=1, ITkFile=2, ProcessedITkFile=3};
 	struct eventdata{
 		eventdata() : datatype(-1), source(""), starttime(0.), numevents(0), firstevent(0), 
-				numgenevents(0), freqscaling(1), eta(0), phi(-1), sort(false), distance(0) {}
+				numgenevents(0), freqscaling(1), eta(0), noisescaling(1), xtalkscaling(1),
+				sort(false), distance(0), granularity(TCoord<double>::Null) {}
 		int datatype;
 		std::string source;
 		double starttime;
@@ -51,9 +52,11 @@ public:
 		int numgenevents;
 		double freqscaling;
 		int eta;
-		int phi;
+		double noisescaling;
+		double xtalkscaling;
 		bool sort;
 		double distance;
+		TCoord<double> granularity;
 	};
 
 	enum outputkinds   {loadsimulation		= 1,

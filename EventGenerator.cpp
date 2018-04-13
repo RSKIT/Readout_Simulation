@@ -24,25 +24,24 @@
 
 EventGenerator::EventGenerator() : filename(""), eventindex(0), clustersize(0), eventrate(0), 
 		seed(0), threads(0), inclinationsigma(0.3), chargescale(1), numsigmas(3), 
-		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0), 
 		triggerlength(0), triggerstate(true), triggerturnofftime(-1), triggeronclusters(true), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
-		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::string("")),
-		lasteventtimestamp(-1)
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),	pointsindtspline(-1), 
+		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
+		pointsintwspline(-1), genoutput(std::string("")), lasteventtimestamp(-1)
 {
 	SetSeed(0);
 }
 
 EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventindex(0), 
 		clustersize(0), eventrate(0), seed(0), threads(0), inclinationsigma(0.3), chargescale(1), 
-		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), 
-		triggerstate(true), triggerturnofftime(-1), triggerturnontimes(std::list<int>()),
-		totalrate(true), deadtime(tk::spline()), deadtimeX(std::vector<double>()), 
-		deadtimeY(std::vector<double>()), pointsindtspline(-1), timewalk(tk::spline()), 
-		timewalkX(std::vector<double>()), timewalkY(std::vector<double>()), pointsintwspline(-1), 
-		genoutput(std::string("")), lasteventtimestamp(-1), triggeronclusters(true)
+		numsigmas(3), triggerprobability(0), triggerdelay(0), triggerlength(0), triggerstate(true), 
+		triggerturnofftime(-1), triggerturnontimes(std::list<int>()), totalrate(true), 
+		deadtime(tk::spline()), deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
+		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
+		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::string("")), 
+		lasteventtimestamp(-1), triggeronclusters(true)
 {
 	detectors.push_back(detector);
 
@@ -51,13 +50,12 @@ EventGenerator::EventGenerator(DetectorBase* detector) : filename(""), eventinde
 
 EventGenerator::EventGenerator(int seed, double clustersize, double rate) : filename(""), 
 		eventindex(0), chargescale(1), threads(0), inclinationsigma(0.3), 
-		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0),
-		triggerlength(0), triggerstate(true), triggerturnofftime(-1), triggeronclusters(true),
+		detectors(std::vector<DetectorBase*>()), triggerprobability(0), triggerdelay(0), 
+		triggerlength(0), triggerstate(true), triggerturnofftime(-1), triggeronclusters(true), 
 		triggerturnontimes(std::list<int>()), totalrate(true), deadtime(tk::spline()), 
-		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()),
-		pointsindtspline(-1), timewalk(tk::spline()), timewalkX(std::vector<double>()), 
-		timewalkY(std::vector<double>()), pointsintwspline(-1), genoutput(std::string("")),
-		lasteventtimestamp(-1)
+		deadtimeX(std::vector<double>()), deadtimeY(std::vector<double>()), pointsindtspline(-1), 
+		timewalk(tk::spline()), timewalkX(std::vector<double>()), timewalkY(std::vector<double>()),
+		pointsintwspline(-1), genoutput(std::string("")), lasteventtimestamp(-1)
 {
 	this->seed 		  = seed;
 	SetSeed(seed);
@@ -200,7 +198,6 @@ void EventGenerator::SetChargeScaling(double scalefactor)
 	if(scalefactor != 0)
 		chargescale = scalefactor;
 }
-
 
 double EventGenerator::GetMinSize()
 {
@@ -835,6 +832,8 @@ double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double
 	xmax2 = (xmax2 * detectorsize[0]) / granularity[0];
 	ymax = (ymax * detectorsize[1]) / granularity[1];
 
+	double volume = granularity.volume();
+
 	for(auto& it : charge)
 	{
 		if(it.phiindex > ymax)
@@ -852,7 +851,7 @@ double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double
 		TCoord<double> cend   = cstart + granularity;
 
 		pixelcharge += it.charge * chargescale * 
-						(OverlapVolume(start, end, cstart, cend).volume() / granularity.volume());
+						(OverlapVolume(start, end, cstart, cend).volume() / volume);
 	}
 
     if(print)
@@ -862,12 +861,14 @@ double EventGenerator::GetCharge(std::vector<ChargeDistr>& charge, TCoord<double
 }
 
 double EventGenerator::GetCharge(std::vector<ChargeDistrModule>& charge, TCoord<double> position,
-									TCoord<double> size, TCoord<double> granularity, bool print)
+									TCoord<double> size, TCoord<double> granularity, 
+									double noisescaling, double xtalkscaling, bool print)
 {
 	TCoord<double> start = position;
 	TCoord<double> end   = position + size;
 
 	double pixelcharge = 0;
+	double volume = granularity.volume();
 
 	for(auto& it : charge)
 	{
@@ -876,8 +877,12 @@ double EventGenerator::GetCharge(std::vector<ChargeDistrModule>& charge, TCoord<
 								 0};
 		TCoord<double> cend   = cstart + granularity;
 
-		pixelcharge += it.charge * chargescale * 
-						(OverlapVolume(start, end, cstart, cend).volume() / granularity.volume());
+		double totalcharge = it.charge_track + noisescaling * it.charge_noise 
+								+ xtalkscaling * it.charge_xtalk;
+
+
+		pixelcharge += totalcharge * chargescale * 
+						(OverlapVolume(start, end, cstart, cend).volume() / volume);
 	}
 
     if(print)
@@ -1598,8 +1603,8 @@ int EventGenerator::LoadITkEvents(std::string filename, int firstline, int numli
 
 int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, int numlines,
 					double firsttime, int numeventstogenerate, double freqscaling, 
-					int eta, int phi, TCoord<double> granularity, int numthreads, bool writeout,
-					bool print, bool sort, int updatepitch)
+					int eta, double noisescaling, double xtalkscaling, TCoord<double> granularity,
+					int numthreads, bool writeout, bool print, bool sort, int updatepitch)
 {
 	std::map<Event, std::vector<ChargeDistrModule> > clusters;
 
@@ -1650,22 +1655,30 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	unsigned int   bcid;
 	bool           trigger;
 	unsigned char  etamodule;
-	unsigned char  phimodule;
 	unsigned short etaindex;
 	unsigned short phiindex;
+	//charge is available as composition and total charge:
+	float          charge_track;
+	float          charge_noise;
+	float          charge_xtalk;
 	float          charge;
 
 	unsigned int maxbcid = 0;
 	unsigned int minbcid = 4e9;
 
-	hits->SetBranchAddress("charge", &charge);
+	//set up the branches from the tree to read:
 	hits->SetBranchAddress("bcid", &bcid);
+	hits->SetBranchAddress("trigger", &trigger);
 	hits->SetBranchAddress("eta_module", &etamodule);
-	hits->SetBranchAddress("phi_module", &phimodule);
-	hits->SetBranchAddress("phi_index", &phiindex);
 	hits->SetBranchAddress("eta_index", &etaindex);
-	hits->SetBranchAddress("trigger", & trigger);
+	hits->SetBranchAddress("phi_index", &phiindex);
 
+	hits->SetBranchAddress("charge_track", &charge_track);
+	hits->SetBranchAddress("charge_noise", &charge_noise);
+	hits->SetBranchAddress("charge_xtalk", &charge_xtalk);
+	hits->SetBranchAddress("charge", &charge);
+
+	//set up the entries from the tree to read:
 	if(numlines == -1)
 		numlines = hits->GetEntries();
 	else
@@ -1674,6 +1687,7 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	if(numlines > hits->GetEntries())
 		numlines = hits->GetEntries();
 
+	//actual reading:
 	for(int i = firstline; i < numlines; ++i)
 	{
 		hits->GetEntry(i);
@@ -1681,15 +1695,19 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 		if(eta != 0 && etamodule != eta)
 			continue;
 
-		ChargeDistrModule singlecluster;
-		singlecluster.charge   = charge;
-		singlecluster.etaindex = etaindex;
-		singlecluster.phiindex = phiindex;
 		Event singleevent;
-		singleevent.etamodule  = etamodule;
-		singleevent.phimodule  = phimodule;
 		singleevent.bcid       = bcid;
 		singleevent.trigger    = trigger;
+		singleevent.etamodule  = etamodule;
+
+		ChargeDistrModule singlecluster;
+		singlecluster.etaindex = etaindex;
+		singlecluster.phiindex = phiindex;
+		singlecluster.charge_track = charge_track;
+		singlecluster.charge_noise = charge_noise;
+		singlecluster.charge_xtalk = charge_xtalk; 
+
+		//keep track of extremal bcids:
 		if(bcid > maxbcid)
 			maxbcid = bcid;
 		else if(bcid < minbcid)
@@ -1718,7 +1736,7 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	if(numthreads < 0)
 		numthreads = threads;
 	if(numthreads == 0)
-		numthreads = std::thread::hardware_concurrency();
+		numthreads = std::thread::hardware_concurrency() - 1;
 
 	std::vector<Event> events[numthreads];
 
@@ -1732,15 +1750,18 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 		if(eta != 0)
 			randomevent.etamodule = eta;
 		else
-			randomevent.etamodule = (generator() % 21) + 1;	//possible eta values: [1, 21]
-		if(phi != -1)
-			randomevent.phimodule = phi;
-		else
-			randomevent.phimodule = generator() % 54;	//54 modules form a ring
+			randomevent.etamodule = (generator() % 26) + 1;	//possible eta values: [1, 26]
 		randomevent.bcid      = (generator() % bcidrange) + minbcid;
 
 		if(triggerprobability > 0)
 			randomevent.trigger = (generator() / genmax < triggerprobability);
+		//use the trigger data in the data file provided for triggerprobability < 0
+		else if(triggerprobability < 0)
+		{
+			randomevent.trigger = true;
+			if(clusters.find(randomevent) == clusters.end())
+				randomevent.trigger = false;
+		}
 
 		if(i/eventsperthread < numthreads)
 			events[i/eventsperthread].push_back(randomevent);
@@ -1755,7 +1776,7 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	if(numthreads < 0)
 		numthreads = threads;
 	if(numthreads == 0)
-		numthreads = std::thread::hardware_concurrency();
+		numthreads = std::thread::hardware_concurrency() - 1;
 
 	//variables for the worker threads:
 	std::vector<Hit> threadhits[numthreads];
@@ -1769,8 +1790,8 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	for(int i = 0; i < numthreads; ++i)
 	{
 		std::thread* worker = new std::thread(GenerateHitsFromProcessedChargeDistributions, this, 
-												&(events[i]), &clusters, granularity, 
-												&(threadhits[i]), &(outputs[i]),
+												&(events[i]), &clusters, granularity,noisescaling,
+												xtalkscaling, &(threadhits[i]), &(outputs[i]),
 												eventindex + firsteventid, threadfirsttime, 
 												freqscaling, i, print, updatepitch);
 
@@ -1819,8 +1840,7 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 	double eventtime = firsttime;
 	for(int i = 0; i < numthreads; ++i)
 	{
-		//overwrite trigger information if provided:
-		if(triggerprobability > 0)
+		if(triggerprobability >= 0)
 		{
 			for(auto& it : events[i])
 			{
@@ -1830,37 +1850,7 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 				eventtime += freqscaling;
 			}
 		}
-		//keep data trigger information:
-		else
-		{
-			for(auto& it : events[i])
-			{
-				auto evnt = clusters.find(it);
-				if(evnt != clusters.end())
-				{
-					if(evnt->first.trigger)
-						AddOnTimeStamp(ceil(eventtime + triggerdelay));
-				}
-
-				eventtime += freqscaling;
-			}
-		}
 	}
-
-	/*
-	//already done during hit generation:
-	//prepare output of the trigger timestamps:
-	for(auto& it : triggerturnontimes)
-	{
-		std::stringstream s("");
-		s << "# Trigger " << it << " - " << it + triggerlength << std::endl;
-		std::string trigstring = s.str();
-
-		if(fout.is_open())
-			fout << trigstring;
-		genoutput += trigstring;
-	}
-	*/
 
 	fout.close();
 
@@ -2234,7 +2224,8 @@ void EventGenerator::SeparateClusters(
 void EventGenerator::GenerateHitsFromProcessedChargeDistributions(EventGenerator* itself, 
 						std::vector<Event>* events, 
 						std::map<Event, std::vector<ChargeDistrModule> >* data, 
-						TCoord<double> granularity, std::vector<Hit>* pixelhits, 
+						TCoord<double> granularity, double noisescaling, double xtalkscaling,
+						std::vector<Hit>* pixelhits, 
 						std::string* output, int firsteventid, double firsttime, 
 						double freqscaling, int id, bool print,	int updatepitch)
 {
@@ -2318,7 +2309,8 @@ void EventGenerator::GenerateHitsFromProcessedChargeDistributions(EventGenerator
 					continue;
 
 				localhits = itself->ScanReadoutCell(hittemplate, &(*rit), chargedist->second, 
-													start, end, granularity, false);
+													start, end, granularity, noisescaling,
+													xtalkscaling, false);
 
 				//copy the pixel hits to the output vector:
 				pixelhits->insert(pixelhits->end(), localhits.begin(), localhits.end());
@@ -2349,7 +2341,8 @@ void EventGenerator::GenerateHitsFromProcessedChargeDistributions(EventGenerator
 
 std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell, 
 						std::vector<ChargeDistrModule>& charge, TCoord<double> chargestart, 
-						TCoord<double> chargeend, TCoord<double> granularity, bool print)
+						TCoord<double> chargeend, TCoord<double> granularity, double noisescaling,
+						double xtalkscaling, bool print)
 {
 	std::vector<Hit> globalhits;
 
@@ -2368,7 +2361,8 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 				continue;
 
 			std::vector<Hit> localhits = ScanReadoutCell(hit, &(*it), charge, chargestart,
-															chargeend, granularity, print);
+															chargeend, granularity, noisescaling,
+															xtalkscaling, print);
 
 			globalhits.insert(globalhits.end(), localhits.begin(), localhits.end());
 		}
@@ -2379,7 +2373,7 @@ std::vector<Hit> EventGenerator::ScanReadoutCell(Hit hit, ReadoutCell* cell,
 		for(auto it = cell->GetPixelsBegin(); it != cell->GetPixelsEnd(); ++it)
 		{
 			double pixelcharge = GetCharge(charge, it->GetPosition(), it->GetSize(), granularity,
-											print);
+											noisescaling, xtalkscaling, print);
 
 			if(pixelcharge > it->GetThreshold() && 
 				(it->GetEfficiency() == 1 || generator()/genmax 
