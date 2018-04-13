@@ -1350,7 +1350,7 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	//Configuration of the ROC:
 	int configuration = 0;
 	
-	//PPtB Readout (without alternative at the moment):
+	//PPtB Readout:
 	bool pptb = true;
 	nam = parent->Attribute("pixelreadout");
 	std::string pptbro = (nam != 0)?std::string(nam):"";
@@ -1362,10 +1362,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 	{
 		configuration |= ReadoutCell::PPTB;
 
-		std::cerr << "Unknown Pixel Readout Scheme \"" << pptbro << "\" in ROC \"" 
-					<< addressname << "\"" << std::endl;
-		logcontent += std::string("Loading Error: Unknown Pixel Readout Scheme \"") + pptbro
-						+ "\" in ROC \"" + addressname + "\"\n";
+		if(getNode(parent,"Pixel") != 0) //only write out an error if this feature is used
+		{
+			std::cerr << "Unknown Pixel Readout Scheme \"" << pptbro << "\" in ROC \"" 
+						<< addressname << "\"" << std::endl;
+			logcontent += std::string("Loading Error: Unknown Pixel Readout Scheme \"") + pptbro
+							+ "\" in ROC \"" + addressname + "\"\n";
+		}
 	}
 	
 	//zero suppression:
@@ -1458,10 +1461,13 @@ ReadoutCell Simulator::LoadROC(tinyxml2::XMLElement* parent, TCoord<double> pixe
 		sampledelay = 0;
 	if(!roc.SetSampleDelay(sampledelay))
 	{
-		std::cerr << "Sample Delay was not accepted by ReadoutCell \"" << roc.GetAddressName()
-					<< "\"" << std::endl;
-		logcontent += std::string("Loading Error: Sample Delay was not accepted by ReadoutCell \"")
-						+ roc.GetAddressName() + "\"\n";
+		if(getNode(parent,"Pixel") != 0)	//sample delay only necessary if pixels are present
+		{
+			std::cerr << "Sample Delay was not accepted by ReadoutCell \"" << roc.GetAddressName()
+						<< "\"" << std::endl;
+			logcontent += std::string("Loading Error: Sample Delay was not accepted by")
+							+ " ReadoutCell \"" + roc.GetAddressName() + "\"\n";
+		}
 	}
 
 	tinyxml2::XMLElement* child = parent->FirstChildElement();

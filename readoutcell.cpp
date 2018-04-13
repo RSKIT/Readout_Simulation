@@ -717,7 +717,7 @@ double ReadoutCell::GetSampleDelay()
 
 bool ReadoutCell::SetSampleDelay(double delay)
 {
-    if(delay < readoutdelay)
+    if(delay <= readoutdelay)
     {
         sampledelay = delay;
         return true;
