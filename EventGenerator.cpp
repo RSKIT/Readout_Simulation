@@ -1701,8 +1701,17 @@ int EventGenerator::LoadProcessedITkEvents(std::string filename, int firstline, 
 		singleevent.etamodule  = etamodule;
 
 		ChargeDistrModule singlecluster;
-		singlecluster.etaindex = etaindex;
-		singlecluster.phiindex = phiindex;
+		if(etamodule <= 13)
+		{
+			singlecluster.etaindex = etaindex;
+			singlecluster.phiindex = phiindex;
+		}
+		//the chips on the inclined modules are rotated by 90°:
+		else
+		{
+			singlecluster.etaindex = phiindex;
+			singlecluster.phiindex = etaindex;
+		}
 		singlecluster.charge_track = charge_track;
 		singlecluster.charge_noise = charge_noise;
 		singlecluster.charge_xtalk = charge_xtalk; 
