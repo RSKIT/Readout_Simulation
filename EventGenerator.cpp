@@ -970,6 +970,8 @@ bool EventGenerator::SaveDeadTimeSpline(std::string filename, double resolution)
 	if(!f.is_open())
 		return false;
 
+	f << "# Dead Time Spline" << std::endl << "# Charge (in e); Dead Time (in TS)" << std::endl;
+
 	for(double x = min; x < max; x += resolution)
 		f << x << " " << GetDeadTime(x) << std::endl;
 
@@ -1055,6 +1057,8 @@ bool EventGenerator::SaveTimeWalkSpline(std::string filename, double resolution)
 	f.open(filename.c_str(), std::ios::out | std::ios::app);
 	if(!f.is_open())
 		return false;
+
+	f << "# Time Walk Spline" << std::endl << "# Charge (in e); Time Walk (in TS)" << std::endl;
 
 	for(double x = min; x < max; x += resolution)
 		f << x << " " << GetTimeWalk(x) << std::endl;
