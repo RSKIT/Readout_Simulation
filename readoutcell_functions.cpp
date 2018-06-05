@@ -836,7 +836,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 							ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
 													+ cell->GetReadoutDelay());
 						//add the still dead pixels to the hit read before this pixel:
-						if(h.GetCharge() != -1)
+						if(h.GetAddress(it->GetAddressName()) != -1)
 						{
 							ph.SetAddress(it->GetAddressName(), it->GetAddress()
 															| h.GetAddress(it->GetAddressName()));
@@ -866,7 +866,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 					}
 
 					//first dead pixel without a hit in the group:
-					if(h.GetCharge() == -1)
+					if(h.GetAddress(it->GetAddressName()) == -1)
 					{
 						h.SetAddress(it->GetAddressName(), it->GetAddress());
 						h.SetCharge(ph.GetCharge());
@@ -904,7 +904,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 				h.SetCharge(it.GetCharge());
 				h.ClearReadoutTimes();
 				h.AddReadoutTime("remerged", it.GetReadoutTime("remerged"));
-				*out += h.GenerateString();
+				*out += h.GenerateString() + "\n";
 			}
 
 			remergedhits.clear();
