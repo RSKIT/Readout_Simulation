@@ -829,7 +829,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 					//use this hit as group hit if it is the first hit pixel in the group:
 					if(!h.is_valid())
 					{
-						ph.AddReadoutTime(cell->addressname, timestamp);
+						ph.AddReadoutTime(cell->addressname, ceil(ph.GetTimeStamp()));
 						if(cell->GetReadoutDelayReference() == "")
 							ph.SetAvailableTime(timestamp + cell->GetReadoutDelay());
 						else
@@ -1022,7 +1022,7 @@ bool PPtBReadoutOrBeforeEdge::Read(int timestamp, std::string* out)
 				else
 					ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference())
 											+ cell->GetReadoutDelay());
-				ph.AddReadoutTime(cell->addressname, timestamp);
+				ph.AddReadoutTime(cell->addressname, ceil(ph.GetTimeStamp()));
 				
 				h = ph;
 			}
