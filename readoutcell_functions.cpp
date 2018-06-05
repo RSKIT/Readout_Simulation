@@ -766,6 +766,8 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 
 		hitsampletime = -1e10;
 
+		std::vector<Hit> remergedhits;
+
 		//find the evaluation time for the group:
 		for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 		{
@@ -810,7 +812,6 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 
 		if(hitsampletime != -1e10)
 		{
-
 			for(auto it = cell->pixelvector.begin(); it != cell->pixelvector.end(); ++it)
 			{
 				Hit ph = it->LoadHit(hitsampletime, out);
@@ -856,11 +857,12 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 				{
 					if(out != NULL)
 					{
-						Hit sph = h;
+						Hit sph;
 						sph.SetAddress(it->GetAddressName(), it->GetAddress());
 						sph.SetCharge(ph.GetCharge());
 						sph.AddReadoutTime("remerged", timestamp);
-						*out += sph.GenerateString() + "\n";
+						remergedhits.push_back(sph);
+						//*out += sph.GenerateString() + "\n";
 					}
 
 					//first dead pixel without a hit in the group:
@@ -891,6 +893,21 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 				if(out != NULL)
 					*out += h.GenerateString() + "\n";
 			}
+		}
+
+		if(out != NULL && h.is_valid())
+		{
+			for(auto& it : remergedhits)
+			{
+				h.SetAddress(cell->pixelvector.front().GetAddressName(), 
+					it.GetAddress(cell->pixelvector.front().GetAddressName()));
+				h.SetCharge(it.GetCharge());
+				h.ClearReadoutTimes();
+				h.AddReadoutTime("remerged", it.GetReadoutTime("remerged"));
+				*out += h.GenerateString();
+			}
+
+			remergedhits.clear();
 		}
 
 		h = Hit();
