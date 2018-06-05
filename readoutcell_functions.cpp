@@ -857,9 +857,9 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 				{
 					if(out != NULL)
 					{
-						Hit sph;
+						Hit sph = it->GetHit();
 						sph.AddAddress(it->GetAddressName(), it->GetAddress());
-						sph.SetCharge(ph.GetCharge());
+						//sph.SetCharge(ph.GetCharge());
 						sph.AddReadoutTime("remerged", timestamp);
 						remergedhits.push_back(sph);
 						//*out += sph.GenerateString() + "\n";
@@ -899,6 +899,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 		{
 			for(auto& it : remergedhits)
 			{
+				h.SetEventIndex(it.GetEventIndex());
 				h.SetAddress(cell->pixelvector.front().GetAddressName(), 
 					it.GetAddress(cell->pixelvector.front().GetAddressName()));
 				h.SetCharge(it.GetCharge());

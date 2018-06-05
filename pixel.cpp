@@ -193,7 +193,7 @@ bool Pixel::CreateHit(Hit hit)
 void Pixel::ClearHit(bool resetcharge)
 {
 	//hit.SetTimeStamp(-1);	//used for checking evaluation with edge detect therefore commented out
-	hit.SetEventIndex(-1);
+	//hit.SetEventIndex(-1);	//Test (05.06.18)
 	//hit.SetDeadTimeEnd(-1);	//same reason as time stamp
 	if(resetcharge)
 		hit.SetCharge(-1);
