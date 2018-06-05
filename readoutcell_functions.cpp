@@ -757,7 +757,7 @@ PPtBReadout::PPtBReadout(ReadoutCell* roc) : PixelReadout(roc)
 
 bool PPtBReadout::Read(int timestamp, std::string* out)
 {
-	Hit h;
+	Hit h = Hit();
 	double hitsampletime = -1e10; //time at which the pixel pattern is stored after a hit
 	bool result = false;
 
@@ -834,6 +834,14 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 						else
 							ph.SetAvailableTime(ph.GetReadoutTime(cell->GetReadoutDelayReference()) 
 													+ cell->GetReadoutDelay());
+						//add the still dead pixels to the hit read before this pixel:
+						if(h.GetCharge() != -1)
+						{
+							ph.SetAddress(it->GetAddressName(), it->GetAddress()
+															| h.GetAddress(it->GetAddressName()));
+							ph.SetCharge(ph.GetCharge() + h.GetCharge());
+						}
+
 						h = ph;
 					}
 					//add the pixel address if it is not the first hit pixel in the group:
@@ -844,7 +852,7 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 						h.SetCharge(h.GetCharge() + ph.GetCharge());
 					}
 				}
-				else if(!it->IsEmpty(hitsampletime) && h.is_valid())
+				else if(!it->IsEmpty(hitsampletime)) // && h.is_valid())
 				{
 					if(out != NULL)
 					{
@@ -855,9 +863,20 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 						*out += sph.GenerateString() + "\n";
 					}
 
-					h.SetAddress(it->GetAddressName(), 
-									h.GetAddress(it->GetAddressName()) | it->GetAddress());
-					h.SetCharge(h.GetCharge() + ph.GetCharge());
+					//first dead pixel without a hit in the group:
+					if(h.GetCharge() == -1)
+					{
+						h.SetAddress(it->GetAddressName(), it->GetAddress());
+						h.SetCharge(ph.GetCharge());
+					}
+					//add address and charge if not the first pixel:
+					else
+					{
+						h.SetAddress(it->GetAddressName(), 
+										h.GetAddress(it->GetAddressName()) | it->GetAddress());
+						h.SetCharge(h.GetCharge() + ph.GetCharge());
+					}
+
 				}
 			}
 		}
@@ -873,6 +892,8 @@ bool PPtBReadout::Read(int timestamp, std::string* out)
 					*out += h.GenerateString() + "\n";
 			}
 		}
+
+		h = Hit();
 
 	}while(hitsampletime != -1e10);
 
