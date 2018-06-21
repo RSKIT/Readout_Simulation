@@ -30,6 +30,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <algorithm>
 
 #include "TGraph.h"
 #include "TH1.h"
@@ -174,6 +175,14 @@ public:
      * @return               - the number of hits in the category
      */
     int     GetNumHits(int input = Pass);
+
+    /**
+     * @brief sorts the hits in the passed category chronologically using the timestamp
+     * @details 
+     * 
+     * @param input          - the category of the hits to sort (Pass, Fail, Input)
+     */
+    void    SortHits(int input = Pass);
 
     /**
      * @brief generates a scatter plot from the data provided (for options for xaxis and yaxis,

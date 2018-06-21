@@ -167,6 +167,16 @@ int Evaluation::GetNumHits(int input)
         return 0;
 }
 
+void Evaluation::SortHits(int input)
+{
+    std::vector<Hit>* vec = GetVectorPointer(input);
+    if(vec == 0)
+        return;
+
+    std::sort(vec->begin(), vec->end());
+}
+
+
 TGraph* Evaluation::GenerateScatterplot(std::string xaxis, std::string yaxis, int input)
 {
     std::vector<Hit>* vec = GetVectorPointer(input);
