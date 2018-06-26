@@ -36,6 +36,8 @@
 #include "EventGenerator.h"
 #include "simulator.h"
 
+#include "build.cpp"
+
 std::string GetDateTime()
 {
     std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -90,7 +92,8 @@ int main(int argc, char** argv)
               << "    *        developed at KIT-ADL           *\n"
               << "    * by Rudolf Schimassek and Felix Ehrler *\n"
               << "    *                                       *\n"
-              << "    *  Version: 0.9.13.1-beta (05.06.2018)  *\n"
+              << "    *  Version: 0.9.13.1-beta (26.06.2018)  *\n"
+              << "    *               build " << BUILD_ID << "               *\n"
               << "    *                                       *\n"
               << "    *****************************************\n" 
               << std::endl;

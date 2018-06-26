@@ -20,4 +20,25 @@
 #   This file is part of the ROME simulation framework.
 #
 
+import os.path
+
+def countup(filename):
+  
+  if os.path.isfile("master.key"):
+    buildnumber = open(filename,"r");
+    text = buildnumber.read(16);
+    id   = buildnumber.read(10);
+    buildnumber.close();
+    id   = int(id) + 1
+    buildnumber = open(filename,"w");
+    buildnumber.write(text+" " + str(id));
+    buildnumber.close();
+
+# Count up build ID before building ROME:
+Command("build.cpp","", 
+	[
+	  countup("build.cpp"),
+	])
+
+
 SConscript('Main.scons', variant_dir = "build/", duplicate = 0)
