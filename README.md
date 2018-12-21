@@ -4,6 +4,10 @@
 
 This is a simulation tool for different readout architectures of synchronous Particle Detectors developed at Karlsruhe Insitute of Technology (KIT) by Rudolf Schimassek and Felix Ehrler in the ASIC and Detector Laboratory (ADL).
 
+The development was moved to a KIT git server available at:
+https://git.scc.kit.edu/jl1038/Readout_Simulation
+This repository will no longer be maintained.
+
 The simulation aims at synchronous detector architectures. For asynchronous detectors refer to Enrico Junior Schioppa's implementation developed for the MALTA sensor.
 
 The configuration of the simulation is done via XML files. For this, Lee Thomason's XML parsing library tinyxml2 is used (see https://github.com/leethomason/tinyxml2).
